@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Developers - YAW8</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="../css/style.css"/>
+    <!-- Modal CSS (developer + game profile modals) -->
+    <link rel="stylesheet" href="../css/modal.css"/>
+    <!-- Developers Page CSS -->
+    <link rel="stylesheet" href="../css/developers.css"/>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+    LOADING SCREEN
+══════════════════════════════════════════ -->
+<div id="loading-screen">
+  <div class="loader-content">
+    <div class="loader-logo">
+      <img src="../assets/images/Official_Logo.png" alt="YA!W8" class="loader-logo-img" />
+    </div>
+    <div class="loader-bar-track">
+      <div class="loader-bar-fill" id="loaderBarFill"></div>
+    </div>
+    <p class="loader-text" id="loaderText">Loading…</p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+    NAVBAR
+══════════════════════════════════════════ -->
+<nav>
+<div class="nav-pill-wrap">
+
+  <!-- Logo image -->
+  <div class="nav-logo">
+    <a href="../index.html"><img src="../assets/images/NavBar_Logo.png" alt="YA!W8 - Play What Students Create" /></a>
+  </div>
+
+  <div class="nav-divider"></div>
+
+  <!-- Navigation Links -->
+  <div class="nav-pill">
+  <ul class="nav-links">
+
+    <li>
+      <a href="../index.html" data-nav="home">
+        <!-- House icon -->
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+        </svg>
+        Home
+      </a>
+    </li>
+
+    <li>
+      <a href="games.html" data-nav="games">
+        <!-- Gamepad icon -->
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M15 7.5V2H9v5.5l3 3 3-3zM7.5 9H2v6h5.5l3-3-3-3zM9 16.5V22h6v-5.5l-3-3-3 3zM16.5 9l-3 3 3 3H22V9h-5.5z"/>
+        </svg>
+        Games
+      </a>
+    </li>
+
+    <li>
+      <a href="developers.html" class="active" data-nav="developers">
+        <!-- People / group icon -->
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+        </svg>
+        Developers
+      </a>
+    </li>
+
+    <li>
+      <a href="about.html" data-nav="about">
+        <!-- Info circle icon -->
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+        </svg>
+        About
+      </a>
+    </li>
+
+  </ul>
+  </div>
+
+  <div class="nav-divider"></div>
+
+  <!-- Right side controls -->
+  <div class="nav-right">
+
+    <!-- Search (developer-page specific: searches developers, not games) -->
+    <div class="search-bar">
+      <svg class="search-icon" viewBox="0 0 24 24"><path d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+      <input type="text" placeholder="Search developer…" id="searchInput" />
+      <!-- Filter icon inside search bar -->
+      <button class="search-filter-btn" title="Filter" id="filterBtn">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M4 6h16M7 12h10M10 18h4"/>
+        </svg>
+      </button>
+
+      <!-- Filter dropdown — sort & scope options for the All Developers grid -->
+      <div class="dev-filter-dropdown" id="devFilterDropdown">
+        <div class="dev-filter-label">Sort By</div>
+        <button class="dev-filter-item active" data-sort="rating">Highest Rated</button>
+        <button class="dev-filter-item" data-sort="games">Most Games</button>
+        <button class="dev-filter-item" data-sort="name">Name (A–Z)</button>
+
+        <div class="dev-filter-divider"></div>
+
+        <div class="dev-filter-label">Show</div>
+        <button class="dev-filter-item active" data-scope="all">All Developers</button>
+        <button class="dev-filter-item" data-scope="top">Top Developers Only</button>
+      </div>
+    </div>
+
+    <!-- Notification bell -->
+    <button class="icon-btn" title="Notifications">
+      <svg viewBox="0 0 24 24">
+        <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+      </svg>
+    </button>
+
+    <!-- Avatar / user menu — dropdown is a sibling, not a child of the button -->
+    <div class="avatar-wrap">
+      <button class="avatar-btn" id="avatarBtn">
+        <div class="avatar-circle">
+          <!-- Person icon -->
+          <svg viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+        </div>
+        <p>User</p>
+        <!-- Chevron down -->
+        <svg class="chevron" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+      </button>
+
+      <!-- Dropdown sits outside the button, anchored to .avatar-wrap -->
+      <div class="user-dropdown" id="userDropdown">
+        <!-- Profile -->
+        <button class="dropdown-item">
+          <svg viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+          My Profile
+        </button>
+        <!-- My Games -->
+        <button class="dropdown-item">
+          <svg viewBox="0 0 24 24"><path d="M15 7.5V2H9v5.5l3 3 3-3zM7.5 9H2v6h5.5l3-3-3-3zM9 16.5V22h6v-5.5l-3-3-3 3zM16.5 9l-3 3 3 3H22V9h-5.5z"/></svg>
+          My Games
+        </button>
+        <!-- Settings -->
+        <button class="dropdown-item">
+          <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+          Settings
+        </button>
+        <div class="dropdown-divider"></div>
+        <!-- Sign out -->
+        <button class="dropdown-item danger">
+          <svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+          Sign Out
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+</nav>
+
+
+<!-- ══════════════════════════════════════════
+    PAGE BODY
+══════════════════════════════════════════ -->
+<div class="page-wrap" style="grid-template-columns: 1fr;">
+
+  <!-- ── MAIN COLUMN ── -->
+  <main class="main-col">
+
+    <!-- ─────────────────
+        DEVELOPERS PAGE HERO
+    ───────────────── -->
+    <section class="dev-page-hero" style="background-image: url('../assets/images/Front_BG4.png'); background-size: cover; background-position: center; background-repeat: no-repeat;"> <!--Change the image/background-->
+      <div class="dev-page-hero-content">
+        <span class="dev-page-eyebrow">
+          Meet The Creators
+        </span>
+        <h1>The Devs Behind <br> the <span class="accent">Games</span></h1>
+        <p>Every game on YA!W8 was built by a student just like you. <br>Browse profiles, see what they have made, and find your next collaborator.</p>
+      </div>
+    </section>
+
+
+    <!-- ─────────────────
+        TOP DEVELOPERS
+    ───────────────── -->
+    <section class="panel" id="top-developers">
+      <div class="section-header">
+        <h2 class="section-title">
+          <!-- Trophy / star icon -->
+          <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+          Top Developers
+        </h2>
+      </div>
+
+      <div class="top-dev-grid" id="topDevGrid"></div>
+    </section>
+
+
+    <!-- ─────────────────
+        ALL DEVELOPERS
+    ───────────────── -->
+    <section class="panel" id="all-developers">
+      <div class="section-header">
+        <h2 class="section-title">
+          <!-- People icon -->
+          <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+          All Developers
+        </h2>
+      </div>
+
+      <div class="all-dev-grid" id="allDevGrid"></div>
+    </section>
+
+
+    <!-- ─────────────────
+        GAME COLLABORATIONS
+    ───────────────── -->
+    <section class="panel" id="game-collaborations">
+      <div class="section-header">
+        <h2 class="section-title">
+          <!-- Gamepad icon -->
+          <svg viewBox="0 0 24 24"><path d="M15 7.5V2H9v5.5l3 3 3-3zM7.5 9H2v6h5.5l3-3-3-3zM9 16.5V22h6v-5.5l-3-3-3 3zM16.5 9l-3 3 3 3H22V9h-5.5z"/></svg>
+          Game Collaborations
+        </h2>
+      </div>
+
+      <div class="collab-list" id="collabList"></div>
+    </section>
+
+  </main><!-- end .main-col -->
+
+</div><!-- end .page-wrap -->
+
+
+<!-- ══════════════════════════════════════════
+    DEVELOPER PROFILE MODAL
+══════════════════════════════════════════ -->
+<div class="modal" id="devModal">
+  <div class="modal-overlay" id="devModalOverlay"></div>
+  <div class="modal-content">
+    <button class="modal-close" id="devModalClose">
+      <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+    </button>
+    <div class="modal-inner" id="devModalInner">
+      <!-- populated by developers.js -->
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+    GAME COLLABORATION MODAL
+══════════════════════════════════════════ -->
+<div class="modal" id="gameModal">
+  <div class="modal-overlay" id="gameModalOverlay"></div>
+  <div class="modal-content">
+    <button class="modal-close" id="gameModalClose">
+      <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+    </button>
+    <div class="modal-inner" id="gameModalInner">
+      <!-- populated by developers.js -->
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+    FOOTER
+══════════════════════════════════════════ -->
+<footer>
+    <div class="footer-inner">
+
+        <div class="footer-brand">
+            <img class="footer-logo" src="../assets/images/Official_Logo.png" alt="YA!W8" />
+            <p>YA!W8 is a platform for student-made games. Play, discover, and support creativity within the school community.</p>
+        </div>
+
+        <div class="footer-col">
+            <h4>Explore</h4>
+                <ul>
+                    <li><a href="games.html">All Games</a></li>
+                    <li><a href="../index.html#featured-games">Random Challenge</a></li>
+                    <li><a href="../index.html">Spotlight</a></li>
+                </ul>
+        </div>
+
+        <div class="footer-col">
+            <h4>Community</h4>
+                <ul>
+                    <li><a href="developers.html">Developers</a></li>
+                    <li><a href="../index.html">Leaderboard</a></li>
+                    <li><a href="../index.html">Submit Your Game</a></li>
+                </ul>
+        </div>
+
+        <div class="footer-col">
+            <h4>Support</h4>
+                <ul>
+                    <li><a href="#">Feedback</a></li>
+                    <li><a href="about.html">About Us</a></li>
+                </ul>
+        </div>
+
+        <div class="footer-col">
+            <h4>Follow Us</h4>
+                <div class="social-links" style="margin-top:4px;flex-wrap:wrap;">
+                    <!-- Discord -->
+                    <a href="#" title="Discord">
+                        <svg viewBox="0 0 24 24"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
+                    </a>
+
+                    <!-- Facebook -->
+                    <a href="#" title="Facebook">
+                        <svg viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                    </a>
+
+                    <!-- YouTube -->
+                    <a href="#" title="YouTube">
+                        <svg viewBox="0 0 24 24"><path d="M23.495 6.205a3.007 3.007 0 0 0-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 0 0 .527 6.205a31.247 31.247 0 0 0-.522 5.805 31.247 31.247 0 0 0 .522 5.783 3.007 3.007 0 0 0 2.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 0 0 2.088-2.088 31.247 31.247 0 0 0 .5-5.783 31.247 31.247 0 0 0-.5-5.805zM9.609 15.601V8.408l6.264 3.602z"/></svg>
+                    </a>
+
+                    <!-- Twitter / X -->
+                    <a href="#" title="Twitter">
+                        <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                    </a>
+                </div>
+        </div>
+
+    </div>
+
+    <div class="footer-bottom">
+        <span>© 2026 YA!W8. All rights reserved.</span>
+    </div>
+</footer>
+
+<!-- JavaScript -->
+<script src="../js/developers.js"></script>
+
+</body>
+</html>

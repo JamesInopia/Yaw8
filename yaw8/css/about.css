@@ -1,0 +1,282 @@
+/* ═══════════════════════════════
+    SINGLE-COLUMN PAGE WRAP
+═══════════════════════════════ */
+.page-wrap-single {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    max-width: 1340px;
+    margin: 0 auto;
+    padding: 3px 24px 48px;
+}
+
+/* ═══════════════════════════════
+    PAGE HEADER
+═══════════════════════════════ */
+.page-header {
+    position: relative; 
+    overflow: hidden;
+    border-radius: var(--radius);
+    border: 1px solid rgba(0, 255, 255, 0.5);
+    padding: 40px 44px;
+    background:
+        radial-gradient(ellipse 60% 80% at 70% 50%, rgba(100,40,200,.28) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 60% at 85% 80%, rgba(0,180,255,.12) 0%, transparent 60%),
+        linear-gradient(135deg, #001624 0%, #08061a 55%, #180030 100%);
+}
+
+.page-header::before {
+    content: '';
+    position: absolute; 
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(0,229,255,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,255,.035) 1px, transparent 1px);
+    background-size: 36px 36px;
+    pointer-events: none;
+}
+
+.page-header-content {
+    position: relative;
+    z-index: 1;
+    max-width: 560px;
+}
+
+.page-header h1 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 20px;
+    font-weight: 400;
+    line-height: 1.6;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    color: var(--white);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.page-header h1 .accent {
+    color: var(--cyan);
+    display: flex;
+    align-items: center;
+}
+
+.header-logo-img {
+    height: 52px;
+    width: auto;
+    display: block;
+}
+
+.page-header p {
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.7;
+}
+
+/* ═══════════════════════════════
+    MEET THE TEAM
+═══════════════════════════════ */
+.team-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    }
+
+    .team-card {
+    background: #07111d;
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-sm);
+    padding: 24px 16px;
+    text-align: center;
+    transition: transform .2s, border-color .2s, box-shadow .2s;
+    /* used by the scroll-reveal effect in about.js */
+    opacity: 0;
+    transform: translateY(16px);
+    /* team cards are now links to developer profiles */
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+}
+
+.team-card.revealed {
+    opacity: 1;
+    transform: translateY(0);
+    transition: transform .5s ease, border-color .2s, box-shadow .2s, opacity .5s ease;
+}
+
+.team-card:hover {
+    transform: translateY(-5px);
+    border-color: #ffd700;
+    box-shadow: 0 0 28px rgba(0,229,255,.35);
+}
+
+.team-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    margin: 0 auto 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
+}
+
+/* Profile Background */
+.ta-1 { 
+    background: linear-gradient(135deg, var(--cyan), var(--purple)); 
+}
+
+.ta-2 { 
+    background: linear-gradient(135deg, var(--pink), #ff8c00); 
+}
+
+.ta-3 { 
+    background: linear-gradient(135deg, #00dd77, var(--cyan)); 
+}
+
+.ta-4 { 
+    background: linear-gradient(135deg, var(--purple), var(--pink)); 
+}
+
+.ta-5 { 
+    background: linear-gradient(135deg, #f59e0b, var(--pink)); 
+}
+
+.team-name {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 2px;
+}
+
+.team-role {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--cyan);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    margin-bottom: 10px;
+}
+
+.team-bio {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.65;
+}
+
+/* ═══════════════════════════════
+    COMMENTS / TESTIMONIALS
+═══════════════════════════════ */
+.comments-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+}
+
+.comment-card {
+    background: #07111d;
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-sm);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    /* used by the scroll-reveal effect in about.js */
+    opacity: 0;
+    transform: translateY(16px);
+}
+
+.comment-card.revealed {
+    opacity: 1;
+    transform: translateY(0);
+    transition: transform .5s ease, opacity .5s ease;
+}
+
+.comment-card--featured {
+    grid-column: span 2;
+}
+
+.comment-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.comment-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+}
+
+.comment-user { 
+    flex: 1; 
+    min-width: 0; 
+}
+
+.comment-name {
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.comment-tag {
+    font-size: 10px;
+    color: var(--muted);
+}
+
+.comment-stars {
+    font-size: 11px;
+    color: #fbbf24;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.comment-text {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.75;
+}
+
+/* ═══════════════════════════════
+    RESPONSIVE (OPTIONAL)
+═══════════════════════════════ */
+@media (max-width: 900px) {
+.team-grid { 
+        grid-template-columns: repeat(2, 1fr); 
+    }   
+}
+
+@media (max-width: 800px) {
+.team-grid { 
+        grid-template-columns: repeat(2, 1fr); 
+    }
+
+.comments-grid { 
+        grid-template-columns: 1fr; 
+    
+    }
+.comment-card--featured { 
+        grid-column: span 1; 
+    }
+
+.page-header { 
+        padding: 26px 22px; 
+    }
+
+.page-header h1 {   
+        font-size: 15px; 
+    }
+    
+.header-logo-img { 
+        height: 20px; 
+    }
+}

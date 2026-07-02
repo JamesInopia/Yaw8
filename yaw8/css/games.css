@@ -1,0 +1,222 @@
+/* ═══════════════════════════════
+    SINGLE-COLUMN PAGE WRAP
+═══════════════════════════════ */
+.page-wrap-single {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    max-width: 1340px;
+    margin: 0 auto;
+    padding: 3px 24px 48px;
+}
+
+/* ═══════════════════════════════
+    PAGE HEADER
+    (compact hero at the top of the page)
+═══════════════════════════════ */
+.page-header {
+    position: relative; overflow: hidden;
+    border-radius: var(--radius);
+    border: 1px solid rgba(0, 255, 255, 0.5);
+    padding: 40px 44px;
+    background:
+        radial-gradient(ellipse 60% 80% at 70% 50%, rgba(100,40,200,.28) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 60% at 85% 80%, rgba(0,180,255,.12) 0%, transparent 60%),
+        linear-gradient(135deg, #001624 0%, #08061a 55%, #180030 100%);
+}
+
+.page-header::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+        linear-gradient(rgba(0,229,255,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,255,.035) 1px, transparent 1px);
+    background-size: 36px 36px;
+    pointer-events: none;
+}
+
+.page-header-content {
+    position: relative;
+    z-index: 1;
+    max-width: 560px;
+}
+
+.page-header h1 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 20px;
+    font-weight: 400;
+    line-height: 1.6;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    color: var(--white);
+}
+
+.page-header h1 .accent {
+    color: var(--cyan);
+}
+
+.page-header p {
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.7;
+}
+
+/* ═══════════════════════════════
+    FILTER CHIPS
+    (genre filters on All Games)
+═══════════════════════════════ */
+.filter-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.filter-chip {
+    background: rgba(255,255,255,.05);
+    border: 1px solid var(--card-border);
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: 20px;
+    transition: color .2s, border-color .2s, background .2s;
+}
+
+.filter-chip:hover {
+    color: var(--white);
+    border-color: rgba(0,229,255,.4);
+}
+
+.filter-chip.active {
+    color: var(--cyan);
+    background: rgba(0,229,255,.12);
+    border-color: var(--cyan);
+}
+
+/* ═══════════════════════════════
+    RANK BADGE
+    (Top Played Games cards)
+═══════════════════════════════ */
+.rank-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 3;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    color: #000;
+    background: var(--cyan);
+    box-shadow: 0 0 12px rgba(0,229,255,.55);
+}
+
+.rank-badge.rank-2 { 
+    background: #cfd8e3; 
+}
+
+.rank-badge.rank-3 { 
+    background: #d98c4a; 
+}
+
+.rank-badge.rank-4 { 
+    background: #8892a4; 
+}
+
+/* ═══════════════════════════════
+    NEW GAME THUMBNAILS
+    (Neon Vault, Star Forge, Blob Quest, Sky Punch —
+    used by the All Games grid)
+═══════════════════════════════ */
+
+/* ── Neon Vault ── */
+.gt-neon-vault {
+    background: linear-gradient(180deg, #05001a 0%, #0d0033 50%, #1a0050 100%);
+}
+
+.gt-neon-vault::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+        repeating-linear-gradient(90deg, rgba(0,229,255,.12) 0 2px, transparent 2px 34px),
+        radial-gradient(ellipse at 50% 30%, rgba(0,229,255,.2) 0%, transparent 60%);
+}
+
+.gt-neon-vault .game-thumb-title {
+    font-size: 9px;
+    color: #00E5FF;
+    text-shadow: 0 0 8px #00b3cc, 0 0 20px #00e5ff66;
+}
+
+/* ── Star Forge ── */
+.gt-star-forge {
+    background: linear-gradient(180deg, #1a0800 0%, #331100 45%, #4d1a00 100%);
+}
+
+.gt-star-forge::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 60% 70%, rgba(255,140,0,.35) 0%, transparent 55%);
+}
+
+.gt-star-forge .game-thumb-title {
+    font-size: 9px;
+    color: #ffb347;
+    text-shadow: 0 0 8px #ff7700, 0 0 20px #ff440066;
+}
+
+/* ── Blob Quest ── */
+.gt-blob-quest {
+    background: linear-gradient(180deg, #00120c 0%, #002419 50%, #003d29 100%);
+}
+
+.gt-blob-quest::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 40% 60%, rgba(0,255,170,.25) 0%, transparent 55%);
+}
+
+.gt-blob-quest .game-thumb-title {
+    font-size: 9px;
+    color: #4dffb8;
+    text-shadow: 0 0 8px #00cc88;
+}
+
+/* ── Sky Punch ── */
+.gt-sky-punch {
+    background: linear-gradient(180deg, #1a0010 0%, #33001f 50%, #4d0030 100%);
+}
+
+.gt-sky-punch::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 20%, rgba(255,79,216,.3) 0%, transparent 60%);
+}
+
+.gt-sky-punch .game-thumb-title {
+    font-size: 9px;
+    color: #ff4fd8;
+    text-shadow: 0 0 8px #cc0088;
+}
+
+/* ═══════════════════════════════
+    RESPONSIVE
+═══════════════════════════════ */
+@media (max-width: 800px) {
+    .page-header { 
+        padding: 26px 22px; 
+    }
+
+    .page-header h1 { 
+        font-size: 15px; 
+    }
+}

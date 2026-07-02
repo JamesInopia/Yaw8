@@ -1,0 +1,698 @@
+/* ═══════════════════════════════
+    DEVELOPERS PAGE STYLES
+═══════════════════════════════ */
+
+/* ── Page header banner ── */
+.dev-page-hero {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius);
+    border: 1px solid rgba(0, 255, 255, 0.5);
+    padding: 44px 44px;
+    margin-bottom: 22px;
+    background: linear-gradient(135deg, #0a0f1a 0%, #0f0a1a 100%);
+}
+
+.dev-page-hero-content {
+    position: relative;
+    z-index: 1;
+}
+
+.dev-page-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--cyan);
+    background: rgba(0,229,255,.1);
+    border: 1px solid rgba(0,229,255,.25);
+    padding: 6px 14px;
+    border-radius: 15px;
+    margin-bottom: 18px;
+}
+
+.dev-page-eyebrow svg {
+    width: 13px;
+    height: 13px;
+    fill: var(--cyan);
+}
+
+.dev-page-hero h1 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 24px;
+    font-weight: 400;
+    line-height: 1.6;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    color: var(--white);
+}
+
+.dev-page-hero h1 .accent {
+    color: var(--cyan);
+}
+
+.dev-page-hero p {
+    font-size: 14px;
+    color: var(--muted);
+    max-width: 480px;
+    line-height: 1.7;
+}
+
+.dev-page-stats {
+    display: flex;
+    gap: 28px;
+    margin-top: 26px;
+    flex-wrap: wrap;
+}
+
+.dev-page-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.dev-page-stat .num {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--cyan);
+}
+
+.dev-page-stat .lbl {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--muted);
+}
+
+
+/* Extra avatar gradients */
+.da-5 { 
+    background: linear-gradient(135deg, #00dd77, var(--pink)); 
+}
+
+.da-6 { 
+    background: linear-gradient(135deg, #f59e0b, var(--purple)); 
+}
+
+
+/* ═══════════════════════════════
+    TOP DEVELOPERS
+═══════════════════════════════ */
+.top-dev-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+}
+
+.top-dev-card {
+    background: #07111d;
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius);
+    padding: 24px 18px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    transition: transform .2s, border-color .2s, box-shadow .2s;
+    position: relative;
+}
+
+.top-dev-card:hover {
+    transform: translateY(-5px);
+    border-color: #ffd700;
+    box-shadow: 0 0 32px rgba(0,229,255,.45);
+}
+
+.top-dev-rank {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: rgba(0,229,255,.1);
+    border: 1px solid rgba(0,229,255,.3);
+    color: var(--cyan);
+    font-size: 11px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.top-dev-avatar {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 14px;
+    box-shadow: 0 0 0 3px rgba(0,229,255,.12);
+}
+
+.top-dev-name {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 2px;
+}
+
+.top-dev-role {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 12px;
+}
+
+.top-dev-metrics {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 16px;
+}
+
+.top-dev-metric {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.top-dev-metric .val {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--white);
+}
+
+.top-dev-metric.rating .val {
+    color: #fbbf24;
+}
+
+.top-dev-metric .key {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--muted);
+}
+
+.btn-view-profile {
+    width: 100%;
+    background: rgba(0,229,255,.08);
+    color: var(--cyan);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 10px 0;
+    border-radius: 8px;
+    border: 1px solid rgba(0,229,255,.3);
+    transition: all .2s;
+}
+
+.btn-view-profile:hover {
+    background: var(--cyan);
+    color: #000;
+    box-shadow: 0 0 22px rgba(0,229,255,.4);
+}
+
+
+/* ═══════════════════════════════
+    NAVBAR SEARCH — FILTER DROPDOWN (NOT FUNCTIONAL)
+═══════════════════════════════ */
+
+.search-bar {
+    position: relative;
+}
+
+.dev-filter-dropdown {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    min-width: 190px;
+    background: #0a0f1e;
+    border: 1px solid rgba(0, 229, 255, 0.546);
+    border-radius: 12px;
+    padding: 6px;
+    display: none;
+    flex-direction: column;
+    gap: 2px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,229,255,0.05);
+    z-index: 200;
+}
+
+.dev-filter-dropdown.open {
+    display: flex;
+}
+
+.dev-filter-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+    padding: 8px 10px 4px;
+}
+
+.dev-filter-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    padding: 9px 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: 'Poppins', sans-serif;
+    color: var(--muted);
+    cursor: pointer;
+    transition: color .15s, background .15s;
+}
+
+.dev-filter-item:hover {
+    color: var(--white);
+    background: rgba(255,255,255,0.06);
+}
+
+.dev-filter-item.active {
+    color: var(--cyan);
+    background: rgba(0,229,255,.12);
+}
+
+.dev-filter-divider {
+    height: 1px;
+    background: rgba(0,229,255,0.1);
+    margin: 4px 6px;
+}
+
+
+/* ═══════════════════════════════
+    ALL DEVELOPERS
+═══════════════════════════════ */
+.all-dev-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+}
+
+.all-dev-card {
+    background: #07111d;
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: transform .2s, border-color .2s;
+}
+
+.all-dev-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--cyan);
+    box-shadow: 0 0 20px rgba(0,229,255,.25);
+}
+
+.all-dev-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+}
+
+.all-dev-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.all-dev-name {
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.all-dev-games {
+    font-size: 11px;
+    color: var(--muted);
+}
+
+.all-dev-rating {
+    font-size: 11px;
+    font-weight: 600;
+    color: #fbbf24;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+
+/* ═══════════════════════════════
+    GAME COLLABORATIONS
+═══════════════════════════════ */
+.collab-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.collab-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: #07111d;
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    transition: border-color .2s, transform .2s;
+    min-width: 0;
+}
+
+.collab-row:hover {
+    border-color: var(--cyan);
+    transform: translateY(-2px);
+}
+
+.collab-thumb {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+}
+
+/* Real game image thumb (Wobble Bao) — same image as the Homepage */
+.collab-thumb.has-image {
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    border: 1px solid rgba(0,229,255,0.15);
+}
+
+.collab-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.collab-name {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 3px;
+}
+
+.collab-genre {
+    font-size: 11px;
+    color: var(--muted);
+}
+
+.collab-avatars {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.collab-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 2px solid var(--card-bg);
+    margin-left: -10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    color: #fff;
+}
+
+.collab-avatar:first-child {
+    margin-left: 0;
+}
+
+.collab-avatar.more {
+    background: rgba(255,255,255,.08);
+    color: var(--muted);
+}
+
+.collab-rating {
+    font-size: 12px;
+    font-weight: 700;
+    color: #fbbf24;
+    flex-shrink: 0;
+    min-width: 50px;
+    text-align: right;
+}
+
+
+/* ═══════════════════════════════
+    RESPONSIVE (OPTIONAL)
+═══════════════════════════════ */
+@media (max-width: 1000px) {
+    .top-dev-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .all-dev-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .collab-list {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 700px) {
+    .dev-page-hero {
+        padding: 30px 22px;
+    }
+
+    .dev-page-hero h1 {
+        font-size: 16px;
+    }
+
+    .top-dev-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .all-dev-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .collab-row {
+        flex-wrap: wrap;
+    }
+
+    .collab-rating {
+        text-align: left;
+    }
+}
+
+/* ═══════════════════════════════
+    DEVELOPER & GAME MODALS
+═══════════════════════════════ */
+.all-dev-card,
+.top-dev-card,
+.collab-row {
+    cursor: pointer;
+}
+
+.dev-modal-avatar-row {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 28px;
+}
+
+.dev-modal-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    font-weight: 800;
+    color: #fff;
+    flex-shrink: 0;
+    box-shadow: 0 0 0 3px rgba(0,229,255,.12);
+}
+
+.dev-modal-name h1 {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--white);
+    margin-bottom: 4px;
+}
+
+.dev-modal-name p {
+    font-size: 13px;
+    color: var(--muted);
+}
+
+/* Give Games / Rating / Status */
+#devModalInner .modal-stats {
+    margin-bottom: 24px;
+}
+
+#devModalInner .stat {
+    align-items: center;
+    background: rgba(0, 229, 255, 0.03);
+    border-radius: 10px;
+    padding: 16px 12px;
+}
+
+/* Centered quote box for developer profile modals */
+.dev-quote-box {
+    border-left: none;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.dev-quote-box p {
+    font-style: italic;
+    font-size: 15px !important;
+    color: var(--white) !important;
+    line-height: 1.7 !important;
+    text-align: center;
+}
+
+.dev-skills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.dev-skill-tag {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--cyan);
+    background: rgba(0,229,255,.08);
+    border: 1px solid rgba(0,229,255,.25);
+    padding: 6px 12px;
+    border-radius: 14px;
+}
+
+.dev-games-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.dev-game-card {
+    background: #07111d;
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    transition: transform .2s, border-color .2s;
+}
+
+.dev-game-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--cyan);
+}
+
+.dev-game-thumb {
+    width: 100%;
+    aspect-ratio: 16/10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    background-size: cover;
+    background-position: center;
+}
+
+.dev-game-info {
+    padding: 10px 12px;
+}
+
+.dev-game-name {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--white);
+    margin-bottom: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dev-game-meta {
+    font-size: 10px;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+}
+
+.game-team-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.game-team-member {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #07111d;
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    transition: border-color .2s, background .2s, transform .2s;
+}
+
+/* Only members that link to an actual developer profile
+    get the clickable hover treatment */
+.game-team-member[data-dev-id] {
+    cursor: pointer;
+}
+
+.game-team-member[data-dev-id]:hover {
+    border-color: var(--cyan);
+    background: rgba(0, 229, 255, 0.06);
+    transform: translateY(-2px);
+}
+
+.game-team-member .member-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.game-team-member .member-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--white);
+    transition: color .2s;
+}
+
+.game-team-member[data-dev-id]:hover .member-name {
+    color: var(--cyan);
+}
+
+@media (max-width: 700px) {
+    .dev-games-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
