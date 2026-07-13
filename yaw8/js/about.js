@@ -1,8 +1,6 @@
 // ═══════════════════════════════════════════════════
     // ABOUT.JS
-    // Logic used only on about.html. Load this AFTER
-    // script.js (not required for it to work, but keeps
-    // load order consistent with the other pages).
+    // Logic used only on about.html.
     // ═══════════════════════════════════════════════════
 
     // ═══════════════════════════════════════════

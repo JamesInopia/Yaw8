@@ -68,7 +68,6 @@
     ═══════════════════════════════ */
 
     /* Outer nav bar — transparent full-width sticky strip */
-
     nav {
         position: sticky;
         top: 0;
@@ -83,7 +82,6 @@
     }
 
     /* Single pill that wraps everything — logo, links, search, icons */
-
     .nav-pill-wrap {
         display: flex;
         align-items: center;
@@ -97,7 +95,6 @@
     }
 
     /* ── Logo image ── */
-
     .nav-logo {
         display: flex;
         align-items: center;
@@ -153,7 +150,6 @@
     }
 
     /* ── SVG nav icons ── */
-
     .nav-links a svg {
         width: 15px;
         height: 15px;

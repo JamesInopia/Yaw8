@@ -104,7 +104,7 @@ const developerDatabase = [
 
 // ═══════════════════════════════════════════
 // GAME COLLABORATIONS - games made by more
-// than one developer
+// than one developer (NEEDS DATABASE)
 // ═══════════════════════════════════════════
 const collaborationDatabase = [
     {
@@ -565,7 +565,7 @@ document.addEventListener('click', function(e) {
 // ═══════════════════════════════════════════
 // NAVBAR SEARCH — filters the All Developers
 // grid as the person types (this page only,
-// since developers.js isn't loaded elsewhere)
+// since developers.js isn't loaded elsewhere) (NOT FUNCTIONAL)
 // ═══════════════════════════════════════════
 const searchInput = document.getElementById('searchInput');
 if (searchInput) {
@@ -576,7 +576,7 @@ if (searchInput) {
 }
 
 // ═══════════════════════════════════════════
-// NAVBAR FILTER DROPDOWN — sort by / show
+// NAVBAR FILTER DROPDOWN — sort by / show (NOT FUNCTIONAL)
 // ═══════════════════════════════════════════
 const filterBtn = document.getElementById('filterBtn');
 const devFilterDropdown = document.getElementById('devFilterDropdown');

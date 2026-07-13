@@ -2,15 +2,12 @@
     // GAMES.JS
     // Logic used only on games.html. Load this AFTER
     // script.js — it relies on globals declared there
-    // (gameDatabase, openGameModal). Classic <script> tags
-    // share one top-level scope, so those top-level
-    // const/function declarations from script.js are
-    // visible here automatically.
+    // (gameDatabase, openGameModal).
     // ═══════════════════════════════════════════════════
 
     // ─────────────────────────────────────────────
     // Extend the shared game database with a few more
-    // titles so the All Games grid has real variety.
+    // titles so the All Games grid has real variety. (CHANGE THIS LATER)
     // ─────────────────────────────────────────────
     Object.assign(gameDatabase, {
     'neon-vault': {

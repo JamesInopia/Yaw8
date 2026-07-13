@@ -111,6 +111,40 @@
     });
     });
 
+    // ═══════════════════════════════════════════
+    // PLAY BUTTON — send the user to the game page
+    // Delegated on document so it also covers cards
+    // rendered later (e.g. the All Games grid built
+    // by games.js). Works from index.html (root) and
+    // from pages already inside /html/.
+    // ═══════════════════════════════════════════
+    function goToGamePage(gameId) {
+    const alreadyInHtmlFolder = window.location.pathname.includes('/html/');
+    const basePath = alreadyInHtmlFolder ? '' : 'html/';
+    window.location.href = `${basePath}gamepage.html?game=${gameId}`;
+    }
+
+    document.addEventListener('click', function(e) {
+    const playBtn = e.target.closest('.btn-play');
+    if (!playBtn) return;
+
+    const card = playBtn.closest('[data-game-id]');
+    if (!card) return;
+
+    goToGamePage(card.getAttribute('data-game-id'));
+    });
+
+    // The big "PLAY NOW" button inside the game modal isn't tied to a
+    // [data-game-id] card, so it uses currentGameId (set by openGameModal)
+    // instead.
+    const modalPlayBtn = document.querySelector('.btn-play-modal');
+    if (modalPlayBtn) {
+    modalPlayBtn.addEventListener('click', function() {
+        if (!currentGameId) return;
+        goToGamePage(currentGameId);
+    });
+    }
+
     // ─────────────────────────────────────────────
     // DEVELOPER DISPLAY
     // Always shows first 2 devs. The 3rd dev and beyond

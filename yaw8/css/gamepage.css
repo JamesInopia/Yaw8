@@ -1,0 +1,540 @@
+/* ═══════════════════════════════
+    GAME PLAYER PAGE
+═══════════════════════════════ */
+
+.gp-breadcrumb {
+    font-size: 12px;
+    color: var(--muted);
+    padding: 2px 2px 0;
+}
+
+.gp-breadcrumb a {
+    color: var(--muted);
+    transition: color .15s;
+}
+
+.gp-breadcrumb a:hover {
+    color: var(--cyan);
+}
+
+.gp-breadcrumb span {
+    color: var(--white);
+    font-weight: 600;
+}
+
+/* ── Arcade Cabinet ── */
+
+.gp-cabinet {
+    position: relative;
+    max-width: 1300px;
+    width: 80%;
+    margin: 0 auto;
+    border-radius: var(--radius);
+    padding: 3px;
+    background: linear-gradient(135deg, rgba(0,229,255,.5), rgba(139,92,246,.4) 45%, rgba(255,79,216,.4));
+}
+
+.gp-cabinet-glow {
+    position: absolute;
+    inset: -18px;
+    z-index: -1;
+    background: radial-gradient(ellipse 70% 60% at 50% 40%, rgba(0,229,255,.16) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.gp-screen {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16/9;
+    background: #000;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.gp-iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+    background: #000;
+}
+
+/* Subtle CRT scanline texture over the whole screen */
+.gp-scanlines {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    pointer-events: none;
+    background: repeating-linear-gradient(180deg, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 2px, rgba(0,0,0,.12) 3px);
+    mix-blend-mode: multiply;
+    opacity: .5;
+}
+
+/* ── Start / Insert-Coin overlay ── */
+
+.gp-startcard {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    text-align: center;
+    background: linear-gradient(180deg, #01050a 0%, #030512 60%, #06031a 100%);
+}
+
+.gp-startcard.hidden {
+    display: none;
+}
+
+.gp-start-thumb {
+    position: absolute;
+    inset: 0;
+    opacity: .55;
+}
+
+.gp-start-badge {
+    position: relative;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 11px;
+    color: var(--cyan);
+    letter-spacing: .08em;
+    text-shadow: 0 0 14px rgba(0,229,255,.65);
+    animation: gpBlink 1.4s steps(1) infinite;
+}
+
+@keyframes gpBlink {
+    0%, 49% { opacity: 1; }
+    50%, 100% { opacity: .35; }
+}
+
+.gp-play-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 15px;
+    font-weight: 700;
+    padding: 14px 30px;
+    border: none;
+    border-radius: 12px;
+    color: #01050a;
+    background: linear-gradient(135deg, var(--cyan), var(--purple));
+    box-shadow: 0 0 24px rgba(0,229,255,.45);
+    cursor: pointer;
+    transition: transform .15s, box-shadow .15s;
+}
+
+.gp-play-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 32px rgba(0,229,255,.65);
+}
+
+.gp-play-btn:active {
+    transform: translateY(0);
+}
+
+.gp-play-btn svg {
+    width: 14px;
+    height: 14px;
+    fill: currentColor;
+}
+
+.gp-start-hint {
+    position: relative;
+    font-size: 12px;
+    color: var(--muted);
+}
+
+/* ── In-game HUD controls ── */
+
+.gp-hud {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 15;
+    display: flex;
+    gap: 6px;
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity .2s, transform .2s;
+}
+
+.gp-screen:hover .gp-hud,
+.gp-screen.playing .gp-hud {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.gp-hud-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(1,1,8,.7);
+    border: 1px solid var(--card-border);
+    color: var(--muted);
+    backdrop-filter: blur(6px);
+    transition: color .2s, border-color .2s;
+}
+
+.gp-hud-btn:hover {
+    color: var(--cyan);
+    border-color: var(--cyan);
+}
+
+.gp-hud-btn svg {
+    width: 15px;
+    height: 15px;
+    fill: currentColor;
+}
+
+/* ── Toolbar: title / meta / actions ── */
+
+.gp-toolbar {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.gp-title-block {
+    min-width: 0;
+}
+
+.gp-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--white);
+    margin-bottom: 10px;
+    line-height: 1.3;
+}
+
+.gp-meta-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px 16px;
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.gp-genre-badge {
+    position: static;
+    background: rgba(0,229,255,.12);
+    color: var(--cyan);
+    border: 1px solid rgba(0,229,255,.3);
+}
+
+.gp-dev a {
+    color: var(--white);
+    font-weight: 600;
+    border-bottom: 1px dashed var(--card-border);
+}
+
+.gp-dev a:hover {
+    color: var(--cyan);
+}
+
+.gp-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.gp-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: rgba(255,255,255,.05);
+    border: 1px solid var(--card-border);
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 9px 14px;
+    border-radius: 10px;
+    transition: color .15s, border-color .15s, background .15s;
+}
+
+.gp-action-btn svg {
+    width: 14px;
+    height: 14px;
+    fill: currentColor;
+    flex-shrink: 0;
+}
+
+.gp-action-btn:hover {
+    color: var(--white);
+    border-color: var(--cyan);
+}
+
+.gp-action-btn.active {
+    color: var(--cyan);
+    border-color: var(--cyan);
+    background: rgba(0,229,255,.1);
+}
+
+.gp-action-btn.danger:hover {
+    color: #ff7070;
+    border-color: #ff5f5f;
+}
+
+/* ── Tabs ── */
+
+.gp-tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid var(--card-border);
+    margin-bottom: 18px;
+}
+
+.gp-tab {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 6px;
+    margin-right: 18px;
+    position: relative;
+}
+
+.gp-tab.active {
+    color: var(--white);
+}
+
+.gp-tab.active::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 2px;
+    background: var(--cyan);
+    box-shadow: 0 0 8px rgba(0,229,255,.7);
+}
+
+.gp-tab-content {
+    display: none;
+}
+
+.gp-tab-content.active {
+    display: block;
+}
+
+#gpDescription {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.8;
+    margin-bottom: 18px;
+}
+
+.gp-info-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+}
+
+.gp-info-grid > div {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.gp-info-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+    font-weight: 700;
+}
+
+/* ── Comments ── */
+
+.gp-comment-form {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.gp-comment-form textarea {
+    width: 100%;
+    min-height: 70px;
+}
+
+.gp-comment-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.gp-comment {
+    display: flex;
+    gap: 12px;
+}
+
+.gp-comment-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+    background: linear-gradient(135deg, var(--purple), var(--pink));
+}
+
+.gp-comment-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.gp-comment-head {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 3px;
+}
+
+.gp-comment-name {
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.gp-comment-time {
+    font-size: 11px;
+    color: var(--muted);
+}
+
+.gp-comment-text {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+}
+
+.gp-empty {
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+    padding: 10px 0 2px;
+}
+
+/* ── Sidebar queue rows ── */
+
+.gp-queue {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.gp-queue-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 8px;
+    transition: background .15s;
+}
+
+.gp-queue-row:hover {
+    background: rgba(255,255,255,.05);
+}
+
+.gp-queue-thumb {
+    width: 56px;
+    height: 40px;
+    border-radius: 6px;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 6px;
+}
+
+.gp-queue-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.gp-queue-name {
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.gp-queue-meta {
+    font-size: 11px;
+    color: var(--muted);
+}
+
+/* ── Toast (self-contained, no modal.css dependency) ── */
+
+.gp-toast {
+    position: fixed;
+    left: 50%;
+    bottom: 26px;
+    transform: translate(-50%, 20px);
+    background: #0a0f1e;
+    border: 1px solid rgba(0,229,255,.546);
+    color: var(--white);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 12px 20px;
+    border-radius: 10px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.6);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s, transform .2s;
+    z-index: 500;
+}
+
+.gp-toast.show {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+/* ── Bottom row: Up Next + More by Developer, side by side under About/Comments ── */
+
+.gp-bottom-row {
+    display: flex;
+    gap: 18px;
+    align-items: flex-start;
+}
+
+.gp-bottom-row > .panel {
+    flex: 1;
+    min-width: 0;
+}
+
+@media (max-width: 640px) {
+    .gp-toolbar {
+        flex-direction: column;
+    }
+    .gp-info-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+    .gp-bottom-row {
+        flex-direction: column;
+    }
+}
