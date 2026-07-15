@@ -1,0 +1,542 @@
+/* ═══════════════════════════════
+    PROFILE / MY GAMES — SHARED STYLES
+    Used by myprofile.html and mygames.html
+═══════════════════════════════ */
+
+/* ── Hero banner (avatar + info OR page title) ── */
+.profile-hero,
+.games-hero {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius);
+    border: 1px solid rgba(0, 255, 255, 0.5);
+    padding: 40px 44px;
+    background:
+        radial-gradient(ellipse 60% 80% at 70% 50%, rgba(100,40,200,.28) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 60% at 85% 80%, rgba(0,180,255,.12) 0%, transparent 60%),
+        linear-gradient(135deg, #001624 0%, #08061a 55%, #180030 100%);
+}
+
+.profile-hero::before,
+.games-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(0,229,255,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,255,.035) 1px, transparent 1px);
+    background-size: 36px 36px;
+    pointer-events: none;
+}
+
+/* ═══════════════════════════════
+    MY PROFILE
+═══════════════════════════════ */
+
+.profile-hero-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 26px;
+    flex-wrap: wrap;
+}
+
+.profile-avatar-xl {
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    font-weight: 800;
+    color: #fff;
+    background: linear-gradient(135deg, var(--purple), var(--pink));
+    box-shadow: 0 0 0 4px rgba(0,229,255,.12);
+}
+
+.profile-id {
+    flex: 1;
+    min-width: 220px;
+}
+
+.profile-name-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+}
+
+.profile-name-row h1 {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--white);
+}
+
+.profile-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--cyan);
+    background: rgba(0,229,255,.1);
+    border: 1px solid rgba(0,229,255,.3);
+    padding: 4px 10px;
+    border-radius: 12px;
+}
+
+.profile-username {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 10px;
+}
+
+.profile-bio {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.7;
+    max-width: 520px;
+}
+
+.profile-actions {
+    position: relative;
+    z-index: 1;
+    flex-shrink: 0;
+    display: flex;
+    gap: 10px;
+    margin-left: auto;
+}
+
+.btn-edit-profile {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0,229,255,.1);
+    color: var(--cyan);
+    border: 1px solid rgba(0,229,255,.3);
+    font-size: 13px;
+    font-weight: 700;
+    padding: 10px 18px;
+    border-radius: 8px;
+    transition: all .2s;
+}
+
+.btn-edit-profile:hover {
+    background: var(--cyan);
+    color: #000;
+    box-shadow: 0 0 22px rgba(0,229,255,.4);
+}
+
+.btn-edit-profile svg {
+    width: 14px;
+    height: 14px;
+    fill: currentColor;
+}
+
+/* ── Stat row (shared by profile hero + games hero) ── */
+.profile-stats-row {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    gap: 30px;
+    margin-top: 26px;
+    padding-top: 24px;
+    border-top: 1px solid rgba(0,229,255,0.12);
+    flex-wrap: wrap;
+}
+
+.profile-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 2px;
+}
+
+.profile-stat .num {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--cyan);
+}
+
+.profile-stat .lbl {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--muted);
+}
+
+/* ── Account details panel ── */
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+}
+
+.info-item {
+    background: #07111d;
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-sm);
+    padding: 16px 18px;
+}
+
+.info-item .info-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+    margin-bottom: 6px;
+}
+
+.info-item .info-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--white);
+    word-break: break-word;
+}
+
+
+.recent-games-strip {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+}
+
+.recent-game-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #07111d;
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    transition: border-color .2s, transform .2s;
+}
+
+.recent-game-row:hover {
+    border-color: var(--cyan);
+    transform: translateY(-2px);
+}
+
+.recent-game-thumb {
+    width: 42px;
+    height: 42px;
+    border-radius: 8px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    font-weight: 700;
+}
+
+.recent-game-info {
+    min-width: 0;
+}
+
+.recent-game-name {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--white);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.recent-game-meta {
+    font-size: 10.5px;
+    color: var(--muted);
+}
+
+/* ═══════════════════════════════
+    MY GAMES
+═══════════════════════════════ */
+
+.games-hero-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.games-hero-text h1 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 18px;
+    font-weight: 400;
+    line-height: 1.6;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    color: var(--white);
+}
+
+.games-hero-text h1 .accent {
+    color: var(--cyan);
+}
+
+.games-hero-text p {
+    color: var(--muted);
+    font-size: 13.5px;
+    line-height: 1.7;
+    max-width: 480px;
+}
+
+.btn-add-game {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--cyan);
+    color: #000;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 13.5px;
+    padding: 8px 22px;
+    border-radius: 8px;
+    border: none;
+    flex-shrink: 0;
+    transition: transform .15s, box-shadow .2s;
+    box-shadow: 0 0 22px rgba(0,229,255,.38);
+}
+
+.btn-add-game:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 32px rgba(0,229,255,0.65);
+}
+
+.btn-add-game svg {
+    width: 13px;
+    height: 13px;
+    fill: #000;
+}
+
+.games-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.games-toolbar .count-text {
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.games-toolbar .count-text strong {
+    color: var(--white);
+}
+
+.sort-select {
+    width: auto;
+    min-width: 170px;
+    padding: 9px 34px 9px 14px;
+    font-size: 12.5px;
+}
+
+.sort-dropdown-wrap {
+    position: relative;
+}
+
+.sort-dropdown-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-width: 170px;
+    background: rgba(255,255,255,.05);
+    border: 1px solid var(--card-border);
+    border-radius: 15px;
+    padding: 9px 14px;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--white);
+    cursor: pointer;
+    transition: border-color .2s;
+}
+
+.sort-dropdown-btn:hover,
+.sort-dropdown-btn.open {
+    border-color: var(--cyan);
+}
+
+.sort-dropdown-btn .chevron {
+    width: 12px;
+    height: 12px;
+    fill: var(--muted);
+    flex-shrink: 0;
+    transition: transform .2s;
+}
+
+.sort-dropdown-btn.open .chevron {
+    transform: rotate(180deg);
+}
+
+.sort-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 0;
+    min-width: 180px;
+    background: #0a0f1e;
+    border: 1px solid rgba(0, 229, 255, 0.546);
+    border-radius: 12px;
+    padding: 6px;
+    display: none;
+    flex-direction: column;
+    gap: 2px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,229,255,0.05);
+    z-index: 200;
+}
+
+.sort-dropdown-menu.open {
+    display: flex;
+}
+
+.sort-option.active {
+    color: var(--cyan);
+    background: rgba(0,229,255,.08);
+}
+
+/* ── Status badge on card thumbnail ── */
+.status-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 3;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    padding: 4px 9px;
+    border-radius: 10px;
+    backdrop-filter: blur(4px);
+}
+
+.status-badge.published {
+    color: #00dd77;
+    background: rgba(0,221,119,.15);
+    border: 1px solid rgba(0,221,119,.4);
+}
+
+.status-badge.review {
+    color: #fbbf24;
+    background: rgba(251,191,36,.15);
+    border: 1px solid rgba(251,191,36,.4);
+}
+
+/* Generic fallback thumbnail gradients for user-submitted games */
+.gt-my-a { 
+    background: linear-gradient(180deg, #05001a 0%, #0d0033 50%, #1a0050 100%); 
+}
+
+.gt-my-b { 
+    background: linear-gradient(180deg, #1a0800 0%, #331100 45%, #4d1a00 100%); 
+}
+
+.gt-my-c { 
+    background: linear-gradient(180deg, #00120c 0%, #002419 50%, #003d29 100%); 
+}
+
+.gt-my-d { 
+    background: linear-gradient(180deg, #1a0010 0%, #33001f 50%, #4d0030 100%); 
+}
+
+.gt-my-a .game-thumb-title { 
+    color: #00E5FF; text-shadow: 0 0 8px #00b3cc; 
+}
+
+.gt-my-b .game-thumb-title { 
+    color: #ffb347; text-shadow: 0 0 8px #ff7700; 
+}
+
+.gt-my-c .game-thumb-title { 
+    color: #4dffb8; text-shadow: 0 0 8px #00cc88; 
+}
+
+.gt-my-d .game-thumb-title { 
+    color: #ff4fd8; text-shadow: 0 0 8px #cc0088; 
+}
+
+/* ── Manage menu button on card ── */
+.btn-manage {
+    background: rgba(255,255,255,.05);
+    border: 1px solid var(--card-border);
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 6px 16px;
+    border-radius: 6px;
+    transition: all .15s;
+}
+
+.btn-manage:hover {
+    color: var(--cyan);
+    border-color: var(--cyan);
+    background: rgba(0,229,255,.08);
+}
+
+/* ── Empty state ── */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 10px;
+    padding: 56px 20px;
+}
+
+.empty-state .empty-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,229,255,.08);
+    border: 1px solid rgba(0,229,255,.25);
+    margin-bottom: 8px;
+}
+
+.empty-state .empty-icon svg {
+    width: 24px;
+    height: 24px;
+    fill: var(--cyan);
+}
+
+.empty-state h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--white);
+}
+
+.empty-state p {
+    font-size: 13px;
+    color: var(--muted);
+    max-width: 340px;
+    line-height: 1.6;
+}
+
+/* ── Manage-game modal detail rows ── */
+.manage-modal-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 22px;
+}
+
+.manage-modal-stats .stat {
+    background: rgba(0,229,255,.03);
+    border-radius: 10px;
+    padding: 14px 12px;
+    align-items: center;
+    text-align: center;
+}

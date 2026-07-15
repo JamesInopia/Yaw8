@@ -1,14 +1,11 @@
 // ═══════════════════════════════════════════════════
     // ABOUT.JS
     // Logic used only on about.html.
-    // ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
 
     // ═══════════════════════════════════════════
     // SCROLL REVEAL
-    // Fades + slides team cards and comment cards into
-    // view as they enter the viewport. Falls back to
-    // showing everything immediately if IntersectionObserver
-    // isn't available.
+    // Fades + slides team cards and comment cards
     // ═══════════════════════════════════════════
     (function initScrollReveal() {
     const targets = document.querySelectorAll('.team-card, .comment-card');

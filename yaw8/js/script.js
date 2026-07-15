@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════
-    // GAME DATABASE - Optional sincce this is just hardcoded (will change later)
+    // GAME DATABASE - Optional sincce this is just hardcoded (need to change later)
     // ═══════════════════════════════════════════
     const gameDatabase = {
     'pixel-drift': {
@@ -12,6 +12,7 @@
         description: 'Pixel Drift is a fast-paced racing game where you drift through neon-lit tracks. Master the art of drifting to achieve high scores and unlock challenging levels. Feel the adrenaline rush as you compete against the clock in this retro-inspired racing experience.',
         thumbnail: 'gt-pixel-drift'
     },
+
     'tower-tactics': {
         id: 'tower-tactics',
         name: 'Tower Tactics',
@@ -22,6 +23,7 @@
         description: 'Tower Tactics is a strategic tower defense game where you build and upgrade towers to defend your base. Plan your strategy carefully, manage resources, and defeat waves of enemies. Perfect your defense combinations to become the ultimate tower master.',
         thumbnail: 'gt-tower-tactics'
     },
+    
     'box-jumper': {
         id: 'box-jumper',
         name: 'Box Jumper',
@@ -99,10 +101,6 @@
     // Open modal only when clicking the card (not the play button)
     document.querySelectorAll('.game-card, .spotlight-card').forEach(card => {
     card.addEventListener('click', function(e) {
-        // Prevent modal from opening if clicking the play button
-        // or a linked developer name (e.g. "by Christine Arenal"
-        // on a Community Spotlight card) — those should navigate
-        // to the developer's profile instead.
         if (e.target.closest('.btn-play') || e.target.closest('.dev-name-link')) {
         return;
         }
@@ -113,10 +111,6 @@
 
     // ═══════════════════════════════════════════
     // PLAY BUTTON — send the user to the game page
-    // Delegated on document so it also covers cards
-    // rendered later (e.g. the All Games grid built
-    // by games.js). Works from index.html (root) and
-    // from pages already inside /html/.
     // ═══════════════════════════════════════════
     function goToGamePage(gameId) {
     const alreadyInHtmlFolder = window.location.pathname.includes('/html/');
@@ -134,9 +128,6 @@
     goToGamePage(card.getAttribute('data-game-id'));
     });
 
-    // The big "PLAY NOW" button inside the game modal isn't tied to a
-    // [data-game-id] card, so it uses currentGameId (set by openGameModal)
-    // instead.
     const modalPlayBtn = document.querySelector('.btn-play-modal');
     if (modalPlayBtn) {
     modalPlayBtn.addEventListener('click', function() {
@@ -361,8 +352,7 @@
     // ═══════════════════════════════════════════
     document.querySelectorAll('.nav-links a').forEach(link => {
     link.addEventListener('click', function(e) {
-        // Only block navigation for placeholder links ("#").
-        // Links pointing to real pages (e.g. developers.html) are left alone.
+
         const href = this.getAttribute('href');
         if (href === '#') {
         e.preventDefault();
@@ -382,7 +372,12 @@
     const avatarBtn     = document.getElementById('avatarBtn');
     const userDropdown  = document.getElementById('userDropdown');
     // The wrapper contains both the button and the dropdown
-    const avatarWrap    = avatarBtn.closest('.avatar-wrap');
+    const avatarWrap    = avatarBtn && avatarBtn.closest('.avatar-wrap');
+
+    // Prevents double-wiring if another script (ex. auth-guard.js) on
+    // this same page also sets up the dropdown toggle.
+    if (avatarBtn && userDropdown && avatarWrap && !window.__yaw8DropdownWired) {
+    window.__yaw8DropdownWired = true;
 
     avatarBtn.addEventListener('click', function(e) {
     e.stopPropagation();
@@ -407,6 +402,7 @@
         avatarBtn.classList.remove('open');
     }, 120);
     });
+    }
 
     // ═══════════════════════════════════════════
     // SUBMIT GAME MODAL

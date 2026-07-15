@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+        <title>My Profile - YAW8</title>
+        <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+
+        <!-- CSS -->
+        <link rel="stylesheet" href="../css/style.css"/>
+        <!-- Modal CSS -->
+        <link rel="stylesheet" href="../css/modal.css"/>
+        <!-- My Profile / My Games shared CSS -->
+        <link rel="stylesheet" href="../css/account.css"/>
+    </head>
+
+    <body>
+
+    <!-- ══════════════════════════════════════════
+        NAVBAR
+    ══════════════════════════════════════════ -->
+    <nav>
+    <div class="nav-pill-wrap">
+
+    <!-- Logo image -->
+    <div class="nav-logo">
+        <a href="../index.html"><img src="../assets/images/NavBar_Logo.png" alt="YA!W8 - Play What Students Create" /></a>
+    </div>
+
+    <div class="nav-divider"></div>
+
+    <!-- Navigation Links -->
+    <div class="nav-pill">
+    <ul class="nav-links">
+
+        <li>
+        <a href="../index.html" data-nav="home">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+            </svg>
+            Home
+        </a>
+        </li>
+
+        <li>
+        <a href="games.html" data-nav="games">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M15 7.5V2H9v5.5l3 3 3-3zM7.5 9H2v6h5.5l3-3-3-3zM9 16.5V22h6v-5.5l-3-3-3 3zM16.5 9l-3 3 3 3H22V9h-5.5z"/>
+            </svg>
+            Games
+        </a>
+        </li>
+
+        <li>
+        <a href="developers.html" data-nav="developers">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+            </svg>
+            Developers
+        </a>
+        </li>
+
+        <li>
+        <a href="about.html" data-nav="about">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+            </svg>
+            About
+        </a>
+        </li>
+
+    </ul>
+    </div>
+
+    <div class="nav-divider"></div>
+
+    <!-- Right side controls -->
+    <div class="nav-right">
+
+        <!-- Search -->
+        <div class="search-bar">
+        <svg class="search-icon" viewBox="0 0 24 24"><path d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+        <input type="text" placeholder="Search games and developers…" id="searchInput" />
+        <button class="search-filter-btn" title="Filter" id="filterBtn">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M4 6h16M7 12h10M10 18h4"/>
+            </svg>
+        </button>
+        </div>
+
+        <!-- Notification bell -->
+        <button class="icon-btn" title="Notifications">
+        <svg viewBox="0 0 24 24">
+            <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+        </svg>
+        </button>
+
+        <!-- Avatar / user menu -->
+        <div class="avatar-wrap">
+        <button class="avatar-btn" id="avatarBtn">
+            <div class="avatar-circle">
+            <svg viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+            </div>
+            <p>User</p>
+            <svg class="chevron" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+        </button>
+
+        <div class="user-dropdown" id="userDropdown">
+            <button class="dropdown-item" id="dropdownMyProfile">
+            <svg viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+            My Profile
+            </button>
+            <button class="dropdown-item" id="dropdownSettings">
+            <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+            Settings
+            </button>
+            <div class="dropdown-divider"></div>
+            <button class="dropdown-item danger" id="signOutBtn">
+            <svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+            Sign Out
+            </button>
+        </div>
+        </div>
+
+    </div>
+
+    </div>
+    </nav>
+
+
+    <!-- ══════════════════════════════════════════
+        PAGE BODY
+    ══════════════════════════════════════════ -->
+    <div class="page-wrap" style="grid-template-columns: 1fr;">
+
+    <main class="main-col">
+
+        <!-- ─────────────────
+            PROFILE HERO
+        ───────────────── -->
+        <section class="profile-hero">
+        <div class="profile-hero-content">
+
+            <div class="profile-avatar-xl" id="profileAvatar">S</div>
+
+            <div class="profile-id">
+            <div class="profile-name-row">
+                <h1 id="profileName">Student</h1>
+                <span class="profile-badge" id="profileBadge">
+                <svg viewBox="0 0 24 24" style="width:11px;height:11px;fill:currentColor;"><path d="M12 2 1 7l11 5 9-4.09V17h2V7L12 2zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/></svg>
+                Student Developer
+                </span>
+            </div>
+            <p class="profile-username" id="profileUsername">@student</p>
+            <p class="profile-bio" id="profileBio">Loading your profile…</p>
+            </div>
+
+            <div class="profile-actions">
+            <button class="btn-edit-profile" id="editProfileBtn">
+                <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                Edit Profile
+            </button>
+            </div>
+
+        </div>
+
+        <!-- Quick stats -->
+        <div class="profile-stats-row" id="profileStatsRow">
+            <div class="profile-stat"><span class="num" id="statGames">0</span><span class="lbl">Games Submitted</span></div>
+            <div class="profile-stat"><span class="num" id="statPlays">0</span><span class="lbl">Total Plays</span></div>
+            <div class="profile-stat"><span class="num" id="statRating">–</span><span class="lbl">Avg. Rating</span></div>
+            <div class="profile-stat"><span class="num" id="statSince">–</span><span class="lbl">Member Since</span></div>
+        </div>
+        </section>
+
+        <!-- ─────────────────
+            ACCOUNT DETAILS
+        ───────────────── -->
+        <section class="panel" id="account-details">
+        <div class="section-header">
+            <h2 class="section-title">
+            <svg viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+            Account Details
+            </h2>
+        </div>
+
+        <div class="info-grid">
+            <div class="info-item">
+            <div class="info-label">Full Name</div>
+            <div class="info-value" id="infoName">—</div>
+            </div>
+            <div class="info-item">
+            <div class="info-label">Username</div>
+            <div class="info-value" id="infoUsername">—</div>
+            </div>
+            <div class="info-item">
+            <div class="info-label">Email Address</div>
+            <div class="info-value" id="infoEmail">—</div>
+            </div>
+        </div>
+        </section>
+
+        <!-- ─────────────────
+            MY GAMES (merged from mygames.html - from my previous code)
+        ───────────────── -->
+        <section class="panel" id="my-games">
+        <div class="section-header">
+            <h2 class="section-title">
+            <svg viewBox="0 0 24 24"><path d="M15 7.5V2H9v5.5l3 3 3-3zM7.5 9H2v6h5.5l3-3-3-3zM9 16.5V22h6v-5.5l-3-3-3 3zM16.5 9l-3 3 3 3H22V9h-5.5z"/></svg>
+            My Games
+            </h2>
+            <div style="display:flex; align-items:center; gap:12px;">
+            <div class="sort-dropdown-wrap" id="sortDropdownWrap">
+                <button class="sort-dropdown-btn" id="sortDropdownBtn" type="button">
+                <span id="sortDropdownLabel">Newest First</span>
+                <svg class="chevron" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+                </button>
+                <div class="sort-dropdown-menu" id="sortDropdownMenu">
+                <button class="dropdown-item sort-option active" type="button" data-value="newest">Newest First</button>
+                <button class="dropdown-item sort-option" type="button" data-value="oldest">Oldest First</button>
+                <button class="dropdown-item sort-option" type="button" data-value="rating">Highest Rated</button>
+                <button class="dropdown-item sort-option" type="button" data-value="plays">Most Played</button>
+                </div>
+            </div>
+            <button class="btn-add-game" id="addGameBtn">
+                <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                Add Game
+            </button>
+            </div>
+        </div>
+
+        <!-- Games stats -->
+        <div class="profile-stats-row" style="margin-top:0; padding-top:0; border-top:none; margin-bottom:22px; justify-content:center;">
+            <div class="profile-stat"><span class="num" id="mgStatTotal">0</span><span class="lbl">Total Games</span></div>
+            <div class="profile-stat"><span class="num" id="mgStatPublished">0</span><span class="lbl">Published</span></div>
+            <div class="profile-stat"><span class="num" id="mgStatPlays">0</span><span class="lbl">Total Plays</span></div>
+            <div class="profile-stat"><span class="num" id="mgStatRating">–</span><span class="lbl">Avg. Rating</span></div>
+        </div>
+
+        <!-- Toolbar: count -->
+        <div class="games-toolbar" style="margin-bottom: 18px; justify-content:center;">
+            <span class="count-text"><strong id="mgCount">0</strong> games submitted</span>
+        </div>
+
+        <!-- Games grid (populated by mygames.js) -->
+        <div class="games-grid" id="myGamesGrid"></div>
+
+        <!-- Empty state -->
+        <div class="empty-state" id="myGamesEmpty" style="display:none;">
+            <div class="empty-icon">
+            <svg viewBox="0 0 24 24"><path d="M15 7.5V2H9v5.5l3 3 3-3zM7.5 9H2v6h5.5l3-3-3-3zM9 16.5V22h6v-5.5l-3-3-3 3zM16.5 9l-3 3 3 3H22V9h-5.5z"/></svg>
+            </div>
+            <h3>No games yet</h3>
+            <p>You haven't submitted any games. Once you add one, it'll show up here for you to manage.</p>
+            <button class="btn-add-game" id="emptyAddGameBtn">
+            <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            Add Your First Game
+            </button>
+        </div>
+        </section>
+
+    </main>
+
+    </div>
+
+
+    <!-- ══════════════════════════════════════════
+        EDIT PROFILE MODAL
+    ══════════════════════════════════════════ -->
+    <div class="modal" id="editProfileModal">
+    <div class="modal-overlay" id="editProfileOverlay"></div>
+    <div class="modal-content" style="max-width: 480px;">
+        <button class="modal-close" id="editProfileClose">
+        <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+
+        <div class="modal-inner" style="padding: 40px;">
+
+        <div style="margin-bottom: 24px;">
+            <h1 style="font-size: 22px; font-weight: 800; color: #F5F7FA; margin-bottom: 6px;">Edit Profile</h1>
+            <p style="font-size: 13px; color: #8892a4; line-height: 1.6;">Update how your name, username, and bio appear across YA!W8.</p>
+        </div>
+
+        <form id="editProfileForm" novalidate>
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+
+            <div class="form-group">
+                <label class="form-label">Full Name <span class="form-required">*</span></label>
+                <input type="text" class="form-input" id="editName" placeholder="Your full name" />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Username <span class="form-required">*</span></label>
+                <input type="text" class="form-input" id="editUsername" placeholder="yourusername" />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Bio</label>
+                <textarea class="form-input form-textarea" id="editBio" placeholder="Tell other students a bit about yourself…" style="min-height: 80px;"></textarea>
+            </div>
+
+            <div style="display: flex; gap: 12px; justify-content: flex-end; padding-top: 4px;">
+                <button type="button" class="form-btn-cancel" id="editProfileCancelBtn">Cancel</button>
+                <button type="submit" class="form-btn-submit">
+                <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor;flex-shrink:0;"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
+                Save Changes
+                </button>
+            </div>
+
+            </div>
+        </form>
+
+        </div>
+    </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+        EDIT GAME MODAL (merged from mygames.html - from my previous code)
+    ══════════════════════════════════════════ -->
+    <div class="modal" id="gameFormModal">
+    <div class="modal-overlay" id="gameFormOverlay"></div>
+    <div class="modal-content" style="max-width: 560px;">
+        <button class="modal-close" id="gameFormClose">
+        <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+
+        <div class="modal-inner" style="padding: 40px;">
+
+        <div style="margin-bottom: 24px;">
+            <h1 id="gameFormTitle" style="font-size: 22px; font-weight: 800; color: #F5F7FA; margin-bottom: 6px;">Edit Game</h1>
+            <p style="font-size: 13px; color: #8892a4; line-height: 1.6;">Update your game's details below.</p>
+        </div>
+
+        <form id="gameForm" novalidate>
+            <input type="hidden" id="gameFormId" value="" />
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+
+            <div class="form-group">
+                <label class="form-label">Game Title <span class="form-required">*</span></label>
+                <input type="text" class="form-input" id="gameFormName" placeholder="e.g. Pixel Drift" />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Genre <span class="form-required">*</span></label>
+                <select class="form-input form-select" id="gameFormGenre">
+                <option value="" disabled selected>Select a genre</option>
+                <option>Arcade</option>
+                <option>Racing</option>
+                <option>Puzzle</option>
+                <option>Strategy</option>
+                <option>Action</option>
+                <option>Adventure</option>
+                <option>Platformer</option>
+                <option>Other</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Thumbnail Style</label>
+                <select class="form-input form-select" id="gameFormThumb">
+                <option value="gt-my-a">Cyan / Purple</option>
+                <option value="gt-my-b">Orange / Amber</option>
+                <option value="gt-my-c">Green / Teal</option>
+                <option value="gt-my-d">Pink / Magenta</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Description <span class="form-required">*</span></label>
+                <textarea class="form-input form-textarea" id="gameFormDescription" placeholder="Describe your game in a few sentences…" style="min-height: 90px;"></textarea>
+            </div>
+
+            <div style="display: flex; gap: 12px; justify-content: flex-end; padding-top: 4px;">
+                <button type="button" class="form-btn-cancel" id="gameFormCancelBtn">Cancel</button>
+                <button type="submit" class="form-btn-submit" id="gameFormSubmitBtn">
+                <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor;flex-shrink:0;"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
+                Save Changes
+                </button>
+            </div>
+
+            </div>
+        </form>
+
+        </div>
+    </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+        SUBMIT GAME MODAL
+    ══════════════════════════════════════════ -->
+    <div id="submit-game-modal" class="modal">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+        <button class="modal-close" id="submitModalClose">
+        <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+
+        <div class="modal-inner">
+
+        <!-- Modal Header -->
+        <div style="margin-bottom: 28px;">
+            <h1 style="font-size: 26px; font-weight: 800; color: #F5F7FA; margin-bottom: 6px;">Submit Your Game</h1>
+            <p style="font-size: 13px; color: #8892a4; line-height: 1.6;">Share your creation with the YA!W8 community. Fill in the details below and we'll review your submission.</p>
+        </div>
+
+        <!-- Form -->
+        <form id="submitGameForm" novalidate>
+        <div style="display: flex; flex-direction: column; gap: 18px;">
+
+            <!-- Row: Game Title + Genre -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-group">
+                <label class="form-label">Game Title <span class="form-required">*</span></label>
+                <input type="text" class="form-input" placeholder="e.g. Pixel Drift" id="submitGameTitle" />
+            </div>
+            <div class="form-group">
+                <label class="form-label">Genre <span class="form-required">*</span></label>
+                <select class="form-input form-select" id="submitGameGenre">
+                <option value="" disabled selected>Select a genre</option>
+                <option>Arcade</option>
+                <option>Racing</option>
+                <option>Puzzle</option>
+                <option>Strategy</option>
+                <option>Action</option>
+                <option>Adventure</option>
+                <option>Platformer</option>
+                <option>Other</option>
+                </select>
+            </div>
+            </div>
+
+            <!-- Developer Name -->
+            <div class="form-group">
+            <label class="form-label">Developer / Team Name <span class="form-required">*</span></label>
+            <input type="text" class="form-input" placeholder="Your name or team name" id="submitDevName" />
+            </div>
+
+            <!-- Game URL -->
+            <div class="form-group">
+            <label class="form-label">Game Link <span class="form-required">*</span></label>
+            <input type="url" class="form-input" placeholder="https://your-game-link.com" id="submitGameUrl" />
+            </div>
+
+            <!-- Thumbnail URL -->
+            <div class="form-group">
+            <label class="form-label">Thumbnail Image URL</label>
+            <input type="url" class="form-input" placeholder="https://link-to-thumbnail.png" id="submitThumbnail" />
+            </div>
+
+            <!-- Description -->
+            <div class="form-group">
+            <label class="form-label">Description <span class="form-required">*</span></label>
+            <textarea class="form-input form-textarea" placeholder="Describe your game in a few sentences…" id="submitDescription"></textarea>
+            </div>
+
+            <!-- Submit Actions -->
+            <div style="display: flex; gap: 12px; justify-content: flex-end; padding-top: 4px;">
+            <button type="button" class="form-btn-cancel" id="submitCancelBtn">Cancel</button>
+            <button type="submit" class="form-btn-submit">
+                <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor;flex-shrink:0;">
+                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                </svg>
+                Submit Game
+            </button>
+            </div>
+
+        </div>
+        </form>
+        </div>
+    </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+        MANAGE GAME MODAL (merged from mygames.html - from my previous code)
+    ══════════════════════════════════════════ -->
+    <div class="modal" id="manageGameModal">
+    <div class="modal-overlay" id="manageGameOverlay"></div>
+    <div class="modal-content" style="max-width: 520px;">
+        <button class="modal-close" id="manageGameClose">
+        <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+
+        <div class="modal-inner" style="padding: 40px;" id="manageGameInner">
+        <!-- populated by mygames.js -->
+        </div>
+    </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+        DELETE GAME CONFIRMATION (merged from mygames.html)
+    ══════════════════════════════════════════ -->
+    <div class="modal" id="deleteGameModal">
+    <div class="modal-overlay" id="deleteGameOverlay"></div>
+    <div class="modal-content" style="max-width: 380px; margin-top: 120px;">
+        <div class="modal-inner" style="padding: 32px;">
+        <h1 style="font-size: 19px; font-weight: 800; color: #F5F7FA; margin-bottom: 8px;">Delete this game?</h1>
+        <p style="font-size: 13px; color: #8892a4; line-height: 1.6; margin-bottom: 24px;">
+            This can't be undone. The game and its stats will be permanently removed.
+        </p>
+        <div style="display: flex; gap: 12px; justify-content: flex-end;">
+            <button class="form-btn-cancel" id="deleteGameCancelBtn">Cancel</button>
+            <button class="form-btn-submit" id="deleteGameConfirmBtn" style="background: #FF4FD8; box-shadow: 0 0 22px rgba(255, 79, 216, 0.3);">
+            <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor;flex-shrink:0;"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+            Delete
+            </button>
+        </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="../js/myprofile.js"></script>
+    <!-- Auth guard: wires up dropdown open/close, Sign Out, and dropdown navigation -->
+    <script src="../js/auth-guard.js"></script>
+
+    </body>
+    </html>

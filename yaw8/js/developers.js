@@ -1,7 +1,5 @@
 // ═══════════════════════════════════════════
-// DEVELOPER DATABASE - hardcoded for now,
-// mirrors the dev names already used across
-// the site (index.html / script.js)
+// DEVELOPER DATABASE - hardcoded for now
 // ═══════════════════════════════════════════
 const developerDatabase = [
     {
@@ -112,7 +110,7 @@ const collaborationDatabase = [
         genre: 'Arcade',
         rating: '4.8',
         thumbClass: 'da-3',
-        thumbImage: '../Images/Wobble_Bao.png', // same game image used on the Homepage (.sp-forest)
+        thumbImage: '../Images/Wobble_Bao.png',
         releaseDate: 'March 2024',
         description: "A bouncy, physics-based arcade game where you guide a wobbling bao bun through obstacle-filled kitchens. Built as a five-person collaboration, it's become one of the most played games on the platform thanks to its simple controls and chaotic multiplayer mode.",
         team: ['Christine Arenal', 'James Inopia', 'Harvey Ablen', 'Noah Lonoy']
@@ -145,8 +143,6 @@ const avatarClasses = ['da-1', 'da-2', 'da-3', 'da-4', 'da-5', 'da-6'];
 
 // ═══════════════════════════════════════════
 // ALL DEVELOPERS — filter/sort state
-// Driven by the navbar search input + the
-// filter dropdown (sort by / show).
 // ═══════════════════════════════════════════
 let currentSearch = '';
 let currentSort = 'rating';   // 'rating' | 'games' | 'name'
@@ -215,8 +211,6 @@ function renderTopDevelopers() {
 
 // ═══════════════════════════════════════════
 // RENDER — ALL DEVELOPERS
-// Reflects the current search term (from the
-// navbar) + sort/scope (from the filter dropdown).
 // ═══════════════════════════════════════════
 function renderAllDevelopers() {
     const grid = document.getElementById('allDevGrid');
@@ -394,11 +388,7 @@ const gameModalClose = document.getElementById('gameModalClose');
 const gameModalOverlay = document.getElementById('gameModalOverlay');
 
 // ─────────────────────────────────────────────
-// DEVELOPER NAME LINKS (game modal "By …" line)
-// Same pattern as the homepage (script.js): first
-// 2 devs always visible, rest hidden behind a
-// "+N more" toggle. Each name is a hoverable link
-// that opens that developer's profile modal.
+// DEVELOPER NAME LINKS
 // ─────────────────────────────────────────────
 function renderCollabDevelopers(team) {
     const VISIBLE = 2;
@@ -564,8 +554,6 @@ document.addEventListener('click', function(e) {
 
 // ═══════════════════════════════════════════
 // NAVBAR SEARCH — filters the All Developers
-// grid as the person types (this page only,
-// since developers.js isn't loaded elsewhere) (NOT FUNCTIONAL)
 // ═══════════════════════════════════════════
 const searchInput = document.getElementById('searchInput');
 if (searchInput) {
@@ -618,10 +606,7 @@ if (filterBtn && devFilterDropdown) {
 }
 
 // ═══════════════════════════════════════════
-// DEEP LINK — open a developer's profile modal
-// directly when the page loads (or the hash
-// changes) with a #dev-<id> link, e.g. clicking
-// a developer's name from the homepage.
+// DEEP LINK — open a developer's profile modal 
 // ═══════════════════════════════════════════
 function openDevModalFromHash() {
     const hash = window.location.hash;
@@ -642,42 +627,13 @@ openDevModalFromHash();
 window.addEventListener('hashchange', openDevModalFromHash);
 
 
-// ═══════════════════════════════════════════
-// NAVBAR — User dropdown toggle
-// (same behavior as script.js on the homepage)
-// ═══════════════════════════════════════════
-const avatarBtn    = document.getElementById('avatarBtn');
-const userDropdown = document.getElementById('userDropdown');
-
-if (avatarBtn && userDropdown) {
-    const avatarWrap = avatarBtn.closest('.avatar-wrap');
-
-    avatarBtn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        const isOpen = userDropdown.classList.contains('open');
-        userDropdown.classList.toggle('open', !isOpen);
-        avatarBtn.classList.toggle('open', !isOpen);
-    });
-
-    document.addEventListener('click', function(e) {
-        if (!avatarWrap.contains(e.target)) {
-            userDropdown.classList.remove('open');
-            avatarBtn.classList.remove('open');
-        }
-    });
-
-    userDropdown.addEventListener('click', function(e) {
-        e.stopPropagation();
-        setTimeout(() => {
-            userDropdown.classList.remove('open');
-            avatarBtn.classList.remove('open');
-        }, 120);
-    });
-}
+// Note: the navbar user-dropdown open/close toggle is now wired
+// centrally in auth-guard.js (guarded so it's never double-bound).
+// A local copy used to live here, which caused the dropdown to be
+// wired twice on this page and effectively never open.
 
 // ═══════════════════════════════════════════
 // LOADING SCREEN
-// (same behavior as script.js on the homepage)
 // ═══════════════════════════════════════════
 (function() {
     const loadingScreen = document.getElementById('loading-screen');

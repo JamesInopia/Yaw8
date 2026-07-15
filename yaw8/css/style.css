@@ -15,6 +15,7 @@
         --cyan: #00E5FF;
         --purple: #8B5CF6;
         --pink: #FF4FD8;
+        --yellow: #EEE121;
         --white: #F5F7FA;
         --muted: #8892a4;
         --card-border: rgba(0,229,255,0.15);
@@ -1446,63 +1447,6 @@
     .footer-heart {
         color: var(--pink);
         font-size: 16px;
-    }
-
-    /* ═══════════════════════════════
-        RESPONSIVE
-    ═══════════════════════════════ */
-
-    @media (max-width: 1100px) {
-    .page-wrap {
-        grid-template-columns: 1fr;
-    }
-
-    .side-col {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-    }
-    }
-
-    @media (max-width: 800px) {
-    .games-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    .spotlight-grid {
-        grid-template-columns: 1fr 1fr;
-    }
-
-    nav {
-        padding: 10px 14px;
-    }
-
-    .nav-pill {
-        display: none;
-    }
-
-    .nav-links {
-        display: none;
-    }
-
-    .hero {
-        padding: 30px 22px;
-    }
-
-    .hero h1 {
-        font-size: 15px;
-    }
-
-    .hero-art {
-        display: none;
-    }
-
-    .footer-inner {
-        grid-template-columns: 1fr 1fr;
-    }
-
-    .side-col {
-        grid-template-columns: 1fr;
-    }
     }
 
     /* ═══════════════════════════════

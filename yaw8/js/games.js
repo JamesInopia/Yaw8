@@ -1,9 +1,6 @@
 // ═══════════════════════════════════════════════════
     // GAMES.JS
-    // Logic used only on games.html. Load this AFTER
-    // script.js — it relies on globals declared there
-    // (gameDatabase, openGameModal).
-    // ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
 
     // ─────────────────────────────────────────────
     // Extend the shared game database with a few more
@@ -63,9 +60,6 @@
 
     // ═══════════════════════════════════════════
     // ALL GAMES GRID + GENRE FILTER
-    // Renders every game in gameDatabase into #allGamesGrid
-    // and builds genre filter chips from whatever genres
-    // exist in the data.
     // ═══════════════════════════════════════════
     (function initAllGamesGrid() {
     const grid = document.getElementById('allGamesGrid');
@@ -76,8 +70,6 @@
     const genres = ['All', ...new Set(allGames.map(g => g.genre))];
     let activeGenre = 'All';
 
-    // Thumbnail classes that already show real game art (a picture),
-    // where overlaying the title text on top would just be redundant.
     const picturedThumbnails = ['sp-forest'];
 
     function renderGrid() {

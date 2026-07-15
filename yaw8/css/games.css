@@ -130,8 +130,6 @@
 
 /* ═══════════════════════════════
     NEW GAME THUMBNAILS
-    (Neon Vault, Star Forge, Blob Quest, Sky Punch —
-    used by the All Games grid)
 ═══════════════════════════════ */
 
 /* ── Neon Vault ── */
@@ -206,17 +204,4 @@
     font-size: 9px;
     color: #ff4fd8;
     text-shadow: 0 0 8px #cc0088;
-}
-
-/* ═══════════════════════════════
-    RESPONSIVE
-═══════════════════════════════ */
-@media (max-width: 800px) {
-    .page-header { 
-        padding: 26px 22px; 
-    }
-
-    .page-header h1 { 
-        font-size: 15px; 
-    }
 }

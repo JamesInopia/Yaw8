@@ -1,0 +1,388 @@
+/* ═══════════════════════════════
+    SINGLE-COLUMN PAGE WRAP
+    (same pattern used by about.css / games.css)
+═══════════════════════════════ */
+.page-wrap-single {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    max-width: 1340px;
+    margin: 0 auto;
+    padding: 3px 24px 48px;
+}
+
+/* ═══════════════════════════════
+    PAGE HEADER
+═══════════════════════════════ */
+.page-header {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius);
+    border: 1px solid rgba(0, 255, 255, 0.5);
+    padding: 40px 44px;
+    background:
+        radial-gradient(ellipse 60% 80% at 70% 50%, rgba(100,40,200,.28) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 60% at 85% 80%, rgba(0,180,255,.12) 0%, transparent 60%),
+        linear-gradient(135deg, #001624 0%, #08061a 55%, #180030 100%);
+}
+
+.page-header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(0,229,255,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,255,.035) 1px, transparent 1px);
+    background-size: 36px 36px;
+    pointer-events: none;
+}
+
+.page-header-content {
+    position: relative;
+    z-index: 1;
+    max-width: 560px;
+}
+
+.page-header h1 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 20px;
+    font-weight: 400;
+    line-height: 1.6;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    color: var(--white);
+}
+
+.page-header h1 .accent {
+    color: var(--cyan);
+}
+
+.page-header p {
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.7;
+}
+
+/* ═══════════════════════════════
+    SETTINGS LAYOUT
+═══════════════════════════════ */
+
+.settings-panel {
+    scroll-margin-top: 90px;
+}
+
+.settings-panel-desc {
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height: 1.6;
+    margin: -8px 0 18px;
+}
+
+/* ── Quick nav (side-col) ── */
+.settings-quicknav {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 2px;
+    width: 100%;
+}
+
+.settings-quicknav a {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: flex-start;
+    align-self: flex-start !important;
+    gap: 10px;
+    width: auto !important;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 9px 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted);
+    text-align: left;
+    transition: color .15s, background .15s;
+}
+
+.settings-quicknav a svg {
+    width: 15px;
+    height: 15px;
+    fill: currentColor;
+    flex-shrink: 0;
+}
+
+.settings-quicknav a:hover {
+    color: var(--white);
+    background: rgba(255,255,255,0.06);
+}
+
+.settings-quicknav a.danger-link {
+    color: #ff5f5f;
+}
+
+.settings-quicknav a.danger-link:hover {
+    color: #ff7070;
+    background: rgba(255,60,60,0.08);
+}
+
+/* ── Account summary card (side-col) ── */
+.settings-account-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.settings-account-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 800;
+    color: #fff;
+    background: linear-gradient(135deg, var(--purple), var(--pink));
+}
+
+.settings-account-info {
+    min-width: 0;
+}
+
+.settings-account-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--white);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.settings-account-email {
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ═══════════════════════════════
+    TOGGLE SWITCH
+═══════════════════════════════ */
+.setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 14px 0;
+    border-bottom: 1px solid rgba(0,229,255,0.08);
+}
+
+.setting-row:last-child {
+    border-bottom: none;
+    padding-bottom: 2px;
+}
+
+.setting-row:first-child {
+    padding-top: 2px;
+}
+
+.setting-row-text h4 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--white);
+    margin-bottom: 3px;
+}
+
+.setting-row-text p {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+}
+
+.toggle-switch {
+    position: relative;
+    flex-shrink: 0;
+    width: 42px;
+    height: 24px;
+    display: inline-block;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+}
+
+.toggle-track {
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid var(--card-border);
+    border-radius: 20px;
+    cursor: pointer;
+    transition: background .2s, border-color .2s;
+}
+
+.toggle-track::before {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    left: 3px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--muted);
+    border-radius: 50%;
+    transition: transform .2s, background .2s;
+}
+
+.toggle-switch input:checked + .toggle-track {
+    background: rgba(0,229,255,.18);
+    border-color: var(--cyan);
+}
+
+.toggle-switch input:checked + .toggle-track::before {
+    transform: translate(18px, -50%);
+    background: var(--cyan);
+    box-shadow: 0 0 10px rgba(0,229,255,.6);
+}
+
+/* ═══════════════════════════════
+    GUEST BANNER
+═══════════════════════════════ */
+.settings-guest-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: rgba(251,191,36,.07);
+    border: 1px solid rgba(251,191,36,.28);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+}
+
+.settings-guest-banner svg {
+    width: 18px;
+    height: 18px;
+    fill: #fbbf24;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.settings-guest-banner p {
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height: 1.6;
+}
+
+.settings-guest-banner a {
+    color: #fbbf24;
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    transition: text-decoration-color .2s;
+}
+
+.settings-guest-banner a:hover {
+    text-decoration-color: #fbbf24;
+}
+
+/* ═══════════════════════════════
+    DANGER ZONE
+═══════════════════════════════ */
+.panel.danger-zone {
+    border-color: rgba(255,95,95,.3);
+    background: rgba(255,95,95,.03);
+}
+
+.danger-zone .section-title svg {
+    fill: #ff5f5f;
+}
+
+.danger-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 14px 0;
+    border-bottom: 1px solid rgba(255,95,95,.12);
+}
+
+.danger-row:last-child {
+    border-bottom: none;
+    padding-bottom: 2px;
+}
+
+.danger-row:first-child {
+    padding-top: 2px;
+}
+
+.danger-row-text h4 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--white);
+    margin-bottom: 3px;
+}
+
+.danger-row-text p {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+    max-width: 420px;
+}
+
+.btn-danger-outline {
+    flex-shrink: 0;
+    background: rgba(255,95,95,.08);
+    color: #ff5f5f;
+    border: 1px solid rgba(255,95,95,.35);
+    font-size: 12.5px;
+    font-weight: 700;
+    padding: 9px 18px;
+    border-radius: 8px;
+    transition: all .2s;
+    white-space: nowrap;
+}
+
+.btn-danger-outline:hover {
+    background: #ff5f5f;
+    color: #fff;
+    box-shadow: 0 0 20px rgba(255,95,95,.4);
+}
+
+/* ═══════════════════════════════
+    SAVE ROW + INLINE STATUS
+═══════════════════════════════ */
+.settings-save-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    justify-content: flex-end;
+    padding-top: 6px;
+}
+
+.settings-save-status {
+    font-size: 12px;
+    font-weight: 600;
+    color: #00dd77;
+    opacity: 0;
+    transition: opacity .2s;
+}
+
+.settings-save-status.show {
+    opacity: 1;
+}
+
+.settings-save-status.error {
+    color: #ff7070;
+}
+
+@media (max-width: 900px) {
+    .page-wrap {
+        grid-template-columns: 1fr;
+    }
+}

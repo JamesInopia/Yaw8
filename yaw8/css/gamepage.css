@@ -27,7 +27,7 @@
 .gp-cabinet {
     position: relative;
     max-width: 1300px;
-    width: 80%;
+    width: 78%;
     margin: 0 auto;
     border-radius: var(--radius);
     padding: 3px;
@@ -59,7 +59,6 @@
     background: #000;
 }
 
-/* Subtle CRT scanline texture over the whole screen */
 .gp-scanlines {
     position: absolute;
     inset: 0;
@@ -148,8 +147,6 @@
     color: var(--muted);
 }
 
-/* ── In-game HUD controls ── */
-
 .gp-hud {
     position: absolute;
     top: 10px;
@@ -200,11 +197,16 @@
     align-items: flex-start;
     justify-content: space-between;
     gap: 20px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
 }
 
 .gp-title-block {
+    flex: 1 1 auto;
     min-width: 0;
+}
+
+.gp-actions {
+    flex-shrink: 0;
 }
 
 .gp-title {
@@ -218,7 +220,8 @@
 .gp-meta-row {
     display: flex;
     align-items: center;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    white-space: nowrap;
     gap: 10px 16px;
     font-size: 13px;
     color: var(--muted);
@@ -229,6 +232,11 @@
     background: rgba(0,229,255,.12);
     color: var(--cyan);
     border: 1px solid rgba(0,229,255,.3);
+}
+
+.gp-rating {
+    color: #fbbf24;
+    font-weight: 600;
 }
 
 .gp-dev a {
@@ -251,20 +259,20 @@
 .gp-action-btn {
     display: inline-flex;
     align-items: center;
-    gap: 7px;
+    gap: 5px;
     background: rgba(255,255,255,.05);
     border: 1px solid var(--card-border);
     color: var(--muted);
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
-    padding: 9px 14px;
-    border-radius: 10px;
+    padding: 6px 10px;
+    border-radius: 8px;
     transition: color .15s, border-color .15s, background .15s;
 }
 
 .gp-action-btn svg {
-    width: 14px;
-    height: 14px;
+    width: 12px;
+    height: 12px;
     fill: currentColor;
     flex-shrink: 0;
 }
@@ -488,7 +496,7 @@
     color: var(--muted);
 }
 
-/* ── Toast (self-contained, no modal.css dependency) ── */
+/* ── Toast ── */
 
 .gp-toast {
     position: fixed;
@@ -525,16 +533,4 @@
 .gp-bottom-row > .panel {
     flex: 1;
     min-width: 0;
-}
-
-@media (max-width: 640px) {
-    .gp-toolbar {
-        flex-direction: column;
-    }
-    .gp-info-grid {
-        grid-template-columns: 1fr 1fr;
-    }
-    .gp-bottom-row {
-        flex-direction: column;
-    }
 }

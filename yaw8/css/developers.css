@@ -456,50 +456,6 @@
     text-align: right;
 }
 
-
-/* ═══════════════════════════════
-    RESPONSIVE (OPTIONAL)
-═══════════════════════════════ */
-@media (max-width: 1000px) {
-    .top-dev-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    .all-dev-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    .collab-list {
-        grid-template-columns: 1fr;
-    }
-}
-
-@media (max-width: 700px) {
-    .dev-page-hero {
-        padding: 30px 22px;
-    }
-
-    .dev-page-hero h1 {
-        font-size: 16px;
-    }
-
-    .top-dev-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .all-dev-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .collab-row {
-        flex-wrap: wrap;
-    }
-
-    .collab-rating {
-        text-align: left;
-    }
-}
-
 /* ═══════════════════════════════
     DEVELOPER & GAME MODALS
 ═══════════════════════════════ */
@@ -656,7 +612,7 @@
 }
 
 /* Only members that link to an actual developer profile
-    get the clickable hover treatment */
+    gets the clickable hover treatment */
 .game-team-member[data-dev-id] {
     cursor: pointer;
 }
@@ -689,10 +645,4 @@
 
 .game-team-member[data-dev-id]:hover .member-name {
     color: var(--cyan);
-}
-
-@media (max-width: 700px) {
-    .dev-games-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
 }

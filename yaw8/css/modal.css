@@ -614,9 +614,3 @@
         transform: translateY(-2px);
         box-shadow: 0 0 32px rgba(0, 229, 255, 0.55);
     }
-
-    @media (max-width: 600px) {
-    .form-grid-2 {
-            grid-template-columns: 1fr !important;
-        }
-    }
