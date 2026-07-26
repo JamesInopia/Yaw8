@@ -65,12 +65,15 @@ const currentUser = getCurrentUser();
 let activeUser = currentUser;
 
 if (!currentUser || currentUser.isGuest) {
+    // Consistent with the rest of the PHP-routed app: send guests to the login route.
     window.location.replace('?url=auth');
 } else {
 
     let myGames = loadMyGames();
 
     if (myGames === null) {
+        // No backend for games yet — seed a couple of demo entries so the
+        // page has something real to render for a newly-logged-in user.
         myGames = [
             {
                 id: 'demo-' + slugify(activeUser.name) + '-1',
@@ -222,7 +225,6 @@ function initMyGamesPage(initialGames) {
 
     // ── Stats + grid render ──
     function render() {
-        // Stats (games-section mini stats)
         const published = games.filter(g => g.status === 'published');
         const totalPlays = games.reduce((sum, g) => sum + (Number(g.plays) || 0), 0);
         const rated = games.filter(g => g.rating);
@@ -239,7 +241,6 @@ function initMyGamesPage(initialGames) {
         // Keep the profile hero's stats in sync with any change here
         updateProfileStats(games);
 
-        // Sort
         const sorted = [...games].sort((a, b) => {
             if (sortMode === 'newest') return new Date(b.dateAdded) - new Date(a.dateAdded);
             if (sortMode === 'oldest') return new Date(a.dateAdded) - new Date(b.dateAdded);
@@ -248,7 +249,6 @@ function initMyGamesPage(initialGames) {
             return 0;
         });
 
-        // Empty state
         if (sorted.length === 0) {
             grid.style.display = 'none';
             emptyState.style.display = 'flex';
@@ -319,73 +319,63 @@ function initMyGamesPage(initialGames) {
     });
 
     // ═══════════════════════════════════════════
-    // ADD / EDIT GAME MODAL
+    // UPLOAD GAME MODAL → SUBMIT GAME MODAL
+    // "Add Game" now opens the Upload modal first;
+    // choosing files (or, for now, just clicking
+    // Select files) routes straight into the
+    // Submit Your Game details modal.
     // ═══════════════════════════════════════════
-    const gameFormModal = document.getElementById('gameFormModal');
-    const gameFormOverlay = document.getElementById('gameFormOverlay');
-    const gameFormClose = document.getElementById('gameFormClose');
-    const gameFormCancel = document.getElementById('gameFormCancelBtn');
-    const gameForm = document.getElementById('gameForm');
-    const gameFormTitle = document.getElementById('gameFormTitle');
-    const gameFormSubmitBtn = document.getElementById('gameFormSubmitBtn');
+    const uploadGameModal = document.getElementById('uploadGameModal');
+    const uploadGameClose = document.getElementById('uploadGameClose');
+    const uploadGameOverlay = document.getElementById('uploadGameOverlay');
+    const uploadDropzone = document.getElementById('uploadDropzone');
+    const uploadSelectFilesBtn = document.getElementById('uploadSelectFilesBtn');
+    const uploadFileInput = document.getElementById('uploadFileInput');
 
-    function openGameForm(editId) {
-        gameForm.reset();
-        document.getElementById('gameFormId').value = editId || '';
-
-        if (editId) {
-            const game = games.find(g => g.id === editId);
-            gameFormTitle.textContent = 'Edit Game';
-            gameFormSubmitBtn.innerHTML = 'Save Changes';
-            document.getElementById('gameFormName').value = game.name;
-            document.getElementById('gameFormGenre').value = game.genre;
-            document.getElementById('gameFormThumb').value = game.thumbnail || 'gt-my-a';
-            document.getElementById('gameFormDescription').value = game.description || '';
-        } else {
-            gameFormTitle.textContent = 'Submit a New Game';
-            gameFormSubmitBtn.innerHTML = 'Submit Game';
-        }
-
-        gameFormModal.classList.add('active');
-        gameFormModal.scrollTop = 0;
+    function openUploadModal() {
+        uploadGameModal.classList.add('active');
         document.body.style.overflow = 'hidden';
     }
 
-    function closeGameForm() {
-        gameFormModal.classList.remove('active');
+    function closeUploadModal() {
+        uploadGameModal.classList.remove('active');
         document.body.style.overflow = 'auto';
     }
 
-    gameFormClose.addEventListener('click', closeGameForm);
-    gameFormCancel.addEventListener('click', closeGameForm);
-    gameFormOverlay.addEventListener('click', closeGameForm);
+    uploadGameClose.addEventListener('click', closeUploadModal);
+    uploadGameOverlay.addEventListener('click', closeUploadModal);
 
-    gameForm.addEventListener('submit', function (e) {
-        e.preventDefault();
+    // For now, "Select files" just routes straight to the Submit Your Game modal
+    // (no real upload/processing yet — routing only, per current scope).
+    uploadSelectFilesBtn.addEventListener('click', function () {
+        uploadFileInput.click();
+    });
 
-        const editId = document.getElementById('gameFormId').value;
-        const name = document.getElementById('gameFormName').value.trim();
-        const genre = document.getElementById('gameFormGenre').value;
-        const thumbnail = document.getElementById('gameFormThumb').value;
-        const description = document.getElementById('gameFormDescription').value.trim();
+    uploadFileInput.addEventListener('change', function () {
+        closeUploadModal();
+        openSubmitModal();
+    });
 
-        if (!name || !genre || !description) return;
-
-        if (editId) {
-            const game = games.find(g => g.id === editId);
-            game.name = name;
-            game.genre = genre;
-            game.thumbnail = thumbnail;
-            game.description = description;
-        }
-
-        saveMyGames(games);
-        closeGameForm();
-        render();
+    // Dragging files onto the dropzone behaves the same way for now.
+    ['dragenter', 'dragover'].forEach(evt => {
+        uploadDropzone.addEventListener(evt, function (e) {
+            e.preventDefault();
+            uploadDropzone.classList.add('drag-over');
+        });
+    });
+    ['dragleave', 'drop'].forEach(evt => {
+        uploadDropzone.addEventListener(evt, function (e) {
+            e.preventDefault();
+            uploadDropzone.classList.remove('drag-over');
+        });
+    });
+    uploadDropzone.addEventListener('drop', function () {
+        closeUploadModal();
+        openSubmitModal();
     });
 
     // ═══════════════════════════════════════════
-    // SUBMIT GAME MODAL
+    // SUBMIT GAME MODAL (Game Details / Edit Game)
     // ═══════════════════════════════════════════
     const submitGameModal = document.getElementById('submit-game-modal');
     const submitModalClose = document.getElementById('submitModalClose');
@@ -393,8 +383,188 @@ function initMyGamesPage(initialGames) {
     const submitGameForm = document.getElementById('submitGameForm');
     const thumbnailStyles = ['gt-my-a', 'gt-my-b', 'gt-my-c', 'gt-my-d'];
 
-    function openSubmitModal() {
+    // ── Project Type & Collaborator Visibility ──
+    const submitProjectType = document.getElementById('submitProjectType');
+    const collabSection = document.getElementById('collabSection');
+
+    submitProjectType.addEventListener('change', function () {
+        collabSection.style.display = this.value === 'collab' ? 'block' : 'none';
+    });
+
+    // ── Genre Input & Chips ──
+    const genreInput = document.getElementById('genreInput');
+    const genreAddBtn = document.getElementById('genreAddBtn');
+    const genreChipList = document.getElementById('genreChipList');
+    let genres = [];
+
+    function renderGenreChips() {
+        genreChipList.innerHTML = '';
+        genres.forEach((genre, idx) => {
+            const chip = document.createElement('span');
+            chip.className = 'collab-chip'; 
+            chip.innerHTML = `${escapeHtml(genre)} <button type="button" data-idx="${idx}"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>`;
+            genreChipList.appendChild(chip);
+        });
+    }
+
+    function addGenre() {
+        const genre = genreInput.value.trim();
+        if (!genre || genres.includes(genre)) return;
+        genres.push(genre);
+        genreInput.value = '';
+        renderGenreChips();
+    }
+
+    genreAddBtn.addEventListener('click', addGenre);
+    genreInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            addGenre();
+        }
+    });
+
+    genreChipList.addEventListener('click', function (e) {
+        const btn = e.target.closest('button[data-idx]');
+        if (!btn) return;
+        genres.splice(Number(btn.getAttribute('data-idx')), 1);
+        renderGenreChips();
+    });
+
+    function resetGenreChips() {
+        genres = [];
+        if (genreInput) genreInput.value = '';
+        renderGenreChips();
+    }
+
+    // ── Thumbnail preview (right column) ──
+    const thumbnailUploadBox = document.getElementById('thumbnailUploadBox');
+    const thumbnailFileInput = document.getElementById('thumbnailFileInput');
+    const thumbRemoveBtn = document.getElementById('thumbRemoveBtn'); // Grab the new button
+
+    thumbnailUploadBox.addEventListener('click', function () {
+        thumbnailFileInput.click();
+    });
+
+    thumbnailFileInput.addEventListener('change', function () {
+        const file = thumbnailFileInput.files && thumbnailFileInput.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            thumbnailUploadBox.style.backgroundImage = `url(${e.target.result})`;
+            thumbnailUploadBox.classList.add('has-image');
+        };
+        reader.readAsDataURL(file);
+    });
+
+    // Handle removing the thumbnail
+    thumbRemoveBtn.addEventListener('click', function (e) {
+        e.stopPropagation(); // Stop the click from opening the file input
+        resetThumbnailPreview();
+    });
+
+    function resetThumbnailPreview() {
+        thumbnailUploadBox.style.backgroundImage = '';
+        thumbnailUploadBox.classList.remove('has-image');
+        thumbnailFileInput.value = '';
+    }
+
+    // ── Add Collaborators (left column) ──
+    const collabInput = document.getElementById('collabInput');
+    const collabAddBtn = document.getElementById('collabAddBtn');
+    const collabChipList = document.getElementById('collabChipList');
+    let collaborators = [];
+
+    function renderCollabChips() {
+        collabChipList.innerHTML = '';
+        collaborators.forEach((name, idx) => {
+            const chip = document.createElement('span');
+            chip.className = 'collab-chip';
+            chip.innerHTML = `${escapeHtml(name)} <button type="button" data-idx="${idx}"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>`;
+            collabChipList.appendChild(chip);
+        });
+    }
+
+    function escapeHtml(str) {
+        return String(str || '').replace(/[&<>"']/g, m => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+        })[m]);
+    }
+
+    function addCollaborator() {
+        const name = collabInput.value.trim();
+        if (!name || collaborators.includes(name)) return;
+        collaborators.push(name);
+        collabInput.value = '';
+        renderCollabChips();
+    }
+
+    collabAddBtn.addEventListener('click', addCollaborator);
+    collabInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            addCollaborator();
+        }
+    });
+
+    collabChipList.addEventListener('click', function (e) {
+        const btn = e.target.closest('button[data-idx]');
+        if (!btn) return;
+        collaborators.splice(Number(btn.getAttribute('data-idx')), 1);
+        renderCollabChips();
+    });
+
+    function resetCollaborators() {
+        collaborators = [];
+        if (collabInput) collabInput.value = '';
+        renderCollabChips();
+    }
+
+    // ── Main Open / Close Modal Logic ──
+    function openSubmitModal(editId = null) {
         submitGameForm.reset();
+        resetGenreChips();
+        resetThumbnailPreview();
+        resetCollaborators();
+
+        const titleEl = document.getElementById('gameDetailsTitle');
+        const hiddenIdInput = document.getElementById('submitGameId');
+        
+        if (editId) {
+            // EDIT MODE
+            titleEl.textContent = 'Edit Game';
+            hiddenIdInput.value = editId;
+            
+            const game = games.find(g => g.id === editId);
+            if (game) {
+                document.getElementById('submitGameTitle').value = game.name || '';
+                document.getElementById('submitDescription').value = game.description || '';
+                document.getElementById('submitDevName').value = (game.developer || '').replace('by ', '');
+                
+                // Restore genres
+                if (game.genre) {
+                    genres = game.genre.split(', ');
+                    renderGenreChips();
+                }
+
+                // Restore collaborators & project type
+                if (game.collaborators && game.collaborators.length > 0) {
+                    submitProjectType.value = 'collab';
+                    collabSection.style.display = 'block';
+                    collaborators = [...game.collaborators];
+                    renderCollabChips();
+                } else {
+                    submitProjectType.value = 'solo';
+                    collabSection.style.display = 'none';
+                }
+            }
+        } else {
+            // ADD MODE
+            titleEl.textContent = 'Submit Your Game';
+            hiddenIdInput.value = '';
+            submitProjectType.value = 'solo';
+            collabSection.style.display = 'none';
+        }
+
         submitGameModal.classList.add('active');
         submitGameModal.scrollTop = 0;
         document.body.style.overflow = 'hidden';
@@ -405,8 +575,8 @@ function initMyGamesPage(initialGames) {
         document.body.style.overflow = 'auto';
     }
 
-    document.getElementById('addGameBtn').addEventListener('click', openSubmitModal);
-    document.getElementById('emptyAddGameBtn').addEventListener('click', openSubmitModal);
+    document.getElementById('addGameBtn').addEventListener('click', () => openUploadModal());
+    document.getElementById('emptyAddGameBtn').addEventListener('click', () => openUploadModal());
     submitModalClose.addEventListener('click', closeSubmitModal);
     submitCancelBtn.addEventListener('click', closeSubmitModal);
     submitGameModal.querySelector('.modal-overlay').addEventListener('click', closeSubmitModal);
@@ -414,29 +584,45 @@ function initMyGamesPage(initialGames) {
     submitGameForm.addEventListener('submit', function (e) {
         e.preventDefault();
 
+        const editId = document.getElementById('submitGameId').value;
         const name = document.getElementById('submitGameTitle').value.trim();
-        const genre = document.getElementById('submitGameGenre').value;
+        const genreStr = genres.join(', ');
+        const projectType = document.getElementById('submitProjectType').value;
         const devName = document.getElementById('submitDevName').value.trim();
-        const gameUrl = document.getElementById('submitGameUrl').value.trim();
-        const thumbnailUrl = document.getElementById('submitThumbnail').value.trim();
         const description = document.getElementById('submitDescription').value.trim();
 
-        if (!name || !genre || !devName || !gameUrl || !description) return;
+        if (!name || !genreStr || !devName || !description) return;
 
-        games.push({
-            id: slugify(name) + '-' + Date.now(),
-            name: name,
-            developer: 'by ' + devName,
-            genre: genre,
-            description: description,
-            rating: null,
-            plays: 0,
-            status: 'review',
-            thumbnail: thumbnailStyles[games.length % thumbnailStyles.length],
-            thumbnailUrl: thumbnailUrl,
-            gameUrl: gameUrl,
-            dateAdded: new Date().toISOString()
-        });
+        const activeCollaborators = projectType === 'collab' ? collaborators.slice() : [];
+
+        if (editId) {
+            // UPDATE EXISTING GAME
+            const gameIndex = games.findIndex(g => g.id === editId);
+            if (gameIndex > -1) {
+                games[gameIndex].name = name;
+                games[gameIndex].developer = 'by ' + devName;
+                games[gameIndex].genre = genreStr;
+                games[gameIndex].description = description;
+                games[gameIndex].projectType = projectType;
+                games[gameIndex].collaborators = activeCollaborators;
+            }
+        } else {
+            // CREATE NEW GAME
+            games.push({
+                id: slugify(name) + '-' + Date.now(),
+                name: name,
+                developer: 'by ' + devName,
+                genre: genreStr,
+                projectType: projectType,
+                description: description,
+                rating: null,
+                plays: 0,
+                status: 'review',
+                thumbnail: thumbnailStyles[games.length % thumbnailStyles.length],
+                collaborators: activeCollaborators,
+                dateAdded: new Date().toISOString()
+            });
+        }
 
         saveMyGames(games);
         closeSubmitModal();
@@ -494,7 +680,7 @@ function initMyGamesPage(initialGames) {
 
         manageInner.querySelector('#manageEditBtn').addEventListener('click', function () {
             closeManageModal();
-            openGameForm(game.id);
+            openSubmitModal(game.id);
         });
 
         manageInner.querySelector('#manageDeleteBtn').addEventListener('click', function () {
@@ -552,8 +738,8 @@ function initMyGamesPage(initialGames) {
         if (e.key !== 'Escape') return;
         if (deleteModal.classList.contains('active')) closeDeleteConfirm();
         else if (manageModal.classList.contains('active')) closeManageModal();
-        else if (gameFormModal.classList.contains('active')) closeGameForm();
         else if (submitGameModal.classList.contains('active')) closeSubmitModal();
+        else if (uploadGameModal.classList.contains('active')) closeUploadModal();
     });
 
     render();
