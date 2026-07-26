@@ -6,6 +6,7 @@ class SettingsController extends Controller{
 
     # Function that takes user to the index
     public function index(){
+        $this -> requireAuth();
         $this -> view('settings/index', []);
     }
 }

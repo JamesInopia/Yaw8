@@ -2,6 +2,14 @@
 class Controller {
     protected string $layout = 'main';
 
+    # If not logged in, redirects user to login page
+    protected function requireAuth(): void {
+        if (empty($_SESSION['user_id'])) {
+            header('Location: ?url=auth');
+            exit;
+        }
+    }
+
     # Renders entire page layout with content
     public function view(string $view, array $data = []): void {
         extract($data);

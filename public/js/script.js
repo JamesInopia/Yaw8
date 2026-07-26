@@ -494,7 +494,8 @@
 
         // b. Confirm button in modal calls AuthController::logout()
         confirmBtn.addEventListener('click', function () {
-            localStorage.removeItem('jwt_token'); // clear client-side JWT too
+            localStorage.clear();
+            sessionStorage.setItem('show_auth_loader', 'true');
             window.location.href = '?url=logout';
         });
     })();
@@ -587,9 +588,7 @@
     }
     });
     // ═══════════════════════════════════════════
-    // LOADING SCREEN
-    // Fills the progress bar, then fades out the
-    // overlay once the page has fully loaded.
+    // LOADING SCREEN (Triggers only on Auth transitions)
     // ═══════════════════════════════════════════
     (function() {
         const loadingScreen = document.getElementById('loading-screen');
@@ -598,24 +597,36 @@
 
         if (!loadingScreen) return;
 
+        // Check if an auth action (login, signup, or signout) flagged a loading screen request
+        const showLoader = sessionStorage.getItem('show_auth_loader');
+
+        if (!showLoader) {
+            // If no auth action happened, hide the loader screen immediately
+            loadingScreen.style.display = 'none';
+            document.body.style.overflow = 'auto';
+            return;
+        }
+
+        // Clear the flag so it doesn't show again on simple page reloads
+        sessionStorage.removeItem('show_auth_loader');
+
         let progress = 0;
-        let isLoaded = false; // Added: Prevents the hide function from running twice
+        let isLoaded = false;
 
         const interval = setInterval(function() {
-            // Random increment so it feels alive, capped at 90 until window load fires
             progress += Math.random() * 7;
             if (progress > 90) progress = 90;
-            loaderBarFill.style.width = progress + '%';
-            loaderText.textContent = `Loading… ${Math.floor(progress)}%`;
+            if (loaderBarFill) loaderBarFill.style.width = progress + '%';
+            if (loaderText) loaderText.textContent = `Loading… ${Math.floor(progress)}%`;
         }, 400);
 
         function hideLoadingScreen() {
-            if (isLoaded) return; // Added: Exit if already loaded
+            if (isLoaded) return;
             isLoaded = true;
 
             clearInterval(interval);
-            loaderBarFill.style.width = '100%';
-            loaderText.textContent = 'Loading...';
+            if (loaderBarFill) loaderBarFill.style.width = '100%';
+            if (loaderText) loaderText.textContent = 'Loading...';
 
             setTimeout(function() {
                 loadingScreen.classList.add('loaded');
@@ -623,19 +634,16 @@
             }, 500);
         }
 
-        // Check if the page is already loaded (handles the race condition)
         if (document.readyState === 'complete') {
             hideLoadingScreen();
         } else {
             window.addEventListener('load', hideLoadingScreen);
-            
-            // Added: Fallback timer to force close after 3 seconds max
             setTimeout(hideLoadingScreen, 3000); 
         }
 
-        // Prevent scrolling while loading
         document.body.style.overflow = 'hidden';
     })();
+
     // ═══════════════════════════════════════════
     // EXPLORE NOW — smooth scroll to Featured Games
     // Scrolls a bit short of the very top of the

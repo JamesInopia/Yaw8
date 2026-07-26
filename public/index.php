@@ -1,4 +1,8 @@
 <?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 define('BASE_URL', 'http://yaw8.com/Yaw8/public');
 
 spl_autoload_register(function ($class) {

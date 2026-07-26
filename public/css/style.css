@@ -281,6 +281,35 @@
         border: 1.5px solid var(--nav-bg);
     }
 
+    /* Guest "Log In" nav button */
+
+    .login-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(0, 229, 255, 0.08);
+        border: 1px solid var(--cyan);
+        border-radius: 15px;
+        padding: 7px 14px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--cyan);
+        transition: background .2s, color .2s;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+
+    .login-btn svg {
+        width: 16px;
+        height: 16px;
+        fill: currentColor;
+    }
+
+    .login-btn:hover {
+        background: var(--cyan);
+        color: #05131a;
+    }
+
     /* Avatar / user menu button */
 
     .avatar-wrap {

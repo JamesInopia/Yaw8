@@ -1,5 +1,6 @@
 <?php
   $currentRoute = $_GET['url'] ?? 'home'; 
+  $isLoggedIn = !empty($_SESSION['user_id']);
 ?>
 
 <!DOCTYPE html>
@@ -25,6 +26,10 @@
       <link rel="stylesheet" href="css/developers.css"/>
     <?php elseif ($currentRoute === 'about'): ?>
       <link rel="stylesheet" href="css/about.css"/>
+    <?php elseif ($currentRoute === 'profile'): ?>
+      <link rel="stylesheet" href="css/account.css"/>
+    <?php elseif ($currentRoute === 'settings'): ?>
+      <link rel="stylesheet" href="css/settings.css"/>
     <?php endif; ?>
     
 </head>
@@ -106,6 +111,7 @@
     </button>
 
     <!-- Avatar / user menu -->
+    <?php if ($isLoggedIn): ?>
     <div class="avatar-wrap">
       <button class="avatar-btn" id="avatarBtn">
         <div class="avatar-circle">
@@ -116,12 +122,15 @@
       </button>
 
       <div class="user-dropdown" id="userDropdown">
-        <button class="dropdown-item"><svg viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg> My Profile</button>
-        <button class="dropdown-item"><svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg> Settings</button>
+        <a href="?url=profile" class="dropdown-item" id="profileBtn" data-nav="profile"><svg viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg> My Profile</a>
+        <a href="?url=settings" class="dropdown-item" id="settingsBtn" data-nav="settings"><svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg> Settings</a>
         <div class="dropdown-divider"></div>
         <button class="dropdown-item danger" id="signOutBtn"><svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg> Sign Out</button>
       </div>
     </div>
+    <?php else: ?>
+    <a href="?url=auth" class="login-btn" id="loginNavBtn"><svg viewBox="0 0 24 24"><path d="M11 7L9.6 8.4l2.6 2.6H2v2h10.2l-2.6 2.6L11 17l5-5zM19 3H12v2h7v14h-7v2h7c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg> Log In</a>
+    <?php endif; ?>
   </div>
 </div>
 </nav>
@@ -129,7 +138,7 @@
 <!-- ══════════════════════════════════════════
     CONTENT
 ══════════════════════════════════════════ -->
-<div class="<?= in_array($currentRoute, ['games', 'about']) ? 'page-wrap-single' : 'page-wrap' ?>" <?= $currentRoute === 'developers' ? 'style="grid-template-columns: 1fr;"' : '' ?>>
+<div class="<?= in_array($currentRoute, ['about', 'games']) ? 'page-wrap-single' : 'page-wrap' ?>" <?= in_array($currentRoute, ['developers', 'profile']) ? 'style="grid-template-columns: 1fr;"' : '' ?>>
     <?= $content ?? '' ?>
 </div>
 
@@ -213,6 +222,8 @@
     <script src="js/developers.js"></script>
   <?php elseif ($currentRoute === 'about'): ?>
     <script src="js/about.js"></script>
+  <?php elseif ($currentRoute === 'profile'): ?>
+    <script src="js/myprofile.js"></script>
   <?php endif; ?>    
 <?php endif; ?>
 

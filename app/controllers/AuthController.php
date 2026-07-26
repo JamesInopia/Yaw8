@@ -78,12 +78,18 @@ class AuthController extends Controller {
 
         $_SESSION['user_id'] = $userId;
 
-        // Return token and success status
+        // Return token, user profile, and success status
         $this->json([
             'success' => true,
             'token' => $token,
             'token_type' => 'Bearer',
-            'expires_in' => (int) $this->authConfig['jwt_ttl']
+            'expires_in' => (int) $this->authConfig['jwt_ttl'],
+            'user' => [
+                'id' => $userId,
+                'name' => $fullname,
+                'username' => $username,
+                'email' => $email
+            ]
         ], 201);
     }
 
@@ -148,7 +154,13 @@ class AuthController extends Controller {
             'success' => true, 
             'token' => $token,
             'token_type' => 'Bearer',
-            'expires_in' => (int) $this->authConfig['jwt_ttl']
+            'expires_in' => (int) $this->authConfig['jwt_ttl'],
+            'user' => [
+                'id' => $userId,
+                'name' => $user['fullname'] ?? '',
+                'username' => $user['username'] ?? '',
+                'email' => $user['email'] ?? ''
+            ]
         ]);
     }
     

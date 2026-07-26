@@ -65,7 +65,7 @@ const currentUser = getCurrentUser();
 let activeUser = currentUser;
 
 if (!currentUser || currentUser.isGuest) {
-    window.location.replace('login.html?redirect=' + encodeURIComponent('myprofile.html'));
+    window.location.replace('?url=auth');
 } else {
 
     let myGames = loadMyGames();

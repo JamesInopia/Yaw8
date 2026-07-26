@@ -129,22 +129,14 @@ document.addEventListener("DOMContentLoaded", () => {
         e.preventDefault();
 
         // ───────────────────────────────────────
-        // 1. LOGIN LOGIC
+        // LOGIN LOGIC
         // ───────────────────────────────────────
         if (form.id === 'loginForm' || form.getAttribute('data-auth-form') === 'login') {
             const errorAlert = form.querySelector('.auth-error');
             if (errorAlert) errorAlert.classList.remove('active');
 
-            const emailInput = document.getElementById('loginEmail')?.value.trim() || '';
-            const passwordInput = document.getElementById('loginPassword')?.value.trim() || '';
-
-            if (!emailInput || !passwordInput) {
-                if (errorAlert) {
-                    errorAlert.textContent = 'Please fill in all required fields.';
-                    errorAlert.classList.add('active');
-                }
-                return;
-            }
+            const emailInput = document.getElementById('loginEmail')?.value || '';
+            const passwordInput = document.getElementById('loginPassword')?.value || '';
 
             fetch(appUrl('login'), {
                 method: 'POST',
@@ -165,6 +157,20 @@ document.addEventListener("DOMContentLoaded", () => {
                     if (res.body.token) {
                         localStorage.setItem('jwt_token', res.body.token);
                     }
+
+                    // Save user data for profile page and storage sync
+                    const userData = {
+                        name: res.body.user?.fullname || res.body.user?.name || emailInput.split('@')[0],
+                        username: res.body.user?.username || emailInput.split('@')[0],
+                        email: emailInput,
+                        isGuest: false
+                    };
+                    localStorage.setItem('yaw8_user', JSON.stringify(userData));
+                    localStorage.setItem('yaw8_account', JSON.stringify(userData));
+
+                    // Flag loading screen to display on target page
+                    sessionStorage.setItem('show_auth_loader', 'true');
+
                     window.location.href = appUrl('home'); 
                 } else if (errorAlert) {
                     errorAlert.textContent = res.body.message || 'Login failed';
@@ -181,64 +187,18 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         // ───────────────────────────────────────
-        // 2. SIGNUP LOGIC (WITH FRONTEND VALIDATION)
+        // SIGNUP LOGIC
         // ───────────────────────────────────────
         if (form.id === 'signupForm' || form.getAttribute('data-auth-form') === 'signup') {
             const errorAlert = form.querySelector('.auth-error');
-            
-            function showError(msg) {
-                if (errorAlert) {
-                    errorAlert.textContent = msg;
-                    errorAlert.classList.add('active');
-                }
-            }
-
             if (errorAlert) errorAlert.classList.remove('active');
 
-            const fullname = document.getElementById('signupName')?.value.trim() || '';
-            const username = document.getElementById('signupUsername')?.value.trim() || '';
-            const email = document.getElementById('signupEmail')?.value.trim() || '';
-            const password = document.getElementById('signupPassword')?.value.trim() || '';
-            const confirmPassword = document.getElementById('signupConfirmPassword')?.value.trim() || '';
-            const termsCheckbox = form.querySelector('#signupTerms') || form.querySelector('input[type="checkbox"]');
-
-            // a. Check missing fields
-            if (!fullname || !username || !email || !password || !confirmPassword) {
-                showError('Please fill in all required fields.');
-                return;
-            }
-
-            // b. Check terms checkbox
-            if (termsCheckbox && !termsCheckbox.checked) {
-                showError('Please agree to the Terms of Service and Privacy Policy.');
-                return;
-            }
-
-            // e. Check email domain
-            if (!email.toLowerCase().endsWith('@iacademy.edu.ph')) {
-                showError('Email must end with @iacademy.edu.ph');
-                return;
-            }
-
-            // d. Check password length
-            if (password.length < 8) {
-                showError('Password must be at least 8 characters long.');
-                return;
-            }
-
-            // c. Check password confirmation match
-            if (password !== confirmPassword) {
-                showError('Passwords do not match!');
-                return;
-            }
-
             const payload = {
-                fullname,
-                username,
-                email,
-                password,
-                confirmPassword,
-                agreeTerms: termsCheckbox ? termsCheckbox.checked : false
+                fullname: document.getElementById('signupName')?.value || '',
+                username: document.getElementById('signupUsername')?.value || '',
+                email: document.getElementById('signupEmail')?.value || '',
+                password: document.getElementById('signupPassword')?.value || '',
+                confirmPassword: document.getElementById('signupConfirmPassword')?.value || ''
             };
 
             fetch(appUrl('signup'), {
@@ -260,14 +220,32 @@ document.addEventListener("DOMContentLoaded", () => {
                     if (res.body.token) {
                         localStorage.setItem('jwt_token', res.body.token);
                     }
+
+                    // Save registered user data for profile page and storage sync
+                    const newUserData = {
+                        name: payload.fullname,
+                        username: payload.username,
+                        email: payload.email,
+                        isGuest: false
+                    };
+                    localStorage.setItem('yaw8_user', JSON.stringify(newUserData));
+                    localStorage.setItem('yaw8_account', JSON.stringify(newUserData));
+
+                    // Flag loading screen to display on target page
+                    sessionStorage.setItem('show_auth_loader', 'true');
+
                     window.location.href = appUrl('home'); 
-                } else {
-                    showError(res.body.message || 'Registration failed');
+                } else if (errorAlert) {
+                    errorAlert.textContent = res.body.message || 'Registration failed';
+                    errorAlert.classList.add('active');
                 }
             })
             .catch(err => {
                 console.error('AJAX Error: ', err);
-                showError('An unexpected error occurred.');
+                if (errorAlert) {
+                    errorAlert.textContent = 'An unexpected error occurred.';
+                    errorAlert.classList.add('active');
+                }
             });
         }
     });
