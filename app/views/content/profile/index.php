@@ -101,7 +101,9 @@
                 <?php foreach ($data['myGames'] as $game): ?>
                     <!-- GAME CARD TEMPLATE -->
                     <div class="game-card" data-id="<?= htmlspecialchars($game['gameId'] ?? '') ?>">
-                        <div class="game-card-thumb" style="background-image: url('<?= htmlspecialchars($game['thumbnail'] ?: '/public/uploads/thumbnails/default.jpg') ?>');">
+                        <?php $fileName = basename($game['thumbnail']);
+                        $imgPath = '/Yaw8/public/uploads/thumbnails/' . $fileName;?>
+                        <div class="game-card-thumb" style="background-image: url('<?= $imgPath ?>');">
                             <div class="game-card-status <?= htmlspecialchars($game['status']) ?>">
                                 <?= ucfirst(htmlspecialchars($game['status'])) ?>
                             </div>

@@ -233,18 +233,22 @@ function initMyGamesPage(initialGames) {
             // ── Dynamic Thumbnail Logic ──
             let thumbHTML = '';
             
-            if (game.thumbnail) {
-                // 1. Has an actual uploaded image
+            if (game.thumbnail && game.thumbnail.includes('.')) {
+                // 1. Extract JUST the filename (e.g., "1785172785_arrow.png")
+                const fileName = game.thumbnail.split('/').pop();
+                
+                // 2. Build the correct absolute path
+                const imgPath = `/Yaw8/public/uploads/thumbnails/${fileName}`;
+
                 thumbHTML = `
-                <div class="game-thumb" style="background-image: url('/uploads/thumbnails/${game.thumbnail}'); background-size: cover; background-position: center;">
+                <div class="game-thumb" style="background-image: url('${imgPath}'); background-size: cover; background-position: center;">
                     <span class="status-badge ${statusClass}">${statusLabel}</span>
                 </div>`;
             } else {
-                // 2. No image: fallback to old colored style with initials
+                // No image: fallback to old colored style with initials
                 const initialsTitle = safeName.toUpperCase().split(' ').join('<br>');
                 const colorClasses = ['gt-my-a', 'gt-my-b', 'gt-my-c', 'gt-my-d'];
                 
-                // Cycle through the colors based on the array index
                 const colorClass = colorClasses[index % colorClasses.length];
                 
                 thumbHTML = `
@@ -256,7 +260,7 @@ function initMyGamesPage(initialGames) {
 
             // Return the final card HTML
             return `
-            <div class="game-card" data-game-id="${game.gameId}">
+            <div class="game-card" data-game-id="${game.id}">
                 ${thumbHTML}
                 <div class="game-info">
                     <div class="game-meta">
@@ -265,7 +269,7 @@ function initMyGamesPage(initialGames) {
                     <div class="game-genre">${safeGenre} · ${game.plays || 0} plays</div>
                     <div class="game-footer">
                         <span class="stars">${ratingDisplay}</span>
-                        <button class="btn-manage" type="button" onclick="window.openManageModal(${game.gameId})">Manage</button>
+                        <button class="btn-manage" type="button" onclick="window.openManageModal(${game.id})">Manage</button>
                     </div>
                 </div>
             </div>`;
@@ -729,7 +733,7 @@ function initMyGamesPage(initialGames) {
 
     // ── Open / Close / Populate ──
     function openEditGameModal(editId) {
-        const game = games.find(g => g.gameId === editId);
+        const game = games.find(g => g.id === editId);
         if (!game) return;
 
         editGameForm.reset();
@@ -737,7 +741,7 @@ function initMyGamesPage(initialGames) {
         resetEditThumbnailPreview();
         resetEditCollaborators();
 
-        document.getElementById('editGameId').value = game.gameId;
+        document.getElementById('editGameId').value = game.id;
         document.getElementById('editGameTitle').value = game.name || '';
         document.getElementById('editDescription').value = game.description || '';
         document.getElementById('editControls').value = game.controls || '';
@@ -845,7 +849,7 @@ function initMyGamesPage(initialGames) {
     const manageInner = document.getElementById('manageGameInner');
 
     window.openManageModal = function(gameId) {
-        const game = games.find(g => g.gameId === gameId);
+        const game = games.find(g => g.id === gameId);
         if (!game) return;
 
         const statusLabel = game.status === 'published' ? 'Published' : 'Under Review';
@@ -887,12 +891,12 @@ function initMyGamesPage(initialGames) {
 
         manageInner.querySelector('#manageEditBtn').addEventListener('click', function () {
             closeManageModal();
-            openEditGameModal(game.gameId);
+            openEditGameModal(game.id);
         });
 
         manageInner.querySelector('#manageDeleteBtn').addEventListener('click', function () {
             closeManageModal();
-            openDeleteConfirm(game.gameId);
+            openDeleteConfirm(game.id);
         });
 
         manageModal.classList.add('active');
@@ -934,7 +938,7 @@ function initMyGamesPage(initialGames) {
 
     deleteConfirm.addEventListener('click', function () {
         if (!pendingDeleteId) return;
-        games = games.filter(g => g.gameId !== pendingDeleteId);
+        games = games.filter(g => g.id !== pendingDeleteId);
         saveMyGames(games);
         closeDeleteConfirm();
         render();
