@@ -92,12 +92,38 @@
         </div>
 
         <div class="games-toolbar" style="margin-bottom: 18px; justify-content:center;">
-            <span class="count-text"><strong id="mgCount">0</strong> games submitted</span>
+            <span class="count-text"><strong id="mgCount"><?= isset($data['myGames']) ? count($data['myGames']) : 0 ?></strong> games submitted</span>
         </div>
 
-        <div class="games-grid" id="myGamesGrid"></div>
+        <!-- DYNAMIC GAMES GRID -->
+        <div class="games-grid" id="myGamesGrid">
+            <?php if (!empty($data['myGames'])): ?>
+                <?php foreach ($data['myGames'] as $game): ?>
+                    <!-- GAME CARD TEMPLATE -->
+                    <div class="game-card" data-id="<?= htmlspecialchars($game['gameId'] ?? '') ?>">
+                        <div class="game-card-thumb" style="background-image: url('<?= htmlspecialchars($game['thumbnail'] ?: '/public/uploads/thumbnails/default.jpg') ?>');">
+                            <div class="game-card-status <?= htmlspecialchars($game['status']) ?>">
+                                <?= ucfirst(htmlspecialchars($game['status'])) ?>
+                            </div>
+                        </div>
+                        <div class="game-card-info">
+                            <h3 class="game-card-title"><?= htmlspecialchars($game['title']) ?></h3>
+                            <p class="game-card-desc"><?= htmlspecialchars($game['description']) ?></p>
+                            <div class="game-card-meta">
+                                <span><?= htmlspecialchars($game['totalPlays'] ?? 0) ?> plays</span>
+                                <span>Added <?= date('M j, Y', strtotime($game['dateReleased'])) ?></span>
+                            </div>
+                            <div class="game-card-actions">
+                                <button type="button" class="btn-edit" onclick="openManageModal(<?= htmlspecialchars($game['gameId'] ?? 0) ?>)">Manage</button>
+                            </div>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
 
-        <div class="empty-state" id="myGamesEmpty" style="display:none;">
+        <!-- DYNAMIC EMPTY STATE (Removed PHP conditional so JS can control it) -->
+        <div class="empty-state" id="myGamesEmpty" style="display: none;">
             <div class="empty-icon">
                 <svg viewBox="0 0 24 24"><path d="M15 7.5V2H9v5.5l3 3 3-3zM7.5 9H2v6h5.5l3-3-3-3zM9 16.5V22h6v-5.5l-3-3-3 3zM16.5 9l-3 3 3 3H22V9h-5.5z"/></svg>
             </div>
@@ -108,10 +134,30 @@
                 Add Your First Game
             </button>
         </div>
+
     </section>
 </main>
 <?php include __DIR__ . '/manageGame-modal.php'; ?>
-<?php include __DIR__ . '/gameDetails-modal.php'; ?>
+<?php include __DIR__ . '/submitDetails-modal.php'; ?>
+<?php include __DIR__ . '/editDetails-modal.php'; ?>
 <?php include __DIR__ . '/editProfile-modal.php'; ?>
 <?php include __DIR__ . '/deleteConfirmation-modal.php'; ?>
 <?php include __DIR__ . '/upload-modal.php'; ?>
+
+<script>
+    // Pass the PHP array to JavaScript safely
+    const dbGames = <?= json_encode($data['myGames'] ?? []) ?>;
+
+    // Map database keys to match what your JS modals expect
+    const myRealGames = dbGames.map(g => ({
+        id: g.gameId, 
+        name: g.title,
+        description: g.description,
+        controls: g.controls,
+        genre: 'Uncategorized', // Update if you add genres to DB later
+        status: g.status,
+        plays: g.totalPlays,
+        dateAdded: g.dateReleased,
+        thumbnail: g.thumbnail 
+    }));
+</script>

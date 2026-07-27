@@ -1,6 +1,25 @@
 /* ═══════════════════════════════
         MODAL STYLES
     ═══════════════════════════════ */
+    ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: transparent; 
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: rgba(0, 229, 255, 0.15); 
+        border-radius: 10px;
+        transition: background 0.2s;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: rgba(0, 229, 255, 0.4); 
+    }
+
     .modal {
         position: fixed;
         inset: 0;

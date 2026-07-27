@@ -1,6 +1,5 @@
 // ═══════════════════════════════════════════
 // SESSION + STORAGE HELPERS
-// (shared by both the profile hero and the games grid below)
 // ═══════════════════════════════════════════
 function getCurrentUser() {
     try {
@@ -60,53 +59,19 @@ function formatMonthYear(isoString) {
     }
 }
 
-const currentUser = getCurrentUser();
-
+// Grab the user for the top profile info, or default to a generic profile if local storage is cleared
+const currentUser = getCurrentUser() || { name: 'Developer', username: 'developer', email: '' }; 
 let activeUser = currentUser;
 
-if (!currentUser || currentUser.isGuest) {
-    // Consistent with the rest of the PHP-routed app: send guests to the login route.
-    window.location.replace('?url=auth');
-} else {
-
-    let myGames = loadMyGames();
-
-    if (myGames === null) {
-        // No backend for games yet — seed a couple of demo entries so the
-        // page has something real to render for a newly-logged-in user.
-        myGames = [
-            {
-                id: 'demo-' + slugify(activeUser.name) + '-1',
-                name: 'Glitch Runner',
-                developer: 'by ' + activeUser.name,
-                genre: 'Arcade',
-                description: 'Glitch Runner is an endless runner where the level itself glitches and rewrites in real time. React fast, adapt faster, and see how far you can push the corrupted track.',
-                rating: '4.3',
-                plays: 6,
-                status: 'published',
-                thumbnail: 'gt-my-a',
-                dateAdded: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString()
-            },
-            {
-                id: 'demo-' + slugify(activeUser.name) + '-2',
-                name: 'Loop Garden',
-                developer: 'by ' + activeUser.name,
-                genre: 'Puzzle',
-                description: 'Loop Garden is a calm little puzzle game about arranging looping paths so seeds can travel from sun to soil. Still being polished before it goes public.',
-                rating: null,
-                plays: 0,
-                status: 'review',
-                thumbnail: 'gt-my-c',
-                dateAdded: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
-            }
-        ];
-        saveMyGames(myGames);
-    }
-
-    renderProfile(activeUser, myGames);
+// Wait for the HTML to load, then use the PHP data
+document.addEventListener('DOMContentLoaded', () => {
+    // Check if PHP successfully passed the database games to the window
+    const gamesToLoad = typeof myRealGames !== 'undefined' ? myRealGames : [];
+    
+    renderProfile(activeUser, gamesToLoad);
     wireEditModal();
-    initMyGamesPage(myGames);
-}
+    initMyGamesPage(gamesToLoad);
+});
 
 // ═══════════════════════════════════════════
 // PROFILE HERO + ACCOUNT DETAILS
@@ -131,9 +96,6 @@ function renderProfile(user, myGames) {
     updateProfileStats(myGames, meta);
 }
 
-// Recomputes just the profile hero's stat row. Called on initial load
-// AND whenever the games grid below adds/edits/deletes a game, so the
-// two sections never fall out of sync.
 function updateProfileStats(myGames, meta) {
     meta = meta || getProfileMeta();
     const totalPlays = myGames.reduce((sum, g) => sum + (Number(g.plays) || 0), 0);
@@ -257,40 +219,57 @@ function initMyGamesPage(initialGames) {
         grid.style.display = '';
         emptyState.style.display = 'none';
 
-        grid.innerHTML = '';
-        sorted.forEach(game => {
-            const card = document.createElement('div');
-            card.className = 'game-card';
-            card.setAttribute('data-game-id', game.id);
-
-            const initialsTitle = game.name.toUpperCase().split(' ').join('<br>');
+        // Render the sorted cards dynamically into the grid
+        grid.innerHTML = sorted.map((game, index) => {
+            // Format status and rating
             const statusLabel = game.status === 'published' ? 'Published' : 'Under Review';
             const statusClass = game.status === 'published' ? 'published' : 'review';
-            const ratingDisplay = game.rating ? '★ ' + game.rating : 'New';
+            const ratingDisplay = game.rating ? `★ ${parseFloat(game.rating).toFixed(1)}` : 'New';
+            
+            // Safely escape strings
+            const safeName = String(game.name || '').replace(/"/g, '&quot;');
+            const safeGenre = String(game.genre || 'Uncategorized').replace(/"/g, '&quot;');
 
-            card.innerHTML = `
-                <div class="game-thumb ${game.thumbnail || 'gt-my-a'}">
+            // ── Dynamic Thumbnail Logic ──
+            let thumbHTML = '';
+            
+            if (game.thumbnail) {
+                // 1. Has an actual uploaded image
+                thumbHTML = `
+                <div class="game-thumb" style="background-image: url('/uploads/thumbnails/${game.thumbnail}'); background-size: cover; background-position: center;">
+                    <span class="status-badge ${statusClass}">${statusLabel}</span>
+                </div>`;
+            } else {
+                // 2. No image: fallback to old colored style with initials
+                const initialsTitle = safeName.toUpperCase().split(' ').join('<br>');
+                const colorClasses = ['gt-my-a', 'gt-my-b', 'gt-my-c', 'gt-my-d'];
+                
+                // Cycle through the colors based on the array index
+                const colorClass = colorClasses[index % colorClasses.length];
+                
+                thumbHTML = `
+                <div class="game-thumb ${colorClass}">
                     <span class="status-badge ${statusClass}">${statusLabel}</span>
                     <div class="game-thumb-title">${initialsTitle}</div>
-                </div>
+                </div>`;
+            }
+
+            // Return the final card HTML
+            return `
+            <div class="game-card" data-game-id="${game.gameId}">
+                ${thumbHTML}
                 <div class="game-info">
                     <div class="game-meta">
-                        <span class="game-name">${game.name}</span>
+                        <span class="game-name">${safeName}</span>
                     </div>
-                    <div class="game-genre">${game.genre} · ${game.plays || 0} plays</div>
+                    <div class="game-genre">${safeGenre} · ${game.plays || 0} plays</div>
                     <div class="game-footer">
                         <span class="stars">${ratingDisplay}</span>
-                        <button class="btn-manage" type="button">Manage</button>
+                        <button class="btn-manage" type="button" onclick="window.openManageModal(${game.gameId})">Manage</button>
                     </div>
                 </div>
-            `;
-
-            card.addEventListener('click', function () {
-                openManageModal(game.id);
-            });
-
-            grid.appendChild(card);
-        });
+            </div>`;
+        }).join('');
     }
 
     sortDropdownBtn.addEventListener('click', function (e) {
@@ -320,10 +299,6 @@ function initMyGamesPage(initialGames) {
 
     // ═══════════════════════════════════════════
     // UPLOAD GAME MODAL → SUBMIT GAME MODAL
-    // "Add Game" now opens the Upload modal first;
-    // choosing files (or, for now, just clicking
-    // Select files) routes straight into the
-    // Submit Your Game details modal.
     // ═══════════════════════════════════════════
     const uploadGameModal = document.getElementById('uploadGameModal');
     const uploadGameClose = document.getElementById('uploadGameClose');
@@ -369,7 +344,15 @@ function initMyGamesPage(initialGames) {
             uploadDropzone.classList.remove('drag-over');
         });
     });
-    uploadDropzone.addEventListener('drop', function () {
+    uploadDropzone.addEventListener('drop', function (e) {
+        e.preventDefault();
+        uploadDropzone.classList.remove('drag-over');
+
+        // Transfer dropped files to input
+        if (e.dataTransfer && e.dataTransfer.files.length > 0) {
+            uploadFileInput.files = e.dataTransfer.files;
+        }
+
         closeUploadModal();
         openSubmitModal();
     });
@@ -520,50 +503,19 @@ function initMyGamesPage(initialGames) {
     }
 
     // ── Main Open / Close Modal Logic ──
-    function openSubmitModal(editId = null) {
+    // This modal (submitDetails-modal.php / #submit-game-modal) is ADD-ONLY.
+    // Editing an existing game is handled entirely by the dedicated
+    // Edit Game Details modal further below (openEditGameModal / #edit-details-modal).
+    function openSubmitModal() {
         submitGameForm.reset();
         resetGenreChips();
         resetThumbnailPreview();
         resetCollaborators();
 
-        const titleEl = document.getElementById('gameDetailsTitle');
-        const hiddenIdInput = document.getElementById('submitGameId');
-        
-        if (editId) {
-            // EDIT MODE
-            titleEl.textContent = 'Edit Game';
-            hiddenIdInput.value = editId;
-            
-            const game = games.find(g => g.id === editId);
-            if (game) {
-                document.getElementById('submitGameTitle').value = game.name || '';
-                document.getElementById('submitDescription').value = game.description || '';
-                document.getElementById('submitDevName').value = (game.developer || '').replace('by ', '');
-                
-                // Restore genres
-                if (game.genre) {
-                    genres = game.genre.split(', ');
-                    renderGenreChips();
-                }
-
-                // Restore collaborators & project type
-                if (game.collaborators && game.collaborators.length > 0) {
-                    submitProjectType.value = 'collab';
-                    collabSection.style.display = 'block';
-                    collaborators = [...game.collaborators];
-                    renderCollabChips();
-                } else {
-                    submitProjectType.value = 'solo';
-                    collabSection.style.display = 'none';
-                }
-            }
-        } else {
-            // ADD MODE
-            titleEl.textContent = 'Submit Your Game';
-            hiddenIdInput.value = '';
-            submitProjectType.value = 'solo';
-            collabSection.style.display = 'none';
-        }
+        document.getElementById('gameDetailsTitle').textContent = 'Submit Your Game';
+        document.getElementById('submitGameId').value = '';
+        submitProjectType.value = 'solo';
+        collabSection.style.display = 'none';
 
         submitGameModal.classList.add('active');
         submitGameModal.scrollTop = 0;
@@ -584,61 +536,316 @@ function initMyGamesPage(initialGames) {
     submitGameForm.addEventListener('submit', function (e) {
         e.preventDefault();
 
-        const editId = document.getElementById('submitGameId').value;
+        // 1. Gather Text Data
         const name = document.getElementById('submitGameTitle').value.trim();
-        const genreStr = genres.join(', ');
         const projectType = document.getElementById('submitProjectType').value;
-        const devName = document.getElementById('submitDevName').value.trim();
         const description = document.getElementById('submitDescription').value.trim();
+        const controls = document.getElementById('submitControls').value.trim();
 
-        if (!name || !genreStr || !devName || !description) return;
+        // 2. Gather Files
+        const gameZipFile = document.getElementById('uploadFileInput').files[0];
+        const thumbnailFile = document.getElementById('thumbnailFileInput').files[0];
 
-        const activeCollaborators = projectType === 'collab' ? collaborators.slice() : [];
-
-        if (editId) {
-            // UPDATE EXISTING GAME
-            const gameIndex = games.findIndex(g => g.id === editId);
-            if (gameIndex > -1) {
-                games[gameIndex].name = name;
-                games[gameIndex].developer = 'by ' + devName;
-                games[gameIndex].genre = genreStr;
-                games[gameIndex].description = description;
-                games[gameIndex].projectType = projectType;
-                games[gameIndex].collaborators = activeCollaborators;
-            }
-        } else {
-            // CREATE NEW GAME
-            games.push({
-                id: slugify(name) + '-' + Date.now(),
-                name: name,
-                developer: 'by ' + devName,
-                genre: genreStr,
-                projectType: projectType,
-                description: description,
-                rating: null,
-                plays: 0,
-                status: 'review',
-                thumbnail: thumbnailStyles[games.length % thumbnailStyles.length],
-                collaborators: activeCollaborators,
-                dateAdded: new Date().toISOString()
-            });
+        if (!name || !description || !controls) {
+            alert("Please fill in the required fields.");
+            return;
         }
 
-        saveMyGames(games);
-        closeSubmitModal();
-        render();
+        // 3. Construct FormData Payload
+        const formData = new FormData();
+        formData.append('title', name);
+        formData.append('description', description);
+        formData.append('controls', controls);
+        formData.append('projectType', projectType);
+        formData.append('genres', JSON.stringify(genres));
+
+        const activeCollaborators = projectType === 'collab' ? collaborators : [];
+        formData.append('collaborators', JSON.stringify(activeCollaborators));
+
+        if (gameZipFile) formData.append('game_file', gameZipFile);
+        if (thumbnailFile) formData.append('thumbnail', thumbnailFile);
+
+        // 4. Send AJAX Request to the ADD endpoint
+        fetch('?url=profile/addGame', {
+            method: 'POST',
+            body: formData 
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log("Game submitted successfully:", data);
+                
+                // Close modal and reset form
+                closeSubmitModal();
+                
+                // TODO: You may want to fetch the updated games list from the server here 
+                // instead of relying on the local 'games' array.
+            } else {
+                alert('Submission failed: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error uploading game:', error);
+            alert('An error occurred while uploading.');
+        });
     });
 
     // ═══════════════════════════════════════════
-    // MANAGE GAME MODAL (view / edit / delete entry point)
+    // EDIT GAME DETAILS MODAL (editDetails-modal.php / #edit-details-modal)
+    // ═══════════════════════════════════════════
+    const editGameModal = document.getElementById('edit-details-modal');
+    const editModalClose = document.getElementById('editModalClose');
+    const editCancelBtn = document.getElementById('editCancelBtn');
+    const editGameForm = document.getElementById('editGameForm');
+
+    // ── Project Type & Collaborator Visibility ──
+    const editProjectType = document.getElementById('editProjectType');
+    const editCollabSection = document.getElementById('editCollabSection');
+
+    editProjectType.addEventListener('change', function () {
+        editCollabSection.style.display = this.value === 'collab' ? 'block' : 'none';
+    });
+
+    // ── Genre Input & Chips ──
+    const editGenreInput = document.getElementById('editGenreInput');
+    const editGenreAddBtn = document.getElementById('editGenreAddBtn');
+    const editGenreChipList = document.getElementById('editGenreChipList');
+    let editGenres = [];
+
+    function renderEditGenreChips() {
+        editGenreChipList.innerHTML = '';
+        editGenres.forEach((genre, idx) => {
+            const chip = document.createElement('span');
+            chip.className = 'collab-chip';
+            chip.innerHTML = `${escapeHtml(genre)} <button type="button" data-idx="${idx}"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>`;
+            editGenreChipList.appendChild(chip);
+        });
+    }
+
+    function addEditGenre() {
+        const genre = editGenreInput.value.trim();
+        if (!genre || editGenres.includes(genre)) return;
+        editGenres.push(genre);
+        editGenreInput.value = '';
+        renderEditGenreChips();
+    }
+
+    editGenreAddBtn.addEventListener('click', addEditGenre);
+    editGenreInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            addEditGenre();
+        }
+    });
+
+    editGenreChipList.addEventListener('click', function (e) {
+        const btn = e.target.closest('button[data-idx]');
+        if (!btn) return;
+        editGenres.splice(Number(btn.getAttribute('data-idx')), 1);
+        renderEditGenreChips();
+    });
+
+    function resetEditGenreChips() {
+        editGenres = [];
+        if (editGenreInput) editGenreInput.value = '';
+        renderEditGenreChips();
+    }
+
+    // ── Thumbnail preview (right column) ──
+    const editThumbnailUploadBox = document.getElementById('editThumbnailUploadBox');
+    const editThumbnailFileInput = document.getElementById('editThumbnailFileInput');
+    const editThumbRemoveBtn = document.getElementById('editThumbRemoveBtn');
+
+    editThumbnailUploadBox.addEventListener('click', function () {
+        editThumbnailFileInput.click();
+    });
+
+    editThumbnailFileInput.addEventListener('change', function () {
+        const file = editThumbnailFileInput.files && editThumbnailFileInput.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            editThumbnailUploadBox.style.backgroundImage = `url(${e.target.result})`;
+            editThumbnailUploadBox.classList.add('has-image');
+        };
+        reader.readAsDataURL(file);
+    });
+
+    editThumbRemoveBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        resetEditThumbnailPreview();
+    });
+
+    function resetEditThumbnailPreview() {
+        editThumbnailUploadBox.style.backgroundImage = '';
+        editThumbnailUploadBox.classList.remove('has-image');
+        editThumbnailFileInput.value = '';
+    }
+
+    // ── Add Collaborators (left column) ──
+    const editCollabInput = document.getElementById('editCollabInput');
+    const editCollabAddBtn = document.getElementById('editCollabAddBtn');
+    const editCollabChipList = document.getElementById('editCollabChipList');
+    let editCollaborators = [];
+
+    function renderEditCollabChips() {
+        editCollabChipList.innerHTML = '';
+        editCollaborators.forEach((name, idx) => {
+            const chip = document.createElement('span');
+            chip.className = 'collab-chip';
+            chip.innerHTML = `${escapeHtml(name)} <button type="button" data-idx="${idx}"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>`;
+            editCollabChipList.appendChild(chip);
+        });
+    }
+
+    function addEditCollaborator() {
+        const name = editCollabInput.value.trim();
+        if (!name || editCollaborators.includes(name)) return;
+        editCollaborators.push(name);
+        editCollabInput.value = '';
+        renderEditCollabChips();
+    }
+
+    editCollabAddBtn.addEventListener('click', addEditCollaborator);
+    editCollabInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            addEditCollaborator();
+        }
+    });
+
+    editCollabChipList.addEventListener('click', function (e) {
+        const btn = e.target.closest('button[data-idx]');
+        if (!btn) return;
+        editCollaborators.splice(Number(btn.getAttribute('data-idx')), 1);
+        renderEditCollabChips();
+    });
+
+    function resetEditCollaborators() {
+        editCollaborators = [];
+        if (editCollabInput) editCollabInput.value = '';
+        renderEditCollabChips();
+    }
+
+    // ── Open / Close / Populate ──
+    function openEditGameModal(editId) {
+        const game = games.find(g => g.gameId === editId);
+        if (!game) return;
+
+        editGameForm.reset();
+        resetEditGenreChips();
+        resetEditThumbnailPreview();
+        resetEditCollaborators();
+
+        document.getElementById('editGameId').value = game.gameId;
+        document.getElementById('editGameTitle').value = game.name || '';
+        document.getElementById('editDescription').value = game.description || '';
+        document.getElementById('editControls').value = game.controls || '';
+
+        // Restore genres
+        if (game.genre) {
+            editGenres = game.genre.split(', ');
+            renderEditGenreChips();
+        }
+
+        // Restore collaborators & project type
+        if (game.collaborators && game.collaborators.length > 0) {
+            editProjectType.value = 'collab';
+            editCollabSection.style.display = 'block';
+            editCollaborators = [...game.collaborators];
+            renderEditCollabChips();
+        } else {
+            editProjectType.value = 'solo';
+            editCollabSection.style.display = 'none';
+        }
+
+        editGameModal.classList.add('active');
+        editGameModal.scrollTop = 0;
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeEditGameModal() {
+        editGameModal.classList.remove('active');
+        document.body.style.overflow = 'auto';
+    }
+
+    editModalClose.addEventListener('click', closeEditGameModal);
+    editCancelBtn.addEventListener('click', closeEditGameModal);
+    editGameModal.querySelector('.modal-overlay').addEventListener('click', closeEditGameModal);
+
+    editGameForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        // 1. Gather Text Data
+        const id = document.getElementById('editGameId').value;
+        const name = document.getElementById('editGameTitle').value.trim();
+        const projectType = editProjectType.value;
+        const description = document.getElementById('editDescription').value.trim();
+        const controls = document.getElementById('editControls').value.trim();
+
+        if (!id) {
+            alert('Missing game id — cannot save changes.');
+            return;
+        }
+
+        if (!name || !description || !controls) {
+            alert("Please fill in the required fields.");
+            return;
+        }
+
+        // 2. Gather Files (both optional on edit — only sent if replaced)
+        const gameZipFile = document.getElementById('editGameFileInput').files[0];
+        const thumbnailFile = editThumbnailFileInput.files[0];
+
+        // 3. Construct FormData Payload
+        const formData = new FormData();
+        formData.append('id', id);
+        formData.append('title', name);
+        formData.append('description', description);
+        formData.append('controls', controls);
+        formData.append('projectType', projectType);
+        formData.append('genres', JSON.stringify(editGenres));
+
+        const activeCollaborators = projectType === 'collab' ? editCollaborators : [];
+        formData.append('collaborators', JSON.stringify(activeCollaborators));
+
+        if (gameZipFile) formData.append('game_file', gameZipFile);
+        if (thumbnailFile) formData.append('thumbnail', thumbnailFile);
+
+        // 4. Send AJAX Request to the EDIT endpoint
+        fetch('?url=profile/editGame', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log("Game updated successfully:", data);
+
+                closeEditGameModal();
+
+                // TODO: You may want to fetch the updated games list from the server here 
+                // instead of relying on the local 'games' array.
+            } else {
+                alert('Update failed: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error updating game:', error);
+            alert('An error occurred while updating.');
+        });
+    });
+
+    // ═══════════════════════════════════════════
+    // MANAGE GAME MODAL
     // ═══════════════════════════════════════════
     const manageModal = document.getElementById('manageGameModal');
     const manageOverlay = document.getElementById('manageGameOverlay');
     const manageClose = document.getElementById('manageGameClose');
     const manageInner = document.getElementById('manageGameInner');
 
-    function openManageModal(gameId) {
-        const game = games.find(g => g.id === gameId);
+    window.openManageModal = function(gameId) {
+        const game = games.find(g => g.gameId === gameId);
         if (!game) return;
 
         const statusLabel = game.status === 'published' ? 'Published' : 'Under Review';
@@ -680,12 +887,12 @@ function initMyGamesPage(initialGames) {
 
         manageInner.querySelector('#manageEditBtn').addEventListener('click', function () {
             closeManageModal();
-            openSubmitModal(game.id);
+            openEditGameModal(game.gameId);
         });
 
         manageInner.querySelector('#manageDeleteBtn').addEventListener('click', function () {
             closeManageModal();
-            openDeleteConfirm(game.id);
+            openDeleteConfirm(game.gameId);
         });
 
         manageModal.classList.add('active');
@@ -727,7 +934,7 @@ function initMyGamesPage(initialGames) {
 
     deleteConfirm.addEventListener('click', function () {
         if (!pendingDeleteId) return;
-        games = games.filter(g => g.id !== pendingDeleteId);
+        games = games.filter(g => g.gameId !== pendingDeleteId);
         saveMyGames(games);
         closeDeleteConfirm();
         render();
@@ -738,6 +945,7 @@ function initMyGamesPage(initialGames) {
         if (e.key !== 'Escape') return;
         if (deleteModal.classList.contains('active')) closeDeleteConfirm();
         else if (manageModal.classList.contains('active')) closeManageModal();
+        else if (editGameModal.classList.contains('active')) closeEditGameModal();
         else if (submitGameModal.classList.contains('active')) closeSubmitModal();
         else if (uploadGameModal.classList.contains('active')) closeUploadModal();
     });

@@ -23,10 +23,13 @@ return [
 
         #profile
         'profile'    => [ProfileController::class, 'index'],
+        'profile/addGame' => [ProfileController::class, 'addGame'],
+        'profile/editGame' => [ProfileController::class, 'editGame'],
         
         #settings
         'settings'   => [SettingsController::class, 'index'],
 
     # API routes
     'api/profile'=> [AuthController::class, 'profile'],
+    
 ];

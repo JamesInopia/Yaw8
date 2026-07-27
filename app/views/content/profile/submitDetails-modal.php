@@ -1,4 +1,4 @@
-<!-- SUBMIT GAME MODAL (Game Details — YouTube Studio-style, two columns) -->
+<!-- SUBMIT GAME MODAL -->
 <div id="submit-game-modal" class="modal">
     <div class="modal-overlay"></div>
     <div class="modal-content" style="max-width: 900px; height: 85vh; display: flex; flex-direction: column;">
@@ -22,12 +22,14 @@
                             <label class="form-label">Game Title <span class="form-required">*</span></label>
                             <input type="text" class="form-input" placeholder="e.g. Pixel Drift" id="submitGameTitle" />
                         </div>
-
                         <div class="form-group">
                             <label class="form-label">Description <span class="form-required">*</span></label>
                             <textarea class="form-input form-textarea" placeholder="Describe your game in a few sentences…" id="submitDescription" style="min-height: 160px;"></textarea>
                         </div>
-
+                        <div class="form-group">
+                            <label class="form-label">Controls <span class="form-required">*</span></label>
+                            <input type="text" class="form-input" placeholder="e.g. WASD to move, Space to jump" id="submitControls" />
+                        </div>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                             <div class="form-group">
                                 <label class="form-label">Project Type <span class="form-required">*</span></label>
@@ -36,13 +38,9 @@
                                     <option value="collab">Collaborative Project</option>
                                 </select>
                             </div>
-                            <div class="form-group">
-                                <label class="form-label">Developer / Studio Name <span class="form-required">*</span></label>
-                                <input type="text" class="form-input" placeholder="e.g. John Doe or Pixel Studios" id="submitDevName" />
-                            </div>
                         </div>
 
-                        <!-- Collaborators Section (Intended to be shown if 'Collaborative Project' is selected) -->
+                        <!-- Collaborators Section -->
                         <div class="form-group" id="collabSection">
                             <label class="form-label">Add Collaborators</label>
                             <div style="display: flex; gap: 8px; margin-bottom: 12px;">

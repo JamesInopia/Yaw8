@@ -1,4 +1,4 @@
-<!-- UPLOAD GAME MODAL (shown before Submit Your Game) -->
+<!-- UPLOAD GAME MODAL -->
 <div class="modal" id="uploadGameModal">
     <div class="modal-overlay" id="uploadGameOverlay"></div>
     <div class="modal-content" style="max-width: 500px; text-align: center;">
@@ -17,7 +17,7 @@
                 </div>
                 <p class="upload-dropzone-text" style="color: #8892a4; margin-bottom: 15px;">Drag and drop game files to upload</p>
                 <button type="button" class="upload-select-btn" id="uploadSelectFilesBtn" style="padding: 10px 20px; background: var(--cyan); color: #000; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">Select files</button>
-                <input type="file" id="uploadFileInput" multiple hidden />
+                <input type="file" accept=".zip,application/zip,application/x-zip-compressed" id="uploadFileInput" multiple hidden />
             </div>
 
             <div>
