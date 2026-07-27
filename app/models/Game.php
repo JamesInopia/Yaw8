@@ -143,8 +143,55 @@ class Game {
 
     public function deleteGame($id): bool {
         $pdo = Database::connect();
-        $stmt = $pdo->prepare('DELETE FROM game WHERE gameId = ?');
         
-        return $stmt->execute([$id]);
+        try {
+            $pdo->beginTransaction();
+
+            // 1. Fetch file paths before deleting the database record
+            $stmtSelect = $pdo->prepare('SELECT thumbnail, gameFiles FROM game WHERE gameId = ?');
+            $stmtSelect->execute([$id]);
+            $gameData = $stmtSelect->fetch(PDO::FETCH_ASSOC);
+
+            // 2. Delete from game_devs junction table first (prevents foreign key constraint errors)
+            $stmtDevs = $pdo->prepare('DELETE FROM game_devs WHERE gameId = ?');
+            $stmtDevs->execute([$id]);
+
+            // 3. Delete the main game record
+            $stmtGame = $pdo->prepare('DELETE FROM game WHERE gameId = ?');
+            $stmtGame->execute([$id]);
+
+            $pdo->commit();
+
+            // 4. If database deletions succeed, delete the physical files from the server
+            if ($gameData) {
+                // Adjust this path to match your absolute project directory
+                $publicDir = $_SERVER['DOCUMENT_ROOT'] . '/Yaw8/public'; 
+                
+                // Delete Thumbnail
+                if (!empty($gameData['thumbnail'])) {
+                    $thumbPath = $publicDir . $gameData['thumbnail'];
+                    if (file_exists($thumbPath)) {
+                        unlink($thumbPath); // Physically deletes the image
+                    }
+                }
+                
+                // Delete Game Zip/File
+                if (!empty($gameData['gameFiles'])) {
+                    $gameFilePath = $publicDir . $gameData['gameFiles'];
+                    if (file_exists($gameFilePath)) {
+                        unlink($gameFilePath); // Physically deletes the game file
+                    }
+                }
+            }
+
+            return true;
+
+        } catch (Exception $e) {
+            // If anything fails (like a database constraint), roll back the changes
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            return false;
+        }
     }
 }

@@ -938,10 +938,31 @@ function initMyGamesPage(initialGames) {
 
     deleteConfirm.addEventListener('click', function () {
         if (!pendingDeleteId) return;
-        games = games.filter(g => g.id !== pendingDeleteId);
-        saveMyGames(games);
-        closeDeleteConfirm();
-        render();
+
+        // 1. Prepare data to send to server
+        const formData = new FormData();
+        formData.append('id', pendingDeleteId);
+
+        // 2. Call the backend delete endpoint
+        fetch('?url=profile/deleteGame', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // 3. On success, remove from UI array and re-render
+                games = games.filter(g => g.id !== pendingDeleteId);
+                closeDeleteConfirm();
+                render();
+            } else {
+                alert('Delete failed: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error deleting game:', error);
+            alert('An error occurred while deleting.');
+        });
     });
 
     // ── Escape key closes whichever modal is open ──

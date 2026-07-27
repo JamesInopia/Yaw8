@@ -227,4 +227,41 @@ class ProfileController extends Controller {
         }
         exit;
     }
+
+    public function deleteGame() {
+        // Prevent accidental HTML output from breaking JSON responses
+        if (ob_get_length()) ob_clean();
+        header('Content-Type: application/json');
+
+        try {
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                echo json_encode(['success' => false, 'message' => 'Invalid request method']);
+                return;
+            }
+
+            $id = trim($_POST['id'] ?? '');
+
+            if (empty($id)) {
+                echo json_encode(['success' => false, 'message' => 'Missing game id.']);
+                return;
+            }
+
+            require_once __DIR__ . '/../models/Game.php';
+            $gameModel = new Game();
+
+            // Attempt to delete the game
+            $isDeleted = $gameModel->deleteGame($id);
+
+            if ($isDeleted) {
+                echo json_encode(['success' => true, 'message' => 'Game deleted successfully!']);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Failed to delete game from database.']);
+            }
+
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Server Error: ' . $e->getMessage()]);
+        }
+        exit;
+    }
 }
