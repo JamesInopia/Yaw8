@@ -153,14 +153,14 @@
         </div>
 
     </section>
-</main>
-<?php include __DIR__ . '/manageGame-modal.php'; ?>
-<?php include __DIR__ . '/submitDetails-modal.php'; ?>
-<?php include __DIR__ . '/editDetails-modal.php'; ?>
-<?php include __DIR__ . '/editProfile-modal.php'; ?>
-<?php include __DIR__ . '/deleteConfirmation-modal.php'; ?>
-<?php include __DIR__ . '/upload-modal.php'; ?>
 
+    <?php require __DIR__ . '/upload-modal.php'; ?>
+    <?php require __DIR__ . '/submitDetails-modal.php'; ?>
+    <?php require __DIR__ . '/editDetails-modal.php'; ?>
+    <?php require __DIR__ . '/manageGame-modal.php'; ?>
+    <?php require __DIR__ . '/deleteConfirmation-modal.php'; ?>
+    <?php require __DIR__ . '/editProfile-modal.php'; ?>
+</main>
 <script>
     // 1. Pass the database user record to JavaScript
     const dbUser = <?= json_encode($data['user'] ?? [
@@ -179,7 +179,7 @@
         name: g.title,
         description: g.description,
         controls: g.controls,
-        genre: 'Uncategorized',
+        genre: g.genre || '',
         status: g.status,
         plays: g.totalPlays,
         dateAdded: g.dateReleased,

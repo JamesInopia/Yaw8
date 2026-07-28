@@ -56,110 +56,170 @@ class Game {
     public function setStatus($status) { $this->status = $status; } 
 
     # Function that adds a game to the database
-    public function addGame($creatorUserId, $title, $description, $controls, $thumbnailPath, $gameFilePath, $status, $collaboratorUserIds = []): bool {
+    public function addGame($creatorUserId, $title, $description, $controls, $genreNames, $thumbnailPath, $gameFilePath, $status, $collaboratorUserIds = []) {
         $pdo = Database::connect();
 
         try {
             $pdo->beginTransaction();
 
-            // 1. Insert game record
+            // "genre" is not a column on game — genres are a many-to-many
+            // relationship via the game_genre junction table (see ERD).
             $stmt = $pdo->prepare('
-                INSERT INTO Game (title, description, controls, thumbnail, gameFiles, status, dateReleased, lastUpdated) 
+                INSERT INTO game (title, description, controls, thumbnail, gameFiles, status, dateReleased, lastUpdated) 
                 VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
             ');
+
             $stmt->execute([
-                trim($title), 
-                trim($description),
-                trim($controls), 
-                trim($thumbnailPath), 
-                trim($gameFilePath), 
-                trim($status)
+                $title,
+                $description,
+                $controls,
+                $thumbnailPath,
+                $gameFilePath,
+                $status
             ]);
 
+            // Get the ID of the game we just inserted
             $gameId = $pdo->lastInsertId();
 
-            // 2. Merge creator ID and collaborators, removing duplicate IDs
-            $allDevUserIds = array_unique(array_merge([$creatorUserId], $collaboratorUserIds));
-
-            // 3. Populate game_devs junction table
-            $stmtDev = $pdo->prepare('INSERT INTO game_devs (userId, gameId) VALUES (?, ?)');
+            // Associate the creator + any collaborators via game_devs
+            // (this is the same junction table getGamesByUser()/deleteGame() rely on —
+            // the old code inserted into a nonexistent "Collaborators" table and
+            // never linked the creator at all, so new games never showed up in "My Games").
+            $allDevUserIds = array_unique(array_merge([$creatorUserId], (array) $collaboratorUserIds));
+            $devStmt = $pdo->prepare('INSERT INTO game_devs (userId, gameId) VALUES (?, ?)');
             foreach ($allDevUserIds as $devUserId) {
                 if (!empty($devUserId)) {
-                    $stmtDev->execute([$devUserId, $gameId]);
+                    $devStmt->execute([$devUserId, $gameId]);
                 }
             }
 
-            $pdo->commit();
-            return true;
+            // Associate genres via game_genre (genreNames are looked up against
+            // the genres table to resolve their genreId).
+            $this->syncGameGenres($pdo, $gameId, $genreNames);
 
-        } catch (Exception $e) {
+            $pdo->commit();
+            // Return the new gameId (truthy) instead of a plain bool so the
+            // controller can immediately fetch + return the full saved row —
+            // this is what lets the frontend update without a page refresh.
+            return $gameId;
+
+        } catch (PDOException $e) {
+            // Roll back if anything fails
             if ($pdo->inTransaction()) {
                 $pdo->rollBack();
             }
-            return false;
+            error_log("Add Game Error: " . $e->getMessage());
+            // Rethrow (instead of silently returning false) so the exact SQL error
+            // surfaces in ProfileController's response instead of a generic message.
+            throw $e;
         }
     }
 
-    # Function that edits/updates an existing game in the database.
-    public function editGame($id, $title, $description, $controls, $status, $thumbnailPath = '', $gameFilePath = '', $collaboratorUserIds = []): bool {
+    // Fetches a single game (with its comma-joined genre string) by id —
+    // used after addGame()/editGame() to hand the saved row straight back
+    // to the frontend so it can update the UI without a page refresh.
+    public function getGameById($gameId) {
         $pdo = Database::connect();
 
+        $sql = 'SELECT g.*, GROUP_CONCAT(gen.name ORDER BY gen.name SEPARATOR ", ") AS genre
+                FROM game g
+                LEFT JOIN game_genre gg ON g.gameId = gg.gameId
+                LEFT JOIN genre gen ON gg.genreId = gen.genreId
+                WHERE g.gameId = ?
+                GROUP BY g.gameId';
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([$gameId]);
+
+        return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+    }
+
+    // --- 1. EDIT GAME DATABASE FUNCTION ---
+    public function editGame($gameId, $title, $description, $controls, $genreNames, $thumbnailPath, $gameFilePath, $status): bool {
+        $pdo = Database::connect();
+        
         try {
             $pdo->beginTransaction();
 
-            $columns = ['title = ?', 'description = ?', 'controls = ?', 'status = ?'];
-            $params = [trim($title), trim($description), trim($controls), trim($status)];
+            // We use COALESCE so if no new file was uploaded (null), it keeps the old database value.
+            // "genre" is not a column on game — handled via game_genre below.
+            $stmt = $pdo->prepare('
+                UPDATE game 
+                SET title = ?, 
+                    description = ?, 
+                    controls = ?, 
+                    thumbnail = COALESCE(?, thumbnail), 
+                    gameFiles = COALESCE(?, gameFiles), 
+                    status = ?, 
+                    lastUpdated = NOW() 
+                WHERE gameId = ?
+            ');
+            
+            $stmt->execute([
+                $title, 
+                $description, 
+                $controls, 
+                $thumbnailPath, 
+                $gameFilePath, 
+                $status, 
+                $gameId
+            ]);
 
-            if (!empty($thumbnailPath)) {
-                $columns[] = 'thumbnail = ?';
-                $params[] = trim($thumbnailPath);
-            }
-
-            if (!empty($gameFilePath)) {
-                $columns[] = 'gameFiles = ?';
-                $params[] = trim($gameFilePath);
-            }
-
-            $columns[] = 'lastUpdated = NOW()';
-            $params[] = $id;
-
-            $sql = 'UPDATE Game SET ' . implode(', ', $columns) . ' WHERE gameId = ?';
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute($params);
-
-            // Update collaborators if array is provided
-            if (!empty($collaboratorUserIds)) {
-                // Remove existing collaborators for this game
-                $stmtDel = $pdo->prepare('DELETE FROM game_devs WHERE gameId = ?');
-                $stmtDel->execute([$id]);
-
-                // Re-insert current list of collaborators
-                $stmtDev = $pdo->prepare('INSERT INTO game_devs (userId, gameId) VALUES (?, ?)');
-                foreach ($collaboratorUserIds as $devUserId) {
-                    if (!empty($devUserId)) {
-                        $stmtDev->execute([$devUserId, $id]);
-                    }
-                }
-            }
+            // Replace this game's genre associations with the submitted set.
+            $this->syncGameGenres($pdo, $gameId, $genreNames);
 
             $pdo->commit();
             return true;
 
-        } catch (Exception $e) {
+        } catch (PDOException $e) {
             if ($pdo->inTransaction()) {
                 $pdo->rollBack();
             }
-            return false;
+            error_log("Edit Game Error: " . $e->getMessage());
+            // Rethrow so the exact SQL error surfaces via ProfileController's catch
+            // instead of the generic "Database error while updating game."
+            throw $e;
         }
     }
+
+    // Resolves genre names to genreIds (via the genres table) and replaces
+    // this game's rows in the game_genre junction table with the new set.
+    private function syncGameGenres($pdo, $gameId, $genreNames): void {
+        $genreNames = array_filter(array_map('trim', (array) $genreNames));
+
+        // Clear existing associations first so edits fully replace the genre list.
+        $pdo->prepare('DELETE FROM game_genre WHERE gameId = ?')->execute([$gameId]);
+
+        if (empty($genreNames)) {
+            return;
+        }
+
+        $lookupStmt = $pdo->prepare('SELECT genreId FROM genre WHERE name = ? LIMIT 1');
+        $insertStmt = $pdo->prepare('INSERT INTO game_genre (gameId, genreId) VALUES (?, ?)');
+
+        foreach ($genreNames as $genreName) {
+            $lookupStmt->execute([$genreName]);
+            $genreRow = $lookupStmt->fetch(PDO::FETCH_ASSOC);
+            if ($genreRow) {
+                $insertStmt->execute([$gameId, $genreRow['genreId']]);
+            }
+        }
+    }
+    
 
     public function getGamesByUser($userId) {
         $pdo = Database::connect();
         
-        $sql = 'SELECT g.* 
-                FROM Game g
+        // LEFT JOINs so games with zero genres still come back (with genre = NULL),
+        // instead of being silently dropped by an INNER JOIN. GROUP_CONCAT collapses
+        // the (possibly multiple) genre rows per game into one comma-separated string.
+        $sql = 'SELECT g.*, GROUP_CONCAT(gen.name ORDER BY gen.name SEPARATOR ", ") AS genre
+                FROM game g
                 INNER JOIN game_devs gd ON g.gameId = gd.gameId
+                LEFT JOIN game_genre gg ON g.gameId = gg.gameId
+                LEFT JOIN genre gen ON gg.genreId = gen.genreId
                 WHERE gd.userId = ?
+                GROUP BY g.gameId
                 ORDER BY g.dateReleased DESC';
 
         $stmt = $pdo->prepare($sql);
@@ -221,4 +281,13 @@ class Game {
             return false;
         }
     }
+
+    public function getAllGenres() {
+    $pdo = Database::connect();
+    
+    $sql = 'SELECT * FROM genre ORDER BY genreId ASC'; 
+    $stmt = $pdo->query($sql);
+    
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
 }

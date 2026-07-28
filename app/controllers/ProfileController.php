@@ -16,6 +16,7 @@ class ProfileController extends Controller {
         // Grab whichever session key stores the user ID
         $userId = $_SESSION['user_id'] ?? $_SESSION['userId'] ?? $_SESSION['id'] ?? 0; 
         
+        
         // 1. Fetch user directly from DB by ID (or username fallback)
         $userData = null;
         if ($userId) {
@@ -26,11 +27,13 @@ class ProfileController extends Controller {
         
         // 2. Fetch user's games
         $myGames = $gameModel->getGamesByUser($userId);
-        
+        $availableGenres = $gameModel->getAllGenres();
+
         // 3. Pass user and games to the view
         $this->view('profile/index', [
             'user' => $userData,
-            'myGames' => $myGames
+            'myGames' => $myGames,
+            'availableGenres' => $availableGenres
         ]);
     }
 
@@ -91,117 +94,55 @@ class ProfileController extends Controller {
     }
 
     public function addGame() {
-        // Prevent accidental HTML output from breaking JSON responses
+        // Prevent accidental HTML/warning output from breaking JSON responses
         if (ob_get_length()) ob_clean();
         header('Content-Type: application/json');
 
         try {
-            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-                echo json_encode(['success' => false, 'message' => 'Invalid request method']);
-                return;
+            // index.php already starts the session — starting it again here
+            // triggers a PHP warning ("session_start(): Ignoring session_start()...")
+            // which gets printed BEFORE this JSON, causing "Unexpected token '<'" on the client.
+            $creatorUserId = $_SESSION['user_id'] ?? null;
+
+            $title = $_POST['title'] ?? '';
+            $description = $_POST['description'] ?? '';
+            $controls = $_POST['controls'] ?? '';
+            $genresRaw = $_POST['genres'] ?? $_POST['genre'] ?? '[]';
+            $genreNames = is_string($genresRaw) ? (json_decode($genresRaw, true) ?: []) : (array) $genresRaw;
+            $status = $_POST['status'] ?? 'Draft';
+            $collaborators = isset($_POST['collaborators']) ? json_decode($_POST['collaborators'], true) : [];
+
+            // Genre is optional, only checking for user ID and Title
+            if (!$creatorUserId || empty($title)) {
+                echo json_encode(['success' => false, 'message' => 'Missing required fields (Title). User must be logged in.']);
+                exit;
             }
 
-            // 1. Gather Text Data
-            $title = trim($_POST['title'] ?? '');
-            $description = trim($_POST['description'] ?? '');
-            $controls = trim($_POST['controls'] ?? '');
-            $status = 'review';
-
-            if (empty($title) || empty($description) || empty($controls)) {
-                echo json_encode(['success' => false, 'message' => 'Title, description, and controls are required.']);
-                return;
-            }
-
-            // 2. Define Upload Directories (Relative to app root)
-            $publicDir = dirname(__DIR__, 2) . '/public';
-            $gameDir = $publicDir . '/uploads/games/';
-            $thumbDir = $publicDir . '/uploads/thumbnails/';
-            
-            if (!is_dir($gameDir)) mkdir($gameDir, 0777, true);
-            if (!is_dir($thumbDir)) mkdir($thumbDir, 0777, true);
-
-            $gameFilePath = '';
-            $thumbnailPath = '';
-
-            // 3. Process Game .zip File
-            if (isset($_FILES['game_file']) && $_FILES['game_file']['error'] === UPLOAD_ERR_OK) {
-                $gameFileName = time() . '_' . preg_replace('/[^a-zA-Z0-9_.-]/', '_', basename($_FILES['game_file']['name']));
-                $targetGamePath = $gameDir . $gameFileName;
-                
-                if (move_uploaded_file($_FILES['game_file']['tmp_name'], $targetGamePath)) {
-                    $gameFilePath = '/uploads/games/' . $gameFileName; 
-                }
-            }
-
-            // 4. Process Thumbnail
+            // Handle Thumbnail Upload
+            $thumbnailPath = null;
             if (isset($_FILES['thumbnail']) && $_FILES['thumbnail']['error'] === UPLOAD_ERR_OK) {
-                $thumbFileName = time() . '_' . preg_replace('/[^a-zA-Z0-9_.-]/', '_', basename($_FILES['thumbnail']['name']));
-                $targetThumbPath = $thumbDir . $thumbFileName;
-                
-                if (move_uploaded_file($_FILES['thumbnail']['tmp_name'], $targetThumbPath)) {
-                    $thumbnailPath = '/uploads/thumbnails/' . $thumbFileName;
-                }
+                $thumbnailPath = 'uploads/thumbnails/' . basename($_FILES['thumbnail']['name']);
+                move_uploaded_file($_FILES['thumbnail']['tmp_name'], $thumbnailPath);
             }
 
-            // 5. Database Insertion
-            require_once __DIR__ . '/../models/Game.php';
+            // Handle Game File Upload (Note: checking 'game_file' to match JS)
+            $gameFilePath = null;
+            if (isset($_FILES['game_file']) && $_FILES['game_file']['error'] === UPLOAD_ERR_OK) {
+                $gameFilePath = 'uploads/games/' . basename($_FILES['game_file']['name']);
+                move_uploaded_file($_FILES['game_file']['tmp_name'], $gameFilePath);
+            }
+
             $gameModel = new Game();
+            $newGameId = $gameModel->addGame($creatorUserId, $title, $description, $controls, $genreNames, $thumbnailPath, $gameFilePath, $status, $collaborators);
 
-            // Retrieve creator ID from session
-            $userId = $_SESSION['user_id'] ?? $_SESSION['userId'] ?? 0;
-            if (!$userId) {
-                echo json_encode(['success' => false, 'message' => 'User not authenticated. Please log in.']);
-                return;
-            }
-
-            // Decode the JSON array of collaborators sent by JavaScript
-            $collaboratorsRaw = $_POST['collaborators'] ?? '[]';
-            $collaboratorUserIds = [];
-
-            if (is_string($collaboratorsRaw)) {
-                $decoded = json_decode($collaboratorsRaw, true);
-                
-                if (is_array($decoded) && !empty($decoded)) {
-                    // Connect to DB to look up user IDs based on username or email
-                    $pdo = Database::connect();
-                    
-                    // Prepare the statement checking both columns
-                    $stmt = $pdo->prepare('SELECT userId FROM user_account WHERE username = ? OR email = ? LIMIT 1');
-                    
-                    foreach ($decoded as $collabInput) {
-                        $identifier = trim($collabInput);
-                        if (!empty($identifier)) {
-                            // Pass the identifier twice: once for username, once for email
-                            $stmt->execute([$identifier, $identifier]);
-                            $foundUser = $stmt->fetch(PDO::FETCH_ASSOC);
-                            
-                            // If a matching user is found, store their integer ID
-                            if ($foundUser && isset($foundUser['userId'])) {
-                                $collaboratorUserIds[] = (int) $foundUser['userId'];
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Pass $userId and the validated integer $collaboratorUserIds into addGame
-            $isInserted = $gameModel->addGame(
-                $userId,
-                $title, 
-                $description,
-                $controls,
-                $thumbnailPath, 
-                $gameFilePath, 
-                $status,
-                $collaboratorUserIds
-            );
-
-            if ($isInserted) {
-                echo json_encode(['success' => true, 'message' => 'Game uploaded successfully!']);
+            if ($newGameId) {
+                // Hand back the full saved row so the frontend can add it to
+                // the "My Games" grid immediately, without a page refresh.
+                $savedGame = $gameModel->getGameById($newGameId);
+                echo json_encode(['success' => true, 'message' => 'Game submitted successfully.', 'game' => $savedGame]);
             } else {
-                echo json_encode(['success' => false, 'message' => 'Database insertion failed. Check table constraints.']);
+                echo json_encode(['success' => false, 'message' => 'Database error while submitting game.']);
             }
-
         } catch (Throwable $e) {
             http_response_code(500);
             echo json_encode(['success' => false, 'message' => 'Server Error: ' . $e->getMessage()]);
@@ -210,84 +151,52 @@ class ProfileController extends Controller {
     }
 
     public function editGame() {
-        // Prevent accidental HTML output from breaking JSON responses
+        // Prevent accidental HTML/warning output from breaking JSON responses
         if (ob_get_length()) ob_clean();
         header('Content-Type: application/json');
 
         try {
-            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-                echo json_encode(['success' => false, 'message' => 'Invalid request method']);
-                return;
+            // JS sends the game id as 'id', not 'game_id' — this was the mismatch
+            // that made every edit fail with "Missing required fields (ID or Title)".
+            $game_id = $_POST['id'] ?? $_POST['game_id'] ?? null;
+            $title = $_POST['title'] ?? '';
+            $description = $_POST['description'] ?? '';
+            $controls = $_POST['controls'] ?? '';
+            $genresRaw = $_POST['genres'] ?? $_POST['genre'] ?? '[]';
+            $genreNames = is_string($genresRaw) ? (json_decode($genresRaw, true) ?: []) : (array) $genresRaw;
+            $status = $_POST['status'] ?? 'Draft';
+
+            // Genre is no longer required in this check
+            if (!$game_id || empty($title)) {
+                echo json_encode(['success' => false, 'message' => 'Missing required fields (ID or Title).']);
+                exit;
             }
 
-            // 1. Gather Text Data
-            $id = trim($_POST['id'] ?? '');
-            $title = trim($_POST['title'] ?? '');
-            $description = trim($_POST['description'] ?? '');
-            $controls = trim($_POST['controls'] ?? '');
-            $status = trim($_POST['status'] ?? '') ?: 'review';
-
-            if (empty($id)) {
-                echo json_encode(['success' => false, 'message' => 'Missing game id.']);
-                return;
-            }
-
-            if (empty($title) || empty($description) || empty($controls)) {
-                echo json_encode(['success' => false, 'message' => 'Title, description, and controls are required.']);
-                return;
-            }
-
-            // 2. Define Upload Directories (Relative to app root)
-            $publicDir = dirname(__DIR__, 2) . '/public';
-            $gameDir = $publicDir . '/uploads/games/';
-            $thumbDir = $publicDir . '/uploads/thumbnails/';
-
-            if (!is_dir($gameDir)) mkdir($gameDir, 0777, true);
-            if (!is_dir($thumbDir)) mkdir($thumbDir, 0777, true);
-
-            $gameFilePath = '';
-            $thumbnailPath = '';
-
-            // 3. Process Replacement Game .zip File (optional)
-            if (isset($_FILES['game_file']) && $_FILES['game_file']['error'] === UPLOAD_ERR_OK) {
-                $gameFileName = time() . '_' . preg_replace('/[^a-zA-Z0-9_.-]/', '_', basename($_FILES['game_file']['name']));
-                $targetGamePath = $gameDir . $gameFileName;
-
-                if (move_uploaded_file($_FILES['game_file']['tmp_name'], $targetGamePath)) {
-                    $gameFilePath = '/uploads/games/' . $gameFileName;
-                }
-            }
-
-            // 4. Process Replacement Thumbnail (optional)
+            // Handle Thumbnail Upload (if a new one is provided)
+            $thumbnailPath = null;
             if (isset($_FILES['thumbnail']) && $_FILES['thumbnail']['error'] === UPLOAD_ERR_OK) {
-                $thumbFileName = time() . '_' . preg_replace('/[^a-zA-Z0-9_.-]/', '_', basename($_FILES['thumbnail']['name']));
-                $targetThumbPath = $thumbDir . $thumbFileName;
-
-                if (move_uploaded_file($_FILES['thumbnail']['tmp_name'], $targetThumbPath)) {
-                    $thumbnailPath = '/uploads/thumbnails/' . $thumbFileName;
-                }
+                $thumbnailPath = 'uploads/thumbnails/' . basename($_FILES['thumbnail']['name']);
+                move_uploaded_file($_FILES['thumbnail']['tmp_name'], $thumbnailPath);
             }
 
-            // 5. Database Update
-            require_once __DIR__ . '/../models/Game.php';
+            // Handle Game File Upload (if a new one is provided)
+            $gameFilePath = null;
+            if (isset($_FILES['game_file']) && $_FILES['game_file']['error'] === UPLOAD_ERR_OK) {
+                $gameFilePath = 'uploads/games/' . basename($_FILES['game_file']['name']);
+                move_uploaded_file($_FILES['game_file']['tmp_name'], $gameFilePath);
+            }
+
             $gameModel = new Game();
+            $success = $gameModel->editGame($game_id, $title, $description, $controls, $genreNames, $thumbnailPath, $gameFilePath, $status);
 
-            $isUpdated = $gameModel->editGame(
-                $id,
-                $title,
-                $description,
-                $controls,
-                $status,
-                $thumbnailPath,
-                $gameFilePath
-            );
-
-            if ($isUpdated) {
-                echo json_encode(['success' => true, 'message' => 'Game updated successfully!']);
+            if ($success) {
+                // Hand back the full updated row so the frontend can patch the
+                // existing card in place, without a page refresh.
+                $savedGame = $gameModel->getGameById($game_id);
+                echo json_encode(['success' => true, 'message' => 'Game updated successfully.', 'game' => $savedGame]);
             } else {
-                echo json_encode(['success' => false, 'message' => 'Database update failed. Check table constraints.']);
+                echo json_encode(['success' => false, 'message' => 'Database error while updating game.']);
             }
-
         } catch (Throwable $e) {
             http_response_code(500);
             echo json_encode(['success' => false, 'message' => 'Server Error: ' . $e->getMessage()]);

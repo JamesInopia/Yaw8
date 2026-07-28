@@ -86,8 +86,14 @@ document.addEventListener('DOMContentLoaded', () => {
 // ── Render (display-only, safe to call repeatedly) ──
 function renderProfile(user, myGames) {
     const meta = getProfileMeta();
+    updateProfileDisplay(user);
+    updateProfileStats(myGames, meta);
+}
 
-    // ── Hero: avatar, name, username, bio ──
+// Hero + account-details fields only — split out of renderProfile so the
+// edit-profile handler can refresh these after a save without needing to
+// also pass in the games list.
+function updateProfileDisplay(user) {
     document.getElementById('profileAvatar').textContent = getInitials(user.name);
     document.getElementById('profileName').textContent = user.name;
     document.getElementById('profileUsername').textContent = '@' + user.username;
@@ -96,9 +102,6 @@ function renderProfile(user, myGames) {
     document.getElementById('infoName').textContent = user.name;
     document.getElementById('infoUsername').textContent = '@' + user.username;
     document.getElementById('infoEmail').textContent = user.email;
-
-    // ── Stats ──
-    updateProfileStats(myGames, meta);
 }
 
 function updateProfileStats(myGames, meta) {
@@ -125,12 +128,11 @@ function wireEditModal() {
     const editForm = document.getElementById('editProfileForm');
 
     function openEditModal() {
-        // 1. Pre-fill the form using the activeUser data
-        document.getElementById('editName').value = activeUser.fullname || activeUser.name || '';
+        // Populate profile fields with the active user's current data
+        document.getElementById('editName').value = activeUser.name || '';
         document.getElementById('editUsername').value = activeUser.username || '';
         document.getElementById('editBio').value = activeUser.bio || '';
         
-        // 2. Open the modal
         editModal.classList.add('active');
         document.body.style.overflow = 'hidden';
     }
@@ -170,16 +172,24 @@ function wireEditModal() {
             formData.append('username', newUsername);
             formData.append('bio', newBio);
 
-            // Updated fetch path targeting index.php directly
-            fetch('/Yaw8/public/index.php?url=profile/editProfile', {
+            // Relative path (matches addGame/editGame/deleteGame) — the
+            // hardcoded absolute '/Yaw8/public/...' version breaks if the
+            // app isn't deployed at exactly that path.
+            fetch('?url=profile/editProfile', {
                 method: 'POST',
                 body: formData
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Reload the page so PHP fetches the updated info from the database
-                    window.location.reload(); 
+                    // Update the in-memory user and refresh the hero/account
+                    // fields directly — no page refresh needed.
+                    activeUser.name = newName;
+                    activeUser.fullname = newName;
+                    activeUser.username = newUsername;
+                    activeUser.bio = newBio;
+                    updateProfileDisplay(activeUser);
+                    closeEditModal();
                 } else {
                     alert('Update failed: ' + data.message);
                 }
@@ -195,6 +205,24 @@ function wireEditModal() {
 // ═══════════════════════════════════════════
 // MY GAMES — grid, add/edit, manage, delete
 // ═══════════════════════════════════════════
+// Maps a raw DB game row (as returned by the addGame/editGame endpoints)
+// into the same shape profile/index.php uses for myRealGames — keeps the
+// local `games` array consistent whether it was seeded from PHP on load
+// or patched in after an AJAX save.
+function mapDbGame(g) {
+    return {
+        id: g.gameId,
+        name: g.title,
+        description: g.description,
+        controls: g.controls,
+        genre: g.genre || '',
+        status: g.status,
+        plays: g.totalPlays,
+        dateAdded: g.dateReleased,
+        thumbnail: g.thumbnail
+    };
+}
+
 function initMyGamesPage(initialGames) {
     let games = initialGames;
     let sortMode = 'newest';
@@ -274,7 +302,7 @@ function initMyGamesPage(initialGames) {
             const ratingDisplay = game.rating ? `★ ${parseFloat(game.rating).toFixed(1)}` : 'New';
             
             const safeName = String(game.name || '').replace(/"/g, '&quot;');
-            const safeGenre = String(game.genre || 'Uncategorized').replace(/"/g, '&quot;');
+            const safeGenre = String(game.genre || '').trim().replace(/"/g, '&quot;');
 
             let thumbHTML = '';
             if (game.thumbnail && game.thumbnail.includes('.')) {
@@ -302,7 +330,7 @@ function initMyGamesPage(initialGames) {
                     <div class="game-meta">
                         <span class="game-name">${safeName}</span>
                     </div>
-                    <div class="game-genre">${safeGenre} · ${game.plays || 0} plays</div>
+                    <div class="game-genre">${safeGenre ? safeGenre + ' · ' : ''}${game.plays || 0} plays</div>
                     <div class="game-footer">
                         <span class="stars">${ratingDisplay}</span>
                         <button class="btn-manage" type="button" onclick="window.openManageModal(${game.id})">Manage</button>
@@ -378,7 +406,7 @@ function initMyGamesPage(initialGames) {
     render();
 
     // ═══════════════════════════════════════════
-    // UPLOAD GAME MODAL → SUBMIT GAME MODAL
+    // UPLOAD GAME MODAL
     // ═══════════════════════════════════════════
     const uploadGameModal = document.getElementById('uploadGameModal');
     const uploadGameClose = document.getElementById('uploadGameClose');
@@ -400,8 +428,6 @@ function initMyGamesPage(initialGames) {
     uploadGameClose.addEventListener('click', closeUploadModal);
     uploadGameOverlay.addEventListener('click', closeUploadModal);
 
-    // For now, "Select files" just routes straight to the Submit Your Game modal
-    // (no real upload/processing yet — routing only, per current scope).
     uploadSelectFilesBtn.addEventListener('click', function () {
         uploadFileInput.click();
     });
@@ -479,12 +505,7 @@ function initMyGamesPage(initialGames) {
     }
 
     genreAddBtn.addEventListener('click', addGenre);
-    genreInput.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            addGenre();
-        }
-    });
+    genreInput.addEventListener('change', addGenre);
 
     genreChipList.addEventListener('click', function (e) {
         const btn = e.target.closest('button[data-idx]');
@@ -583,9 +604,6 @@ function initMyGamesPage(initialGames) {
     }
 
     // ── Main Open / Close Modal Logic ──
-    // This modal (submitDetails-modal.php / #submit-game-modal) is ADD-ONLY.
-    // Editing an existing game is handled entirely by the dedicated
-    // Edit Game Details modal further below (openEditGameModal / #edit-details-modal).
     function openSubmitModal() {
         submitGameForm.reset();
         resetGenreChips();
@@ -607,11 +625,14 @@ function initMyGamesPage(initialGames) {
         document.body.style.overflow = 'auto';
     }
 
-    document.getElementById('addGameBtn').addEventListener('click', () => openUploadModal());
-    document.getElementById('emptyAddGameBtn').addEventListener('click', () => openUploadModal());
-    submitModalClose.addEventListener('click', closeSubmitModal);
-    submitCancelBtn.addEventListener('click', closeSubmitModal);
-    submitGameModal.querySelector('.modal-overlay').addEventListener('click', closeSubmitModal);
+    document.getElementById('addGameBtn')?.addEventListener('click', () => openUploadModal());
+    document.getElementById('emptyAddGameBtn')?.addEventListener('click', () => openUploadModal());
+
+    if (submitModalClose) submitModalClose.addEventListener('click', closeSubmitModal);
+    if (submitCancelBtn) submitCancelBtn.addEventListener('click', closeSubmitModal);
+    
+    const submitOverlayEl = submitGameModal ? submitGameModal.querySelector('.modal-overlay') : null;
+    if (submitOverlayEl) submitOverlayEl.addEventListener('click', closeSubmitModal);
 
     submitGameForm.addEventListener('submit', function (e) {
         e.preventDefault();
@@ -654,12 +675,16 @@ function initMyGamesPage(initialGames) {
         .then(data => {
             if (data.success) {
                 console.log("Game submitted successfully:", data);
-                
+
+                // Add the newly saved game straight into the local array and
+                // re-render — no page refresh needed to see it in the grid.
+                if (data.game) {
+                    games.push(mapDbGame(data.game));
+                    render();
+                }
+
                 // Close modal and reset form
                 closeSubmitModal();
-                
-                // TODO: You may want to fetch the updated games list from the server here 
-                // instead of relying on the local 'games' array.
             } else {
                 alert('Submission failed: ' + data.message);
             }
@@ -671,7 +696,7 @@ function initMyGamesPage(initialGames) {
     });
 
     // ═══════════════════════════════════════════
-    // EDIT GAME DETAILS MODAL (editDetails-modal.php / #edit-details-modal)
+    // EDIT GAME DETAILS MODAL
     // ═══════════════════════════════════════════
     const editGameModal = document.getElementById('edit-details-modal');
     const editModalClose = document.getElementById('editModalClose');
@@ -711,12 +736,7 @@ function initMyGamesPage(initialGames) {
     }
 
     editGenreAddBtn.addEventListener('click', addEditGenre);
-    editGenreInput.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            addEditGenre();
-        }
-    });
+    editGenreInput.addEventListener('change', addEditGenre);
 
     editGenreChipList.addEventListener('click', function (e) {
         const btn = e.target.closest('button[data-idx]');
@@ -849,9 +869,11 @@ function initMyGamesPage(initialGames) {
         document.body.style.overflow = 'auto';
     }
 
-    editModalClose.addEventListener('click', closeEditGameModal);
-    editCancelBtn.addEventListener('click', closeEditGameModal);
-    editGameModal.querySelector('.modal-overlay').addEventListener('click', closeEditGameModal);
+    if (editModalClose) editModalClose.addEventListener('click', closeEditGameModal);
+    if (editCancelBtn) editCancelBtn.addEventListener('click', closeEditGameModal);
+    
+    const editOverlayEl = editGameModal ? editGameModal.querySelector('.modal-overlay') : null;
+    if (editOverlayEl) editOverlayEl.addEventListener('click', closeEditGameModal);
 
     editGameForm.addEventListener('submit', function (e) {
         e.preventDefault();
@@ -902,10 +924,20 @@ function initMyGamesPage(initialGames) {
             if (data.success) {
                 console.log("Game updated successfully:", data);
 
-                closeEditGameModal();
+                // Patch the matching card in the local array and re-render —
+                // no page refresh needed to see the changes reflected.
+                if (data.game) {
+                    const updated = mapDbGame(data.game);
+                    const idx = games.findIndex(g => String(g.id) === String(updated.id));
+                    if (idx !== -1) {
+                        games[idx] = updated;
+                    } else {
+                        games.push(updated);
+                    }
+                    render();
+                }
 
-                // TODO: You may want to fetch the updated games list from the server here 
-                // instead of relying on the local 'games' array.
+                closeEditGameModal();
             } else {
                 alert('Update failed: ' + data.message);
             }
@@ -935,7 +967,7 @@ function initMyGamesPage(initialGames) {
             <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom: 22px;">
                 <div>
                     <h1 style="font-size: 24px; font-weight: 800; color: #F5F7FA; margin-bottom: 6px;">${game.name}</h1>
-                    <p style="font-size: 13px; color: #8892a4;">${game.genre} · ${statusLabel}</p>
+                    <p style="font-size: 13px; color: #8892a4;">${game.genre ? game.genre + ' · ' : ''}${statusLabel}</p>
                 </div>
             </div>
 

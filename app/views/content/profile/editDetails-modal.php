@@ -93,7 +93,14 @@
                         <div class="genre-box">
                             <h4 style="color: #F5F7FA; font-size: 14px; margin-bottom: 12px;">Genres</h4>
                             <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-                                <input type="text" class="form-input" id="editGenreInput" placeholder="e.g. Action, Puzzle" />
+                                <!-- Changed from <input type="text"> to <select> -->
+                                <select class="form-input form-select" id="editGenreInput">
+                                    <option value="" disabled selected>Select a genre...</option>
+                                    <!-- Example PHP loop to populate from DB -->
+                                    <?php foreach ($availableGenres as $dbGenre): ?>
+                                        <option value="<?= htmlspecialchars($dbGenre['name']) ?>"><?= htmlspecialchars($dbGenre['name']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
                                 <button type="button" class="genre-add-btn" id="editGenreAddBtn" style="padding: 0 16px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; cursor: pointer; color: white;">
                                     <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: currentColor;"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
                                 </button>
