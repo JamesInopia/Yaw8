@@ -6,14 +6,28 @@
 
             <div class="profile-id">
                 <div class="profile-name-row">
-                    <h1 id="profileName">Student</h1>
+                    <!-- Echo the actual user's name, fallback to 'Student' if missing -->
+                    <h1 id="profileName"><?= htmlspecialchars($data['user']['fullname'] ?? $_SESSION['fullname'] ?? 'Student') ?></h1>
                     <span class="profile-badge" id="profileBadge">
                         <svg viewBox="0 0 24 24" style="width:11px;height:11px;fill:currentColor;"><path d="M12 2 1 7l11 5 9-4.09V17h2V7L12 2zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/></svg>
                         Student Developer
                     </span>
                 </div>
-                <p class="profile-username" id="profileUsername">@student</p>
-                <p class="profile-bio" id="profileBio">Loading your profile…</p>
+                
+                <!-- Echo the actual username -->
+                <p class="profile-username" id="profileUsername">@<?= htmlspecialchars($data['user']['username'] ?? $_SESSION['username'] ?? 'student') ?></p>
+                
+                <!-- Dynamic Bio with Empty State -->
+                <p class="profile-bio" id="profileBio">
+                    <?php 
+                        $bio = $data['user']['bio'] ?? $_SESSION['bio'] ?? '';
+                        if (!empty(trim($bio))) {
+                            echo htmlspecialchars($bio);
+                        } else {
+                            echo '<i>User\'s Bio is currently under construction.. Please try again later!</i>';
+                        }
+                    ?>
+                </p>
             </div>
 
             <div class="profile-actions">
@@ -147,7 +161,15 @@
 <?php include __DIR__ . '/upload-modal.php'; ?>
 
 <script>
-    // Pass the PHP array to JavaScript safely
+    // 1. Pass the database user record to JavaScript
+    const dbUser = <?= json_encode($data['user'] ?? [
+        'fullname' => $_SESSION['fullname'] ?? 'Student',
+        'username' => $_SESSION['username'] ?? 'student',
+        'email' => $_SESSION['email'] ?? '',
+        'bio' => $_SESSION['bio'] ?? ''
+    ]) ?>;
+
+    // 2. Pass the PHP array to JavaScript safely
     const dbGames = <?= json_encode($data['myGames'] ?? []) ?>;
 
     // Map database keys to match what your JS modals expect
@@ -156,7 +178,7 @@
         name: g.title,
         description: g.description,
         controls: g.controls,
-        genre: 'Uncategorized', // Update if you add genres to DB later
+        genre: 'Uncategorized',
         status: g.status,
         plays: g.totalPlays,
         dateAdded: g.dateReleased,

@@ -65,7 +65,13 @@ let activeUser = currentUser;
 
 // Wait for the HTML to load, then use the PHP data
 document.addEventListener('DOMContentLoaded', () => {
-    // Check if PHP successfully passed the database games to the window
+    // 1. Assign activeUser to dbUser if available
+    if (typeof dbUser !== 'undefined' && dbUser) {
+        activeUser = dbUser;
+        // Ensure name/fullname property compatibility
+        activeUser.name = dbUser.fullname || dbUser.name || 'Guest';
+    }
+
     const gamesToLoad = typeof myRealGames !== 'undefined' ? myRealGames : [];
     
     renderProfile(activeUser, gamesToLoad);
@@ -85,8 +91,7 @@ function renderProfile(user, myGames) {
     document.getElementById('profileAvatar').textContent = getInitials(user.name);
     document.getElementById('profileName').textContent = user.name;
     document.getElementById('profileUsername').textContent = '@' + user.username;
-    document.getElementById('profileBio').textContent = meta.bio;
-
+    document.getElementById('profileBio').innerHTML = user.bio && user.bio.trim() !== "" ? user.bio : "<i>User's Bio is currently under construction.. Please try again later!</i>";
     // ── Account details panel ──
     document.getElementById('infoName').textContent = user.name;
     document.getElementById('infoUsername').textContent = '@' + user.username;
@@ -120,10 +125,12 @@ function wireEditModal() {
     const editForm = document.getElementById('editProfileForm');
 
     function openEditModal() {
-        const meta = getProfileMeta();
-        document.getElementById('editName').value = activeUser.name;
-        document.getElementById('editUsername').value = activeUser.username;
-        document.getElementById('editBio').value = meta.bio;
+        // 1. Pre-fill the form using the activeUser data
+        document.getElementById('editName').value = activeUser.fullname || activeUser.name || '';
+        document.getElementById('editUsername').value = activeUser.username || '';
+        document.getElementById('editBio').value = activeUser.bio || '';
+        
+        // 2. Open the modal
         editModal.classList.add('active');
         document.body.style.overflow = 'hidden';
     }
@@ -133,41 +140,56 @@ function wireEditModal() {
         document.body.style.overflow = 'auto';
     }
 
-    editBtn.addEventListener('click', openEditModal);
-    editClose.addEventListener('click', closeEditModal);
-    editCancel.addEventListener('click', closeEditModal);
-    editOverlay.addEventListener('click', closeEditModal);
+    // Attach click listeners to open/close
+    if (editBtn) editBtn.addEventListener('click', openEditModal);
+    if (editClose) editClose.addEventListener('click', closeEditModal);
+    if (editCancel) editCancel.addEventListener('click', closeEditModal);
+    if (editOverlay) editOverlay.addEventListener('click', closeEditModal);
 
     document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape' && editModal.classList.contains('active')) closeEditModal();
     });
 
-    editForm.addEventListener('submit', function (e) {
-        e.preventDefault();
+    // Handle Form Submit
+    if (editForm) {
+        editForm.addEventListener('submit', function (e) {
+            e.preventDefault();
 
-        const newName = document.getElementById('editName').value.trim();
-        const newUsername = document.getElementById('editUsername').value.trim();
-        const newBio = document.getElementById('editBio').value.trim();
+            const newName = document.getElementById('editName').value.trim();
+            const newUsername = document.getElementById('editUsername').value.trim();
+            const newBio = document.getElementById('editBio').value.trim();
 
-        if (!newName || !newUsername) return;
+            if (!newName || !newUsername) {
+                alert("Name and username are required.");
+                return;
+            }
 
-        const updatedUser = {
-            name: newName,
-            username: newUsername,
-            email: activeUser.email,
-            isGuest: false
-        };
+            // Prepare data to send to the PHP backend
+            const formData = new FormData();
+            formData.append('fullname', newName);
+            formData.append('username', newUsername);
+            formData.append('bio', newBio);
 
-        try { localStorage.setItem('yaw8_user', JSON.stringify(updatedUser)); } catch (err) {}
-
-        const meta = getProfileMeta();
-        meta.bio = newBio || meta.bio;
-        saveProfileMeta(meta);
-
-        activeUser = updatedUser;
-        closeEditModal();
-        renderProfile(activeUser, loadMyGames() || []);
-    });
+            // Updated fetch path targeting index.php directly
+            fetch('/Yaw8/public/index.php?url=profile/editProfile', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Reload the page so PHP fetches the updated info from the database
+                    window.location.reload(); 
+                } else {
+                    alert('Update failed: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error updating profile:', error);
+                alert('An error occurred while saving your profile.');
+            });
+        });
+    }
 }
 
 // ═══════════════════════════════════════════

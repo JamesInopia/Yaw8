@@ -26,6 +26,7 @@ return [
         'profile/addGame' => [ProfileController::class, 'addGame'],
         'profile/editGame' => [ProfileController::class, 'editGame'],
         'profile/deleteGame' => [ProfileController::class, 'deleteGame'],
+        'profile/editProfile' => [ProfileController::class, 'editProfile'],
         
         #settings
         'settings'   => [SettingsController::class, 'index'],

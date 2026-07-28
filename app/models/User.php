@@ -6,14 +6,16 @@ class User {
     private $email;
     private $password;
     private $role;
+    private $bio;
 
-    public function __construct($userId = '', $fullname = '', $username = '', $email = '', $password = '', $role = ''){
+    public function __construct($userId = '', $fullname = '', $username = '', $email = '', $password = '', $role = '', $bio = ''){
         $this->userId = $userId;
         $this->fullname = $fullname;
         $this->username = $username;
         $this->email = $email;
         $this->password = $password;
         $this->role = $role;
+        $this->bio = $bio;
     }
 
     # Getters and Setters for user ID, Username, and Password
@@ -33,7 +35,10 @@ class User {
     public function setPassword($password) { $this->password = $password; }
 
     public function getRole() {return $this->role; }
-    public function setRole($role) { $this->role = $role; } 
+    public function setRole($role) { $this->role = $role; }
+    
+    public function getBio() {return $this->bio; }
+    public function setBio($bio) { $this->bio = $bio;}
 
     # Function that adds a user to the database
     public function addUser($fullname, $username, $email, $password, $role): bool {
@@ -64,6 +69,30 @@ class User {
         $pdo = Database::connect();
         $stmt = $pdo->prepare('SELECT * FROM user WHERE email = ? LIMIT 1');
         $stmt->execute([$email]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $user ?: null;
+    }
+
+    # Function that edits/updates an existing user's profile
+    public function editUser($id, $fullname, $username, $bio): bool {
+        $pdo = Database::connect();
+        
+        $sql = 'UPDATE user SET fullname = ?, username = ?, bio = ? WHERE userId = ?';
+        $stmt = $pdo->prepare($sql);
+        
+        return $stmt->execute([
+            trim($fullname), 
+            trim($username), 
+            trim($bio), 
+            $id
+        ]);
+    }
+
+    public function getUserById($userId) : ?array {
+        $pdo = Database::connect();
+        $stmt = $pdo->prepare('SELECT * FROM user WHERE userId = ? LIMIT 1');
+        $stmt->execute([$userId]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
         return $user ?: null;

@@ -7,20 +7,87 @@ class ProfileController extends Controller {
     public function index() {
         $this->requireAuth();
         
-        // 1. Require the model
         require_once __DIR__ . '/../models/Game.php';
+        require_once __DIR__ . '/../models/User.php';
+        
         $gameModel = new Game();
+        $userModel = new User();
         
-        // 2. Get the logged-in user's ID (adjust this to match your session variable)
-        $userId = $_SESSION['user_id'] ?? 0; 
+        // Grab whichever session key stores the user ID
+        $userId = $_SESSION['user_id'] ?? $_SESSION['userId'] ?? $_SESSION['id'] ?? 0; 
         
-        // 3. Fetch the games
+        // 1. Fetch user directly from DB by ID (or username fallback)
+        $userData = null;
+        if ($userId) {
+            $userData = $userModel->getUserById($userId);
+        } elseif (!empty($_SESSION['username'])) {
+            $userData = $userModel->verifyUsername($_SESSION['username']);
+        }
+        
+        // 2. Fetch user's games
         $myGames = $gameModel->getGamesByUser($userId);
         
-        // 4. Pass the games array into the view
+        // 3. Pass user and games to the view
         $this->view('profile/index', [
+            'user' => $userData,
             'myGames' => $myGames
         ]);
+    }
+
+    public function editProfile() {
+        // Prevent accidental HTML output from breaking JSON responses
+        if (ob_get_length()) ob_clean();
+        header('Content-Type: application/json');
+
+        try {
+            // 1. Gather Text Data (using $_POST directly)
+            $fullname = trim($_POST['fullname'] ?? '');
+            $username = trim($_POST['username'] ?? '');
+            $bio = trim($_POST['bio'] ?? '');
+
+            // If these are empty, the POST data got lost (likely a redirect issue)
+            if (empty($fullname) || empty($username)) {
+                echo json_encode([
+                    'success' => false, 
+                    'message' => 'Data missing from POST!',
+                    'request_method' => $_SERVER['REQUEST_METHOD'],
+                    'received_post_data' => $_POST
+                ]);
+                exit; 
+            }
+
+            // 2. Get the logged-in user's ID
+            // Make sure these match exactly how you store user IDs in $_SESSION
+            $userId = $_SESSION['user_id'] ?? $_SESSION['userId'] ?? 0;
+            
+            if (!$userId) {
+                echo json_encode(['success' => false, 'message' => 'User not authenticated. Please log in.']);
+                exit;
+            }
+
+            // 3. Database Update
+            require_once __DIR__ . '/../models/User.php';
+            $userModel = new User();
+
+            // Run the update query
+            $isUpdated = $userModel->editUser($userId, $fullname, $username, $bio);
+
+            if ($isUpdated) {
+                $_SESSION['fullname'] = $fullname;
+                $_SESSION['username'] = $username;
+                $_SESSION['bio']      = $bio;
+
+                echo json_encode(['success' => true, 'message' => 'Profile updated successfully!']);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Database update failed. Username might already be taken.']);
+            }
+
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Database/Server Error: ' . $e->getMessage()]);
+        }
+        
+        exit;
     }
 
     public function addGame() {
