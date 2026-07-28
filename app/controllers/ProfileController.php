@@ -166,7 +166,7 @@ class ProfileController extends Controller {
                     $pdo = Database::connect();
                     
                     // Prepare the statement checking both columns
-                    $stmt = $pdo->prepare('SELECT userId FROM user WHERE username = ? OR email = ? LIMIT 1');
+                    $stmt = $pdo->prepare('SELECT userId FROM user_account WHERE username = ? OR email = ? LIMIT 1');
                     
                     foreach ($decoded as $collabInput) {
                         $identifier = trim($collabInput);

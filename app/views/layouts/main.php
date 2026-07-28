@@ -223,7 +223,7 @@
   <?php elseif ($currentRoute === 'about'): ?>
     <script src="js/about.js"></script>
   <?php elseif ($currentRoute === 'profile'): ?>
-    <script src="js/myprofile.js"></script>
+    <script src="js/myprofile.js?v=2"></script>
   <?php endif; ?>    
 <?php endif; ?>
 

@@ -198,6 +198,7 @@ function wireEditModal() {
 function initMyGamesPage(initialGames) {
     let games = initialGames;
     let sortMode = 'newest';
+    let currentFilter = 'all';
 
     const grid = document.getElementById('myGamesGrid');
     const emptyState = document.getElementById('myGamesEmpty');
@@ -207,72 +208,86 @@ function initMyGamesPage(initialGames) {
     const sortDropdownLabel = document.getElementById('sortDropdownLabel');
     const sortOptions = document.querySelectorAll('.sort-option');
 
+    // Helper to evaluate if a game is published safely
+    function isGamePublished(game) {
+        if (!game) return false;
+        const val = String(game.status !== undefined ? game.status : game.is_published || '').toLowerCase().trim();
+        return val === 'published' || val === '1' || val === 'true';
+    }
+
     // ── Stats + grid render ──
     function render() {
-        const published = games.filter(g => g.status === 'published');
+        // 1. FILTER the games based on currentFilter
+        let filteredGames = games;
+        const normalizedFilter = (currentFilter || 'all').toLowerCase().trim();
+
+        if (['review', 'under_review', 'under-review', 'pending', 'draft'].includes(normalizedFilter)) {
+            filteredGames = games.filter(g => !isGamePublished(g));
+        } else if (normalizedFilter === 'published') {
+            filteredGames = games.filter(g => isGamePublished(g));
+        } else {
+            filteredGames = games;
+        }
+
+        // 2. Calculate global stats
+        const published = games.filter(g => isGamePublished(g));
         const totalPlays = games.reduce((sum, g) => sum + (Number(g.plays) || 0), 0);
         const rated = games.filter(g => g.rating);
         const avgRating = rated.length
             ? (rated.reduce((sum, g) => sum + parseFloat(g.rating), 0) / rated.length).toFixed(1)
             : null;
 
-        document.getElementById('mgStatTotal').textContent = games.length;
-        document.getElementById('mgStatPublished').textContent = published.length;
-        document.getElementById('mgStatPlays').textContent = totalPlays;
-        document.getElementById('mgStatRating').textContent = avgRating ? '★ ' + avgRating : '–';
-        countEl.textContent = games.length;
+        if (document.getElementById('mgStatTotal')) document.getElementById('mgStatTotal').textContent = games.length;
+        if (document.getElementById('mgStatPublished')) document.getElementById('mgStatPublished').textContent = published.length;
+        if (document.getElementById('mgStatPlays')) document.getElementById('mgStatPlays').textContent = totalPlays;
+        if (document.getElementById('mgStatRating')) document.getElementById('mgStatRating').textContent = avgRating ? '★ ' + avgRating : '–';
+        
+        if (countEl) countEl.textContent = filteredGames.length;
 
-        // Keep the profile hero's stats in sync with any change here
+        // Keep profile hero stats synced
         updateProfileStats(games);
 
-        const sorted = [...games].sort((a, b) => {
-            if (sortMode === 'newest') return new Date(b.dateAdded) - new Date(a.dateAdded);
-            if (sortMode === 'oldest') return new Date(a.dateAdded) - new Date(b.dateAdded);
+        // 3. SORT the filtered array
+        const sorted = [...filteredGames].sort((a, b) => {
+            if (sortMode === 'newest') return new Date(b.dateAdded || 0) - new Date(a.dateAdded || 0);
+            if (sortMode === 'oldest') return new Date(a.dateAdded || 0) - new Date(b.dateAdded || 0);
             if (sortMode === 'rating') return (parseFloat(b.rating) || 0) - (parseFloat(a.rating) || 0);
             if (sortMode === 'plays') return (Number(b.plays) || 0) - (Number(a.plays) || 0);
             return 0;
         });
 
+        if (!grid) return;
+
         if (sorted.length === 0) {
             grid.style.display = 'none';
-            emptyState.style.display = 'flex';
+            if (emptyState) emptyState.style.display = 'flex';
             return;
         }
         grid.style.display = '';
-        emptyState.style.display = 'none';
+        if (emptyState) emptyState.style.display = 'none';
 
-        // Render the sorted cards dynamically into the grid
+        // 4. Render cards
         grid.innerHTML = sorted.map((game, index) => {
-            // Format status and rating
-            const statusLabel = game.status === 'published' ? 'Published' : 'Under Review';
-            const statusClass = game.status === 'published' ? 'published' : 'review';
+            const isPublished = isGamePublished(game);
+            const statusLabel = isPublished ? 'Published' : 'Under Review';
+            const statusClass = isPublished ? 'published' : 'review';
             const ratingDisplay = game.rating ? `★ ${parseFloat(game.rating).toFixed(1)}` : 'New';
             
-            // Safely escape strings
             const safeName = String(game.name || '').replace(/"/g, '&quot;');
             const safeGenre = String(game.genre || 'Uncategorized').replace(/"/g, '&quot;');
 
-            // ── Dynamic Thumbnail Logic ──
             let thumbHTML = '';
-            
             if (game.thumbnail && game.thumbnail.includes('.')) {
-                // 1. Extract JUST the filename (e.g., "1785172785_arrow.png")
                 const fileName = game.thumbnail.split('/').pop();
-                
-                // 2. Build the correct absolute path
                 const imgPath = `/Yaw8/public/uploads/thumbnails/${fileName}`;
-
                 thumbHTML = `
                 <div class="game-thumb" style="background-image: url('${imgPath}'); background-size: cover; background-position: center;">
                     <span class="status-badge ${statusClass}">${statusLabel}</span>
                 </div>`;
             } else {
-                // No image: fallback to old colored style with initials
                 const initialsTitle = safeName.toUpperCase().split(' ').join('<br>');
                 const colorClasses = ['gt-my-a', 'gt-my-b', 'gt-my-c', 'gt-my-d'];
-                
                 const colorClass = colorClasses[index % colorClasses.length];
-                
                 thumbHTML = `
                 <div class="game-thumb ${colorClass}">
                     <span class="status-badge ${statusClass}">${statusLabel}</span>
@@ -280,7 +295,6 @@ function initMyGamesPage(initialGames) {
                 </div>`;
             }
 
-            // Return the final card HTML
             return `
             <div class="game-card" data-game-id="${game.id}">
                 ${thumbHTML}
@@ -298,30 +312,70 @@ function initMyGamesPage(initialGames) {
         }).join('');
     }
 
-    sortDropdownBtn.addEventListener('click', function (e) {
-        e.stopPropagation();
-        sortDropdownBtn.classList.toggle('open');
-        sortDropdownMenu.classList.toggle('open');
-    });
+    // ── Dropdown Event Handlers ──
+    if (sortDropdownBtn) {
+        sortDropdownBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            sortDropdownBtn.classList.toggle('open');
+            if (sortDropdownMenu) sortDropdownMenu.classList.toggle('open');
+        });
+    }
 
+    // ── Sort Dropdown Items ──
     sortOptions.forEach(function (opt) {
-        opt.addEventListener('click', function () {
-            sortMode = this.getAttribute('data-value');
-            sortDropdownLabel.textContent = this.textContent;
+        opt.addEventListener('click', function (e) {
+            e.stopPropagation();
+            const value = this.getAttribute('data-value');
+            if (!value) return;
+
+            if (value === 'review') {
+                currentFilter = 'review';
+            } else {
+                sortMode = value;
+                currentFilter = 'all'; 
+            }
+
+            document.querySelectorAll('[data-filter]').forEach(btn => {
+                const fVal = (btn.getAttribute('data-filter') || '').toLowerCase().trim();
+                btn.classList.toggle('active', fVal === 'all');
+            });
+
+            if (sortDropdownLabel) sortDropdownLabel.textContent = this.textContent;
             sortOptions.forEach(o => o.classList.remove('active'));
             this.classList.add('active');
-            sortDropdownBtn.classList.remove('open');
-            sortDropdownMenu.classList.remove('open');
+            if (sortDropdownBtn) sortDropdownBtn.classList.remove('open');
+            if (sortDropdownMenu) sortDropdownMenu.classList.remove('open');
+
             render();
         });
     });
 
-    document.addEventListener('click', function (e) {
-        if (!sortDropdownBtn.contains(e.target) && !sortDropdownMenu.contains(e.target)) {
-            sortDropdownBtn.classList.remove('open');
-            sortDropdownMenu.classList.remove('open');
-        }
+    // ── Filter Buttons ──
+    const filterOptions = document.querySelectorAll('[data-filter]');
+    filterOptions.forEach(function (opt) {
+        opt.addEventListener('click', function (e) {
+            // Ignore if this is part of the sort dropdown to prevent class conflicts
+            if (this.classList.contains('sort-option')) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            const filterVal = (this.getAttribute('data-filter') || 'all').toLowerCase().trim();
+            currentFilter = filterVal;
+
+            filterOptions.forEach(o => {
+                if (!o.classList.contains('sort-option')) {
+                    o.classList.remove('active');
+                }
+            });
+            this.classList.add('active');
+
+            render();
+        });
     });
+
+    // Run initial render
+    render();
 
     // ═══════════════════════════════════════════
     // UPLOAD GAME MODAL → SUBMIT GAME MODAL

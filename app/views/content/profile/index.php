@@ -89,6 +89,7 @@
                         <button class="dropdown-item sort-option" type="button" data-value="oldest">Oldest First</button>
                         <button class="dropdown-item sort-option" type="button" data-value="rating">Highest Rated</button>
                         <button class="dropdown-item sort-option" type="button" data-value="plays">Most Played</button>
+                        <button class="dropdown-item sort-option" type="button" data-value="review">Under Review Only</button>
                     </div>
                 </div>
                 <button class="btn-add-game" id="addGameBtn">

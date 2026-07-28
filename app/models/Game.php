@@ -101,29 +101,56 @@ class Game {
     }
 
     # Function that edits/updates an existing game in the database.
-    public function editGame($id, $title, $description, $controls, $status, $thumbnailPath = '', $gameFilePath = ''): bool {
+    public function editGame($id, $title, $description, $controls, $status, $thumbnailPath = '', $gameFilePath = '', $collaboratorUserIds = []): bool {
         $pdo = Database::connect();
 
-        $columns = ['title = ?', 'description = ?', 'controls = ?', 'status = ?'];
-        $params = [trim($title), trim($description), trim($controls), trim($status)];
+        try {
+            $pdo->beginTransaction();
 
-        if (!empty($thumbnailPath)) {
-            $columns[] = 'thumbnail = ?';
-            $params[] = trim($thumbnailPath);
+            $columns = ['title = ?', 'description = ?', 'controls = ?', 'status = ?'];
+            $params = [trim($title), trim($description), trim($controls), trim($status)];
+
+            if (!empty($thumbnailPath)) {
+                $columns[] = 'thumbnail = ?';
+                $params[] = trim($thumbnailPath);
+            }
+
+            if (!empty($gameFilePath)) {
+                $columns[] = 'gameFiles = ?';
+                $params[] = trim($gameFilePath);
+            }
+
+            $columns[] = 'lastUpdated = NOW()';
+            $params[] = $id;
+
+            $sql = 'UPDATE Game SET ' . implode(', ', $columns) . ' WHERE gameId = ?';
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($params);
+
+            // Update collaborators if array is provided
+            if (!empty($collaboratorUserIds)) {
+                // Remove existing collaborators for this game
+                $stmtDel = $pdo->prepare('DELETE FROM game_devs WHERE gameId = ?');
+                $stmtDel->execute([$id]);
+
+                // Re-insert current list of collaborators
+                $stmtDev = $pdo->prepare('INSERT INTO game_devs (userId, gameId) VALUES (?, ?)');
+                foreach ($collaboratorUserIds as $devUserId) {
+                    if (!empty($devUserId)) {
+                        $stmtDev->execute([$devUserId, $id]);
+                    }
+                }
+            }
+
+            $pdo->commit();
+            return true;
+
+        } catch (Exception $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            return false;
         }
-
-        if (!empty($gameFilePath)) {
-            $columns[] = 'gameFiles = ?';
-            $params[] = trim($gameFilePath);
-        }
-
-        $columns[] = 'lastUpdated = NOW()';
-        $params[] = $id;
-
-        $sql = 'UPDATE game SET ' . implode(', ', $columns) . ' WHERE gameId = ?';
-        $stmt = $pdo->prepare($sql);
-
-        return $stmt->execute($params);
     }
 
     public function getGamesByUser($userId) {

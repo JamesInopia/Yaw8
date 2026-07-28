@@ -41,16 +41,20 @@ class User {
     public function setBio($bio) { $this->bio = $bio;}
 
     # Function that adds a user to the database
-    public function addUser($fullname, $username, $email, $password, $role): bool {
+    public function addUser($fullname, $username, $email, $password, $role) {
         $pdo = Database::connect();
-        $stmt = $pdo->prepare('INSERT INTO user (fullname, username, email, password, role) VALUES (?, ?, ?, ?, ?)');
-        return $stmt->execute([trim($fullname), trim($username), trim($email), trim($password), trim($role)]);
+        $stmt = $pdo->prepare('INSERT INTO user_account (fullname, username, email, password, role) VALUES (?, ?, ?, ?, ?)');
+        
+        if ($stmt->execute([trim($fullname), trim($username), trim($email), trim($password), trim($role)])) {
+            return $pdo->lastInsertId();
+        }
+        return false;
     }
-
+    
     # Function that deletes user in the database
     public function deleteUser($id): bool {
         $pdo = Database::connect();
-        $stmt = $pdo->prepare('DELETE FROM user WHERE id = ?');
+        $stmt = $pdo->prepare('DELETE FROM user_account WHERE id = ?');
         
         return $stmt->execute([$id]);
     }
@@ -58,7 +62,7 @@ class User {
     # Functions that verify user credentials
     public function verifyUsername($username) : ?array {
         $pdo = Database::connect();
-        $stmt = $pdo->prepare('SELECT * FROM user WHERE username = ? LIMIT 1');
+        $stmt = $pdo->prepare('SELECT * FROM user_account WHERE username = ? LIMIT 1');
         $stmt->execute([$username]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -67,7 +71,7 @@ class User {
 
     public function verifyEmail($email) : ?array {
         $pdo = Database::connect();
-        $stmt = $pdo->prepare('SELECT * FROM user WHERE email = ? LIMIT 1');
+        $stmt = $pdo->prepare('SELECT * FROM user_account WHERE email = ? LIMIT 1');
         $stmt->execute([$email]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -78,7 +82,7 @@ class User {
     public function editUser($id, $fullname, $username, $bio): bool {
         $pdo = Database::connect();
         
-        $sql = 'UPDATE user SET fullname = ?, username = ?, bio = ? WHERE userId = ?';
+        $sql = 'UPDATE user_account SET fullname = ?, username = ?, bio = ? WHERE userId = ?';
         $stmt = $pdo->prepare($sql);
         
         return $stmt->execute([
@@ -91,8 +95,9 @@ class User {
 
     public function getUserById($userId) : ?array {
         $pdo = Database::connect();
-        $stmt = $pdo->prepare('SELECT * FROM user WHERE userId = ? LIMIT 1');
+        $stmt = $pdo->prepare('SELECT * FROM user_account WHERE userId = ? LIMIT 1');
         $stmt->execute([$userId]);
+
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
         return $user ?: null;

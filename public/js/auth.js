@@ -159,19 +159,18 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
 
                     // Save user data for profile page and storage sync
-                    const userData = {
-                        name: res.body.user?.fullname || res.body.user?.name || emailInput.split('@')[0],
-                        username: res.body.user?.username || emailInput.split('@')[0],
-                        email: emailInput,
+                    const newUserData = {
+                        id: res.body.user?.id,
+                        name: res.body.user?.name || payload.fullname,
+                        username: res.body.user?.username || payload.username,
+                        email: res.body.user?.email || payload.email,
                         isGuest: false
                     };
-                    localStorage.setItem('yaw8_user', JSON.stringify(userData));
-                    localStorage.setItem('yaw8_account', JSON.stringify(userData));
-
-                    // Flag loading screen to display on target page
+                    localStorage.setItem('yaw8_user', JSON.stringify(newUserData));
+                    localStorage.setItem('yaw8_account', JSON.stringify(newUserData));
                     sessionStorage.setItem('show_auth_loader', 'true');
-
                     window.location.href = appUrl('home'); 
+
                 } else if (errorAlert) {
                     errorAlert.textContent = res.body.message || 'Login failed';
                     errorAlert.classList.add('active');
@@ -193,12 +192,15 @@ document.addEventListener("DOMContentLoaded", () => {
             const errorAlert = form.querySelector('.auth-error');
             if (errorAlert) errorAlert.classList.remove('active');
 
+            const termsCheckbox = form.querySelector('input[type="checkbox"]');
+
             const payload = {
                 fullname: document.getElementById('signupName')?.value || '',
                 username: document.getElementById('signupUsername')?.value || '',
                 email: document.getElementById('signupEmail')?.value || '',
                 password: document.getElementById('signupPassword')?.value || '',
-                confirmPassword: document.getElementById('signupConfirmPassword')?.value || ''
+                confirmPassword: document.getElementById('signupConfirmPassword')?.value || '',
+                agreeTerms: termsCheckbox ? termsCheckbox.checked : false
             };
 
             fetch(appUrl('signup'), {
