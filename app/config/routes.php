@@ -33,5 +33,8 @@ return [
 
     # API routes
     'api/profile'=> [AuthController::class, 'profile'],
-    
+    'api/settings/me' => [SettingsController::class, 'me'],
+    'api/settings/verify-email-change' => [SettingsController::class, 'verifyEmailChange'],
+    'api/settings/email'  => [SettingsController::class, 'updateEmail'],
+    'api/settings/password'=> [SettingsController::class, 'updatePassword'],
 ];

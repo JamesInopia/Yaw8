@@ -1,315 +1,278 @@
 // ═══════════════════════════════════════════════════
 // SETTINGS.JS
-// Logic used only on settings.html.
 // ═══════════════════════════════════════════════════
 
+document.addEventListener('DOMContentLoaded', () => {
+    fetchUserData();
+    initAccountInfoForm();
+    initPasswordForm();
+    initDangerZone();
+});
+
 // ═══════════════════════════════════════════
-// SESSION + STORAGE HELPERS
+// FETCH & RENDER USER DATA
 // ═══════════════════════════════════════════
-function getCurrentUser() {
+async function fetchUserData() {
     try {
-        const user = JSON.parse(localStorage.getItem('yaw8_user'));
-        if (user && user.name) return user;
-    } catch (e) {}
-    return null;
+        // Session-based endpoint (matches how the rest of the app routes: ?url=...)
+        const response = await fetch('?url=api/settings/me');
+
+        // Handle cases where the endpoint might redirect or fail
+        if (!response.ok) return;
+
+        const result = await response.json();
+
+        if (result.success && result.user) {
+            renderAccountSummary(result.user.fullname, result.user.username, result.user.email);
+        }
+    } catch (error) {
+        console.error('Error fetching user data:', error);
+    }
 }
 
-function saveCurrentUser(user) {
-    try { localStorage.setItem('yaw8_user', JSON.stringify(user)); } catch (e) {}
-}
+function renderAccountSummary(fullname, username, email) {
+    if (fullname) {
+        const initial = fullname.trim().charAt(0).toUpperCase();
+        document.getElementById('sideAvatar').textContent = initial;
+        document.getElementById('sideFullname').textContent = fullname;
+    }
 
-function getAccounts() {
-    try { return JSON.parse(localStorage.getItem('yaw8_accounts')) || {}; } catch (e) { return {}; }
-}
+    if (username) {
+        document.getElementById('sideUsername').textContent = '@' + username;
+    }
 
-function saveAccounts(accounts) {
-    try { localStorage.setItem('yaw8_accounts', JSON.stringify(accounts)); } catch (e) {}
-}
-
-function getSiteSettings() {
-    try {
-        const s = JSON.parse(localStorage.getItem('yaw8_settings'));
-        if (s) return s;
-    } catch (e) {}
-    // Sensible defaults — most notifications on, preferences off
-    return {
-        notifyComments: true,
-        notifyGameStatus: true,
-        notifyDigest: false,
-        notifyAnnouncements: true,
-        prefReduceMotion: false,
-        prefCompactCards: false
-    };
-}
-
-function saveSiteSettings(settings) {
-    try { localStorage.setItem('yaw8_settings', JSON.stringify(settings)); } catch (e) {}
-}
-
-function getInitials(name) {
-    if (!name) return '?';
-    const parts = name.trim().split(/\s+/);
-    const first = parts[0] ? parts[0][0] : '';
-    const last = parts.length > 1 ? parts[parts.length - 1][0] : '';
-    return (first + last).toUpperCase();
-}
-
-function clearSession() {
-    try {
-        localStorage.removeItem('yaw8_loggedIn');
-        localStorage.removeItem('yaw8_user');
-    } catch (e) {}
+    if (email) {
+        const emailInput = document.getElementById('settingsEmail');
+        // Show the current email as placeholder text rather than pre-filling the field
+        emailInput.placeholder = email;
+        emailInput.dataset.currentEmail = email;
+    }
 }
 
 // ═══════════════════════════════════════════
-// GATE — so it's like no session at all? Then send to login.
-// (Unlike My Profile, guests ARE allowed here —
-// they just get a reduced, read-only account section.)
+// ACCOUNT INFO FORM (Change Email)
 // ═══════════════════════════════════════════
-const currentUser = getCurrentUser();
-let activeUser = currentUser;
-
-if (!currentUser) {
-    window.location.replace('login.html?redirect=' + encodeURIComponent('settings.html'));
-} else {
-    renderAccountSummary(activeUser);
-    initAccountInfoForm(activeUser);
-    initPasswordForm(activeUser);
-    initTogglePrefs();
-    initDangerZone(activeUser);
-    applyGuestRestrictions(activeUser);
-}
-
-// ═══════════════════════════════════════════
-// ACCOUNT SUMMARY (side card + account info fields)
-// ═══════════════════════════════════════════
-function renderAccountSummary(user) {
-    document.getElementById('sideAvatar').textContent = getInitials(user.name);
-    document.getElementById('sideName').textContent = user.name;
-    document.getElementById('sideEmail').textContent = user.email;
-
-    document.getElementById('settingsName').value = user.name || '';
-    document.getElementById('settingsUsername').value = user.username || '';
-    document.getElementById('settingsEmail').value = user.email || '';
-}
-
-// ═══════════════════════════════════════════
-// ACCOUNT INFO FORM
-// ═══════════════════════════════════════════
-function initAccountInfoForm(user) {
+function initAccountInfoForm() {
     const form = document.getElementById('accountInfoForm');
-    const status = document.getElementById('accountInfoStatus');
+    if (!form) return;
 
-    form.addEventListener('submit', function (e) {
+    const statusEl = document.getElementById('accountInfoStatus');
+    const errorBox = document.getElementById('accountInfoError');
+    const emailInput = document.getElementById('settingsEmail');
+
+    const confirmModal = document.getElementById('confirmEmailChangeModal');
+    const confirmOverlay = document.getElementById('confirmEmailChangeOverlay');
+    const confirmCancelBtn = document.getElementById('confirmEmailChangeCancelBtn');
+    const confirmBtn = document.getElementById('confirmEmailChangeConfirmBtn');
+    const confirmAddressEl = document.getElementById('confirmEmailChangeAddress');
+
+    function openConfirmModal(email) {
+        confirmAddressEl.textContent = email;
+        confirmModal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeConfirmModal() {
+        confirmModal.classList.remove('active');
+        document.body.style.overflow = 'auto';
+    }
+
+    if (confirmCancelBtn) confirmCancelBtn.addEventListener('click', closeConfirmModal);
+    if (confirmOverlay) confirmOverlay.addEventListener('click', closeConfirmModal);
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && confirmModal && confirmModal.classList.contains('active')) {
+            closeConfirmModal();
+        }
+    });
+
+    const submitBtn = document.getElementById('accountInfoSaveBtn');
+    const REQUIRED_EMAIL_DOMAIN = '@iacademy.edu.ph';
+
+    form.addEventListener('submit', async function (e) {
         e.preventDefault();
-        if (activeUser.isGuest) return;
+        clearError(errorBox);
 
-        const newName = document.getElementById('settingsName').value.trim();
-        const newUsername = document.getElementById('settingsUsername').value.trim();
+        const emailVal = emailInput.value.trim();
+        const passwordVal = document.getElementById('currentPasswordForEmail').value;
 
-        if (!newName || !newUsername) return;
-
-        const updatedUser = Object.assign({}, activeUser, {
-            name: newName,
-            username: newUsername
-        });
-
-        saveCurrentUser(updatedUser);
-
-        // Keep the mock accounts store (keyed by email) in sync
-        const accounts = getAccounts();
-        const key = (activeUser.email || '').toLowerCase();
-        if (accounts[key]) {
-            accounts[key].name = newName;
-            accounts[key].username = newUsername;
-            saveAccounts(accounts);
+        // 1. Password must be entered first, before anything else happens
+        if (!passwordVal) {
+            showError(errorBox, 'Please enter your current password to confirm this change.');
+            return;
         }
 
-        activeUser = updatedUser;
-        renderAccountSummary(activeUser);
-        flashStatus(status, 'Saved!', false);
+        // 2. The field is now just a placeholder-driven "new email" box — an empty
+        //    field means there's nothing to change.
+        if (!emailVal) {
+            showError(errorBox, 'Please enter a new email address.');
+            return;
+        }
+
+        // 3. Quick client-side domain check (cheap, no need to hit the server for this)
+        if (!emailVal.toLowerCase().endsWith(REQUIRED_EMAIL_DOMAIN)) {
+            showError(errorBox, `Email must be a valid ${REQUIRED_EMAIL_DOMAIN} address.`);
+            return;
+        }
+
+        if (emailVal === emailInput.dataset.currentEmail) {
+            showError(errorBox, 'That\'s already your current email address.');
+            return;
+        }
+
+        // 4. Ask the server to verify the password and re-check the email
+        //    (format, domain, and uniqueness) BEFORE the confirmation modal ever shows.
+        submitBtn.disabled = true;
+        try {
+            const formData = new FormData();
+            formData.append('email', emailVal);
+            formData.append('currentPassword', passwordVal);
+
+            const response = await fetch('?url=api/settings/verify-email-change', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+
+            if (!result.success) {
+                showError(errorBox, result.message || 'Please check your details and try again.');
+                return;
+            }
+
+            // 5. Everything checks out — now, and only now, ask the user one last time
+            openConfirmModal(emailVal);
+        } catch (error) {
+            showError(errorBox, 'An error occurred connecting to the server.');
+        } finally {
+            submitBtn.disabled = false;
+        }
+    });
+
+    // 4. Only actually change the email once the user confirms in the modal
+    confirmBtn.addEventListener('click', async function () {
+        const emailVal = emailInput.value.trim();
+        const passwordVal = document.getElementById('currentPasswordForEmail').value;
+
+        confirmBtn.disabled = true;
+
+        const formData = new FormData();
+        formData.append('email', emailVal);
+        formData.append('currentPassword', passwordVal);
+
+        try {
+            const response = await fetch('?url=api/settings/email', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+
+            if (result.success) {
+                closeConfirmModal();
+                flashStatus(statusEl, result.message || 'Email updated!', false);
+
+                // 5. Email changed — force the user to log back in with the new address
+                if (result.forceLogout) {
+                    setTimeout(() => {
+                        localStorage.clear();
+                        window.location.href = '?url=logout';
+                    }, 1200);
+                }
+            } else {
+                closeConfirmModal();
+                showError(errorBox, result.message || 'Failed to update email.');
+            }
+        } catch (error) {
+            closeConfirmModal();
+            showError(errorBox, 'An error occurred connecting to the server.');
+        } finally {
+            confirmBtn.disabled = false;
+        }
     });
 }
 
 // ═══════════════════════════════════════════
 // PASSWORD & SECURITY FORM
 // ═══════════════════════════════════════════
-function initPasswordForm(user) {
+function initPasswordForm() {
     const form = document.getElementById('passwordForm');
-    const status = document.getElementById('passwordStatus');
+    if (!form) return;
+
     const errorBox = document.getElementById('passwordError');
+    const statusBox = document.getElementById('passwordStatus');
 
-    function showError(message) {
-        errorBox.textContent = message;
-        errorBox.style.display = 'block';
-    }
-
-    function clearError() {
-        errorBox.style.display = 'none';
-    }
-
-    form.addEventListener('submit', function (e) {
+    form.addEventListener('submit', async function (e) {
         e.preventDefault();
-        clearError();
-        if (activeUser.isGuest) return;
+        clearError(errorBox);
 
         const current = document.getElementById('currentPassword').value;
         const next = document.getElementById('newPassword').value;
         const confirm = document.getElementById('confirmNewPassword').value;
 
         if (!current || !next || !confirm) {
-            showError('Please fill in all password fields.');
-            return;
-        }
-        if (next.length < 8) {
-            showError('Your new password must be at least 8 characters.');
-            return;
-        }
-        if (next !== confirm) {
-            showError('New passwords do not match.');
+            showError(errorBox, 'Please fill in all password fields.');
             return;
         }
 
-        const accounts = getAccounts();
-        const key = (activeUser.email || '').toLowerCase();
-        const account = accounts[key];
+        const formData = new FormData();
+        formData.append('currentPassword', current);
+        formData.append('newPassword', next);
+        formData.append('confirmNewPassword', confirm);
 
-        if (!account) {
-            showError('We couldn\'t find your account. Try signing in again.');
-            return;
+        try {
+            const response = await fetch('?url=api/settings/password', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+
+            if (result.success) {
+                form.reset(); // Clear passwords on success
+                flashStatus(statusBox, result.message, false);
+            } else {
+                showError(errorBox, result.message);
+            }
+        } catch (error) {
+            showError(errorBox, 'An error occurred connecting to the server.');
         }
-        if (account.password !== current) {
-            showError('Current password is incorrect.');
-            return;
-        }
-
-        account.password = next;
-        saveAccounts(accounts);
-        form.reset();
-        flashStatus(status, 'Password updated!', false);
-    });
-}
-
-// ═══════════════════════════════════════════
-// NOTIFICATIONS + APPEARANCE TOGGLES
-// ═══════════════════════════════════════════
-function initTogglePrefs() {
-    const settings = getSiteSettings();
-    const toggleIds = [
-        'notifyComments', 'notifyGameStatus', 'notifyDigest', 'notifyAnnouncements',
-        'prefReduceMotion', 'prefCompactCards'
-    ];
-
-    toggleIds.forEach(id => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        el.checked = !!settings[id];
-        el.addEventListener('change', function () {
-            const current = getSiteSettings();
-            current[id] = el.checked;
-            saveSiteSettings(current);
-        });
     });
 }
 
 // ═══════════════════════════════════════════
 // DANGER ZONE
 // ═══════════════════════════════════════════
-function initDangerZone(user) {
-
-    const settingsSignOutBtn = document.getElementById('settingsSignOutBtn');
-    if (settingsSignOutBtn) {
-        settingsSignOutBtn.addEventListener('click', function () {
-            const navSignOutBtn = document.getElementById('signOutBtn');
-            if (navSignOutBtn) navSignOutBtn.click();
-        });
-    }
-
-    // Guest: end session directly, no account to delete
-    const endGuestBtn = document.getElementById('endGuestBtn');
-    if (endGuestBtn) {
-        endGuestBtn.addEventListener('click', function () {
-            clearSession();
-            window.location.href = 'login.html';
-        });
-    }
-
-    // Registered: delete account confirmation modal
+function initDangerZone() {
     const deleteAccountBtn = document.getElementById('deleteAccountBtn');
-    const deleteModal = document.getElementById('deleteAccountModal');
-    const deleteOverlay = document.getElementById('deleteAccountOverlay');
-    const deleteCancelBtn = document.getElementById('deleteAccountCancelBtn');
-    const deleteConfirmBtn = document.getElementById('deleteAccountConfirmBtn');
-
-    function openDeleteModal() {
-        deleteModal.classList.add('active');
-        document.body.style.overflow = 'hidden';
-    }
-
-    function closeDeleteModal() {
-        deleteModal.classList.remove('active');
-        document.body.style.overflow = 'auto';
-    }
 
     if (deleteAccountBtn) {
-        deleteAccountBtn.addEventListener('click', openDeleteModal);
-        deleteCancelBtn.addEventListener('click', closeDeleteModal);
-        deleteOverlay.addEventListener('click', closeDeleteModal);
-
-        deleteConfirmBtn.addEventListener('click', function () {
-            const accounts = getAccounts();
-            const key = (user.email || '').toLowerCase();
-            delete accounts[key];
-            saveAccounts(accounts);
-
-            try {
-                localStorage.removeItem('yaw8_profileMeta');
-                localStorage.removeItem('yaw8_myGames');
-                localStorage.removeItem('yaw8_settings');
-            } catch (e) {}
-
-            clearSession();
-            window.location.href = 'login.html';
-        });
-
-        document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape' && deleteModal.classList.contains('active')) closeDeleteModal();
+        deleteAccountBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+            // Delete action is currently put on hold per instructions
+            alert('Account deletion API endpoint is pending implementation.');
         });
     }
 }
 
 // ═══════════════════════════════════════════
-// GUEST RESTRICTIONS
-// Guests don't have a real password or saved
-// account, so those sections are hidden/disabled
-// rather than shown as if they'd persist.
+// HELPERS
 // ═══════════════════════════════════════════
-function applyGuestRestrictions(user) {
-    if (!user.isGuest) return;
-
-    document.getElementById('guestBanner').style.display = 'flex';
-
-    // Account info: read-only
-    document.getElementById('settingsName').disabled = true;
-    document.getElementById('settingsUsername').disabled = true;
-    document.getElementById('accountInfoSaveBtn').disabled = true;
-    document.getElementById('accountInfoSaveBtn').style.opacity = '0.5';
-    document.getElementById('accountInfoSaveBtn').style.cursor = 'not-allowed';
-
-    // Password panel: not applicable for guests
-    document.getElementById('password-security').style.display = 'none';
-
-    // Danger zone: swap to the guest-only actions
-    document.getElementById('dangerZoneRegistered').style.display = 'none';
-    document.getElementById('dangerZoneGuest').style.display = 'block';
+// Uses the same "active" class toggle as the login page's .auth-error,
+// so the pink smooth fade-in look matches across the app.
+function showError(el, message) {
+    if (!el) return;
+    el.textContent = message;
+    el.classList.add('active');
 }
 
-// ═══════════════════════════════════════════
-// SMALL HELPER — flash a save-status message
-// ═══════════════════════════════════════════
+function clearError(el) {
+    if (!el) return;
+    el.classList.remove('active');
+}
+
 function flashStatus(el, message, isError) {
+    if (!el) return;
     el.textContent = message;
     el.classList.toggle('error', !!isError);
     el.classList.add('show');
+
+    // Auto-hide the status message after a couple of seconds
     setTimeout(() => el.classList.remove('show'), 2200);
 }

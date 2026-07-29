@@ -61,9 +61,6 @@ class Game {
 
         try {
             $pdo->beginTransaction();
-
-            // "genre" is not a column on game — genres are a many-to-many
-            // relationship via the game_genre junction table (see ERD).
             $stmt = $pdo->prepare('
                 INSERT INTO game (title, description, controls, thumbnail, gameFiles, status, dateReleased, lastUpdated) 
                 VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
@@ -78,13 +75,7 @@ class Game {
                 $status
             ]);
 
-            // Get the ID of the game we just inserted
             $gameId = $pdo->lastInsertId();
-
-            // Associate the creator + any collaborators via game_devs
-            // (this is the same junction table getGamesByUser()/deleteGame() rely on —
-            // the old code inserted into a nonexistent "Collaborators" table and
-            // never linked the creator at all, so new games never showed up in "My Games").
             $allDevUserIds = array_unique(array_merge([$creatorUserId], (array) $collaboratorUserIds));
             $devStmt = $pdo->prepare('INSERT INTO game_devs (userId, gameId) VALUES (?, ?)');
             foreach ($allDevUserIds as $devUserId) {
@@ -93,31 +84,20 @@ class Game {
                 }
             }
 
-            // Associate genres via game_genre (genreNames are looked up against
-            // the genres table to resolve their genreId).
             $this->syncGameGenres($pdo, $gameId, $genreNames);
 
             $pdo->commit();
-            // Return the new gameId (truthy) instead of a plain bool so the
-            // controller can immediately fetch + return the full saved row —
-            // this is what lets the frontend update without a page refresh.
             return $gameId;
 
         } catch (PDOException $e) {
-            // Roll back if anything fails
             if ($pdo->inTransaction()) {
                 $pdo->rollBack();
             }
             error_log("Add Game Error: " . $e->getMessage());
-            // Rethrow (instead of silently returning false) so the exact SQL error
-            // surfaces in ProfileController's response instead of a generic message.
             throw $e;
         }
     }
 
-    // Fetches a single game (with its comma-joined genre string) by id —
-    // used after addGame()/editGame() to hand the saved row straight back
-    // to the frontend so it can update the UI without a page refresh.
     public function getGameById($gameId) {
         $pdo = Database::connect();
 
@@ -134,15 +114,12 @@ class Game {
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
-    // --- 1. EDIT GAME DATABASE FUNCTION ---
+    # Function that edits game details
     public function editGame($gameId, $title, $description, $controls, $genreNames, $thumbnailPath, $gameFilePath, $status): bool {
         $pdo = Database::connect();
         
         try {
             $pdo->beginTransaction();
-
-            // We use COALESCE so if no new file was uploaded (null), it keeps the old database value.
-            // "genre" is not a column on game — handled via game_genre below.
             $stmt = $pdo->prepare('
                 UPDATE game 
                 SET title = ?, 
@@ -165,7 +142,6 @@ class Game {
                 $gameId
             ]);
 
-            // Replace this game's genre associations with the submitted set.
             $this->syncGameGenres($pdo, $gameId, $genreNames);
 
             $pdo->commit();
@@ -176,18 +152,12 @@ class Game {
                 $pdo->rollBack();
             }
             error_log("Edit Game Error: " . $e->getMessage());
-            // Rethrow so the exact SQL error surfaces via ProfileController's catch
-            // instead of the generic "Database error while updating game."
             throw $e;
         }
     }
 
-    // Resolves genre names to genreIds (via the genres table) and replaces
-    // this game's rows in the game_genre junction table with the new set.
     private function syncGameGenres($pdo, $gameId, $genreNames): void {
         $genreNames = array_filter(array_map('trim', (array) $genreNames));
-
-        // Clear existing associations first so edits fully replace the genre list.
         $pdo->prepare('DELETE FROM game_genre WHERE gameId = ?')->execute([$gameId]);
 
         if (empty($genreNames)) {
@@ -205,14 +175,10 @@ class Game {
             }
         }
     }
-    
 
+    # Function that gets games made by the user
     public function getGamesByUser($userId) {
         $pdo = Database::connect();
-        
-        // LEFT JOINs so games with zero genres still come back (with genre = NULL),
-        // instead of being silently dropped by an INNER JOIN. GROUP_CONCAT collapses
-        // the (possibly multiple) genre rows per game into one comma-separated string.
         $sql = 'SELECT g.*, GROUP_CONCAT(gen.name ORDER BY gen.name SEPARATOR ", ") AS genre
                 FROM game g
                 INNER JOIN game_devs gd ON g.gameId = gd.gameId
@@ -228,33 +194,30 @@ class Game {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    # Function that deletes game from database
     public function deleteGame($id): bool {
         $pdo = Database::connect();
         
         try {
             $pdo->beginTransaction();
 
-            // 1. Fetch file paths before deleting the database record
+
             $stmtSelect = $pdo->prepare('SELECT thumbnail, gameFiles FROM game WHERE gameId = ?');
             $stmtSelect->execute([$id]);
             $gameData = $stmtSelect->fetch(PDO::FETCH_ASSOC);
 
-            // 2. Delete from game_devs junction table first (prevents foreign key constraint errors)
             $stmtDevs = $pdo->prepare('DELETE FROM game_devs WHERE gameId = ?');
             $stmtDevs->execute([$id]);
 
-            // 3. Delete the main game record
             $stmtGame = $pdo->prepare('DELETE FROM game WHERE gameId = ?');
             $stmtGame->execute([$id]);
 
             $pdo->commit();
 
-            // 4. If database deletions succeed, delete the physical files from the server
             if ($gameData) {
                 // Adjust this path to match your absolute project directory
                 $publicDir = $_SERVER['DOCUMENT_ROOT'] . '/Yaw8/public'; 
                 
-                // Delete Thumbnail
                 if (!empty($gameData['thumbnail'])) {
                     $thumbPath = $publicDir . $gameData['thumbnail'];
                     if (file_exists($thumbPath)) {
@@ -262,7 +225,6 @@ class Game {
                     }
                 }
                 
-                // Delete Game Zip/File
                 if (!empty($gameData['gameFiles'])) {
                     $gameFilePath = $publicDir . $gameData['gameFiles'];
                     if (file_exists($gameFilePath)) {
@@ -274,7 +236,6 @@ class Game {
             return true;
 
         } catch (Exception $e) {
-            // If anything fails (like a database constraint), roll back the changes
             if ($pdo->inTransaction()) {
                 $pdo->rollBack();
             }

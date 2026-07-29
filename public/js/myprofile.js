@@ -118,7 +118,7 @@ function updateProfileStats(myGames, meta) {
     document.getElementById('statSince').textContent = formatMonthYear(meta.joinedAt);
 }
 
-// ── Edit Profile modal (wired once; always acts on the latest activeUser) ──
+// Edit Profile modal
 function wireEditModal() {
     const editModal = document.getElementById('editProfileModal');
     const editBtn = document.getElementById('editProfileBtn');
@@ -142,7 +142,6 @@ function wireEditModal() {
         document.body.style.overflow = 'auto';
     }
 
-    // Attach click listeners to open/close
     if (editBtn) editBtn.addEventListener('click', openEditModal);
     if (editClose) editClose.addEventListener('click', closeEditModal);
     if (editCancel) editCancel.addEventListener('click', closeEditModal);
@@ -152,7 +151,6 @@ function wireEditModal() {
         if (e.key === 'Escape' && editModal.classList.contains('active')) closeEditModal();
     });
 
-    // Handle Form Submit
     if (editForm) {
         editForm.addEventListener('submit', function (e) {
             e.preventDefault();
@@ -172,9 +170,6 @@ function wireEditModal() {
             formData.append('username', newUsername);
             formData.append('bio', newBio);
 
-            // Relative path (matches addGame/editGame/deleteGame) — the
-            // hardcoded absolute '/Yaw8/public/...' version breaks if the
-            // app isn't deployed at exactly that path.
             fetch('?url=profile/editProfile', {
                 method: 'POST',
                 body: formData
@@ -182,8 +177,6 @@ function wireEditModal() {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Update the in-memory user and refresh the hero/account
-                    // fields directly — no page refresh needed.
                     activeUser.name = newName;
                     activeUser.fullname = newName;
                     activeUser.username = newUsername;
@@ -205,10 +198,6 @@ function wireEditModal() {
 // ═══════════════════════════════════════════
 // MY GAMES — grid, add/edit, manage, delete
 // ═══════════════════════════════════════════
-// Maps a raw DB game row (as returned by the addGame/editGame endpoints)
-// into the same shape profile/index.php uses for myRealGames — keeps the
-// local `games` array consistent whether it was seeded from PHP on load
-// or patched in after an AJAX save.
 function mapDbGame(g) {
     return {
         id: g.gameId,

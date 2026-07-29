@@ -93,6 +93,20 @@ class User {
         ]);
     }
 
+    # Function to update user email
+    public function updateEmail($userId, $email): bool {
+        $pdo = Database::connect();
+        $stmt = $pdo->prepare('UPDATE user_account SET email = ? WHERE userId = ?');
+        return $stmt->execute([trim($email), $userId]);
+    }
+
+    # Function to update user password
+    public function updatePassword($userId, $hashedPassword): bool {
+        $pdo = Database::connect();
+        $stmt = $pdo->prepare('UPDATE user_account SET password = ? WHERE userId = ?');
+        return $stmt->execute([$hashedPassword, $userId]);
+    }
+
     public function getUserById($userId) : ?array {
         $pdo = Database::connect();
         $stmt = $pdo->prepare('SELECT * FROM user_account WHERE userId = ? LIMIT 1');
