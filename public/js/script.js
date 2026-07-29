@@ -161,8 +161,15 @@
     function makeDevLink(name) {
         const slug = name.toLowerCase().replace(/\s+/g, '-');
         const a = document.createElement('a');
-        // Points to the developer's profile card/modal on the Developers page
-        a.href = inContentFolder ? `developers/developers.html#dev-${slug}` : `app/views/content/developers/developers.html#dev-${slug}`;
+        // On the about page, disable navigation so team card clicks
+        // open the dev modal instead of sending the user elsewhere
+        const isAboutPage = /\/about\/about\.html/.test(window.location.pathname);
+        if (!isAboutPage) {
+            a.href = inContentFolder ? `developers/developers.html#dev-${slug}` : `app/views/content/developers/developers.html#dev-${slug}`;
+        } else {
+            a.href = '#';
+            a.addEventListener('click', e => e.preventDefault());
+        }
         a.className = 'dev-name-link';
         a.textContent = name;
         return a;

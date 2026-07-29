@@ -184,37 +184,38 @@
       </h2>
     </div>
 
-    <div class="team-grid">
+    <!-- MEET THE TEAM -->
+      <div class="team-grid">
 
-      <a href="../developers/developers.html#dev-christine-arenal" class="team-card">
-        <div class="team-avatar ta-1">CA</div>
-        <div class="team-name">Christine Arenal</div>
-        <div class="team-role">Front-end Developer</div>
-        <div class="team-bio">Description</div>
-      </a>
+        <div class="team-card revealed" data-dev-id="christine-arenal">
+          <div class="team-avatar ta-1">CA</div>
+          <div class="team-name">Christine Arenal</div>
+          <div class="team-role">Front-end Developer</div>
+          <div class="team-bio">Description</div>
+        </div>
 
-      <a href="../developers/developers.html#dev-james-inopia" class="team-card">
-        <div class="team-avatar ta-2">JI</div>
-        <div class="team-name">James Inopia</div>
-        <div class="team-role">Co-Founder · Backend Developer</div>
-        <div class="team-bio">Description</div>
-      </a>
+        <div class="team-card revealed" data-dev-id="james-inopia">
+          <div class="team-avatar ta-2">JI</div>
+          <div class="team-name">James Inopia</div>
+          <div class="team-role">Co-Founder · Backend Developer</div>
+          <div class="team-bio">Description</div>
+        </div>
 
-      <a href="../developers/developers.html#dev-noah-lonoy" class="team-card">
-        <div class="team-avatar ta-3">NL</div>
-        <div class="team-name">Noah Lonoy</div>
-        <div class="team-role">Co-Founder · Backend Developer</div>
-        <div class="team-bio">Description</div>
-      </a>
+        <div class="team-card revealed" data-dev-id="noah-lonoy">
+          <div class="team-avatar ta-3">NL</div>
+          <div class="team-name">Noah Lonoy</div>
+          <div class="team-role">Co-Founder · Backend Developer</div>
+          <div class="team-bio">Description</div>
+        </div>
 
-      <a href="../developers/developers.html#dev-harvey-ablen" class="team-card">
-        <div class="team-avatar ta-4">HA</div>
-        <div class="team-name">Harvey Ablen</div>
-        <div class="team-role">Co-Founder · Backend Developer</div>
-        <div class="team-bio">Description</div>
-      </a>
+        <div class="team-card revealed" data-dev-id="harvey-ablen">
+          <div class="team-avatar ta-4">HA</div>
+          <div class="team-name">Harvey Ablen</div>
+          <div class="team-role">Co-Founder · Backend Developer</div>
+          <div class="team-bio">Description</div>
+        </div>
 
-    </div>
+      </div>
   </section>
 
 
@@ -603,12 +604,27 @@
     </div>
 </footer>
 
+<!-- ══════════════════════════════════════════
+    DEVELOPER PROFILE MODAL (About Page)
+══════════════════════════════════════════ -->
+<div class="modal" id="aboutDevModal">
+  <div class="modal-overlay" id="aboutDevModalOverlay"></div>
+  <div class="modal-content" style="max-width: 560px;">
+    <button class="modal-close" id="aboutDevModalClose">
+      <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+    </button>
+    <div class="modal-inner" id="aboutDevModalInner">
+      <!-- populated by about.js -->
+    </div>
+  </div>
+</div>
+
 <!-- JavaScript -->
-<script src="../js/script.js"></script>
+<script src="../../../../public/js/script.js"></script>
 <!-- About page extras: scroll-reveal for team/comments -->
-<script src="../js/about.js"></script>
+<script src="../../../../public/js/about.js"></script>
 <!-- Auth guard: wires up the Sign Out button -->
-<script src="../js/auth-guard.js"></script>
+<script src="../../../../public/js/auth.js"></script>
 
 </body>
 </html>

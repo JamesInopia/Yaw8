@@ -45,35 +45,36 @@
 
     <div class="team-grid">
 
-      <a href="../developers/developers.html#dev-christine-arenal" class="team-card">
-        <div class="team-avatar ta-1">CA</div>
-        <div class="team-name">Christine Arenal</div>
-        <div class="team-role">Front-end Developer</div>
-        <div class="team-bio">Description</div>
-      </a>
+  <div class="team-card" data-dev-id="christine-arenal">
+    <div class="team-avatar ta-1">CA</div>
+    <div class="team-name">Christine Arenal</div>
+    <div class="team-role">Front-end Developer</div>
+    <div class="team-bio">Description</div>
+  </div>
 
-      <a href="../developers/developers.html#dev-james-inopia" class="team-card">
-        <div class="team-avatar ta-2">JI</div>
-        <div class="team-name">James Inopia</div>
-        <div class="team-role">Co-Founder · Backend Developer</div>
-        <div class="team-bio">Description</div>
-      </a>
+  <div class="team-card" data-dev-id="james-inopia">
+    <div class="team-avatar ta-2">JI</div>
+    <div class="team-name">James Inopia</div>
+    <div class="team-role">Co-Founder · Backend Developer</div>
+    <div class="team-bio">Description</div>
+  </div>
 
-      <a href="../developers/developers.html#dev-noah-lonoy" class="team-card">
-        <div class="team-avatar ta-3">NL</div>
-        <div class="team-name">Noah Lonoy</div>
-        <div class="team-role">Co-Founder · Backend Developer</div>
-        <div class="team-bio">Description</div>
-      </a>
+  <div class="team-card" data-dev-id="noah-lonoy">
+    <div class="team-avatar ta-3">NL</div>
+    <div class="team-name">Noah Lonoy</div>
+    <div class="team-role">Co-Founder · Backend Developer</div>
+    <div class="team-bio">Description</div>
+  </div>
 
-      <a href="../developers/developers.html#dev-harvey-ablen" class="team-card">
-        <div class="team-avatar ta-4">HA</div>
-        <div class="team-name">Harvey Ablen</div>
-        <div class="team-role">Co-Founder · Backend Developer</div>
-        <div class="team-bio">Description</div>
-      </a>
+  <div class="team-card" data-dev-id="harvey-ablen">
+    <div class="team-avatar ta-4">HA</div>
+    <div class="team-name">Harvey Ablen</div>
+    <div class="team-role">Co-Founder · Backend Developer</div>
+    <div class="team-bio">Description</div>
+  </div>
 
-    </div>
+</div>
+
   </section>
   
 </div><!-- end .page-wrap-single -->
