@@ -45,36 +45,51 @@
 
     <div class="team-grid">
 
-  <div class="team-card" data-dev-id="christine-arenal">
-    <div class="team-avatar ta-1">CA</div>
+  <button type="button" class="team-card" data-dev-id="christine-arenal">
+    <img src="assets/images/team/christine_pfp.jpg" alt="Christine Arenal" class="team-avatar-img" />
     <div class="team-name">Christine Arenal</div>
-    <div class="team-role">Front-end Developer</div>
+    <div class="team-role">Co-Founder · Front-end Developer</div>
     <div class="team-bio">Description</div>
-  </div>
+  </button>
 
-  <div class="team-card" data-dev-id="james-inopia">
-    <div class="team-avatar ta-2">JI</div>
+  <button type="button" class="team-card" data-dev-id="james-inopia">
+    <img src="assets/images/team/james_pfp.jpg" alt="James Inopia" class="team-avatar-img" />
     <div class="team-name">James Inopia</div>
     <div class="team-role">Co-Founder · Backend Developer</div>
     <div class="team-bio">Description</div>
-  </div>
+  </button>
 
-  <div class="team-card" data-dev-id="noah-lonoy">
-    <div class="team-avatar ta-3">NL</div>
+  <button type="button" class="team-card" data-dev-id="noah-lonoy">
+    <img src="assets/images/team/jae_posting_noy.jpg" alt="Noah Lonoy" class="team-avatar-img" />
     <div class="team-name">Noah Lonoy</div>
     <div class="team-role">Co-Founder · Backend Developer</div>
     <div class="team-bio">Description</div>
-  </div>
+  </button>
 
-  <div class="team-card" data-dev-id="harvey-ablen">
-    <div class="team-avatar ta-4">HA</div>
+  <button type="button" class="team-card" data-dev-id="harvey-ablen">
+    <img src="assets/images/team/harvey_pfp.jpg" alt="Harvey Ablen" class="team-avatar-img" />
     <div class="team-name">Harvey Ablen</div>
     <div class="team-role">Co-Founder · Backend Developer</div>
     <div class="team-bio">Description</div>
-  </div>
+  </button>
 
 </div>
 
   </section>
-  
+
+<!-- ══════════════════════════════════════════
+    DEVELOPER PROFILE MODAL (About Page)
+══════════════════════════════════════════ -->
+<div class="modal" id="aboutDevModal">
+  <div class="modal-overlay" id="aboutDevModalOverlay"></div>
+  <div class="modal-content" style="max-width: 560px;">
+    <button class="modal-close" id="aboutDevModalClose">
+      <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+    </button>
+    <div class="modal-inner" id="aboutDevModalInner">
+      <!-- populated by about.js -->
+    </div>
+  </div>
+</div>
+
 </div><!-- end .page-wrap-single -->

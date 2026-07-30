@@ -7,40 +7,36 @@ const aboutDevDatabase = {
         role:     'Front-end Developer',
         avatar:   'ta-1',
         initials: 'CA',
+        image:    'assets/images/team/christine_pfp.jpg',
         quote:    '"Good design is invisible — the player should feel the game, not the interface."',
-        rating:   '4.4',
         bio:      'Christine handles the visual layer of YA!W8 — layouts, animations, and the design systems that tie everything together. She believes a great UI should get out of the way and let the game speak.',
-        games:    ['color-clash', 'wobble-bao']
     },
     'james-inopia': {
         name:     'James Inopia',
         role:     'Co-Founder · Backend Developer',
         avatar:   'ta-2',
         initials: 'JI',
+        image:    'assets/images/team/james_pfp.jpg',
         quote:    '"Build it fast, then build it right. The players will tell you which parts need fixing."',
-        rating:   '4.6',
         bio:      'James co-founded YA!W8 and leads backend infrastructure. He built the routing and data systems that keep the platform running, and has a weakness for racing games with ridiculous drift physics.',
-        games:    ['pixel-drift', 'space-cleanup', 'wobble-bao']
     },
     'noah-lonoy': {
         name:     'Noah Lonoy',
         role:     'Co-Founder · Backend Developer',
         avatar:   'ta-3',
         initials: 'NL',
+        image:    'assets/images/team/jae_posting_noy.jpg',
         quote:    '"Every bug is just a feature nobody asked for yet."',
-        rating:   '4.6',
         bio:      'Noah co-founded YA!W8 and focuses on game logic and server-side architecture. When he is not debugging, he is probably adding one more mechanic to Box Jumper that nobody asked for.',
-        games:    ['box-jumper', 'cyber-cell', 'wobble-bao']
     },
     'harvey-ablen': {
         name:     'Harvey Ablen',
         role:     'Co-Founder · Backend Developer',
         avatar:   'ta-4',
         initials: 'HA',
+        image:    'assets/images/team/harvey_pfp.jpg',
         quote:    '"Strategy games taught me that the best move is usually the one your opponent does not expect."',
-        rating:   '4.7',
         bio:      'Harvey co-founded YA!W8 and specialises in game systems and balance. Tower Tactics started as a weekend experiment and somehow became the most played strategy game on the platform.',
-        games:    ['tower-tactics', 'wobble-bao']
     }
 };
 
@@ -70,19 +66,12 @@ function openAboutDevModal(devId) {
     const dev = aboutDevDatabase[devId];
     if (!dev || !aboutDevModal) return;
 
-    const gamesHTML = dev.games.map(id => `
-        <div class="adev-game-pill">
-            <svg viewBox="0 0 24 24" style="width:12px;height:12px;fill:var(--cyan);flex-shrink:0;">
-                <path d="M15 7.5V2H9v5.5l3 3 3-3zM7.5 9H2v6h5.5l3-3-3-3zM9 16.5V22h6v-5.5l-3-3-3 3zM16.5 9l-3 3 3 3H22V9h-5.5z"/>
-            </svg>
-            ${getGameName(id)}
-        </div>
-    `).join('');
-
     aboutDevModalInner.innerHTML = `
         <div style="display:flex; align-items:center; gap:16px; margin-bottom:20px;">
-            <div class="team-avatar ${dev.avatar}" style="width:56px;height:56px;font-size:18px;flex-shrink:0;">
-                ${dev.initials}
+            <div class="team-avatar ${dev.avatar}" style="width:56px;height:56px;font-size:18px;flex-shrink:0;overflow:hidden;">
+                ${dev.image
+                ? `<img src="${dev.image}" alt="${dev.name}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;" />`
+                : dev.initials}
             </div>
             <div>
                 <h2 style="font-size:18px;font-weight:800;color:var(--white);margin:0 0 4px;">${dev.name}</h2>
@@ -95,17 +84,9 @@ function openAboutDevModal(devId) {
             </svg>
             <span>${dev.quote}</span>
         </div>
-        <div class="adev-row">
-            <span class="adev-label">Rating</span>
-            <span class="adev-rating">★ ${dev.rating}</span>
-        </div>
         <div class="adev-row" style="flex-direction:column;align-items:flex-start;gap:6px;">
             <span class="adev-label">About</span>
             <p style="font-size:12px;color:var(--muted);line-height:1.8;margin:0;">${dev.bio}</p>
-        </div>
-        <div class="adev-row" style="flex-direction:column;align-items:flex-start;gap:8px;">
-            <span class="adev-label">Developed Games</span>
-            <div style="display:flex;flex-wrap:wrap;gap:8px;">${gamesHTML}</div>
         </div>
     `;
 

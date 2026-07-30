@@ -125,6 +125,14 @@
     color: #fff;
 }
 
+.team-avatar-img {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
 /* Profile Background */
 .ta-1 { 
     background: linear-gradient(135deg, var(--cyan), var(--purple)); 
