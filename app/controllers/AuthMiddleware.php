@@ -22,12 +22,12 @@ class AuthMiddleware{
     }
 
     public static function authorizationHeader(){
-            return $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
+        return $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
     }
 
-        private static function json(array $data, int $status = 200){
-            http_response_code($status);
-            header('Content-Type: application/json');
-            echo json_encode($data);
-        }
+    private static function json(array $data, int $status = 200){
+        http_response_code($status);
+        header('Content-Type: application/json');
+        echo json_encode($data);
+    }
 }

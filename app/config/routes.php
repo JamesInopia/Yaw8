@@ -13,20 +13,25 @@ return [
 
     # Content routes
         # games
-        'games'      => [GamesController::class, 'index'],
+        'games'             => [GamesController::class, 'index'],
+        'games/details'      => [GamesController::class, 'detail'],
+        'games/player'      => [GamesController::class, 'player'],
+        'games/all'         => [GamesController::class, 'all'],
+        'games/topPlayed'   => [GamesController::class, 'topPlayed'],
+        'games/featured'    => [GamesController::class, 'featured'],
 
         # developers
-        'developers' => [DevelopersController::class, 'index'],
+        'developers'        => [DevelopersController::class, 'index'],
 
         # about
-        'about'      => [AboutController::class, 'index'],
+        'about'             => [AboutController::class, 'index'],
 
         #profile
-        'profile'    => [ProfileController::class, 'index'],
+        'profile'           => [ProfileController::class, 'index'],
         
         #settings
-        'settings'   => [SettingsController::class, 'index'],
+        'settings'          => [SettingsController::class, 'index'],
 
     # API routes
-    'api/profile'=> [AuthController::class, 'profile'],
+    'api/profile'           => [AuthController::class, 'profile'],
 ];

@@ -44,147 +44,41 @@
 
       <div class="games-grid">
 
-        <!-- Pixel Drift -->
-        <div class="game-card" data-game-id="pixel-drift">
-          <div class="game-thumb gt-pixel-drift">
-            <div class="game-thumb-title">PIXEL<br>DRIFT</div>
-          </div>
-          <div class="game-info">
-            <div class="game-meta">
-              <span class="game-name">Pixel Drift</span>
-              <span class="game-more">···</span>
-            </div>
-            <div class="game-genre">Racing</div>
-            <div class="game-footer">
-              <span class="stars">★ 4.6</span>
-              <button class="btn-play">PLAY</button>
-            </div>
-          </div>
-        </div>
+        <?php if(isset($featuredGames)): ?>
+          <section class="top-played-games">
+              <?php foreach($featuredGames as $featuredGame): ?>
+                  <div class="game-card"
+                      data-game-id="<?= htmlspecialchars($featuredGame->getGameId()) ?>"
+                      data-title="<?= htmlspecialchars($featuredGame->getTitle()) ?>"
+                      data-description="<?= htmlspecialchars($featuredGame->getDescription()) ?>"
+                      data-controls="<?= htmlspecialchars($featuredGame->getControls()) ?>"
+                      data-total-plays="<?= htmlspecialchars($featuredGame->getTotalPlays()) ?>"
+                      data-date-released="<?= htmlspecialchars($featuredGame->getDateReleased()) ?>"
+                      data-last-updated="<?= htmlspecialchars($featuredGame->getLastUpdated()) ?>"
+                      data-thumbnail="<?= htmlspecialchars($featuredGame->getThumbnail()) ?>"
+                      data-genre-names="<?= htmlspecialchars($featuredGame->getGenreNames()) ?>"
+                      data-avg-rating="<?= htmlspecialchars($featuredGame->getAvgRating()) ?>"
+                      data-dev-names="<?= htmlspecialchars($featuredGame->getDevNames()) ?>"
+                  >
+                      <div class="game-thumb sp-forest">
+                          <img src="<?= htmlspecialchars($featuredGame->getThumbnail()) ?>" alt="<?= htmlspecialchars($featuredGame->getTitle()) ?>">
+                      </div>
+                      <div class="game-info">
+                          <div class="game-meta">
+                              <span class="game-name"><?= htmlspecialchars($featuredGame->getTitle()) ?></span>
+                              <span class="game-more">···</span>
+                          </div>
+                          <div class="game-genre"><?= htmlspecialchars($featuredGame->getGenreNames()) ?></div>
+                          <div class="game-footer">
+                              <span class="stars"><?= htmlspecialchars($featuredGame->getAvgRating()) ?></span>
+                              <button class="btn-play">PLAY</button>
+                          </div>
+                      </div>
+                  </div>
+              <?php endforeach; ?>
+          </section>
+        <?php endif; ?>
 
-        <!-- Tower Tactics -->
-        <div class="game-card" data-game-id="tower-tactics">
-          <div class="game-thumb gt-tower-tactics">
-            <div class="game-thumb-title">TOWER<br>TACTICS</div>
-          </div>
-          <div class="game-info">
-            <div class="game-meta">
-              <span class="game-name">Tower Tactics</span>
-              <span class="game-more">···</span>
-            </div>
-            <div class="game-genre">Strategy</div>
-            <div class="game-footer">
-              <span class="stars">★ 4.7</span>
-              <button class="btn-play">PLAY</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Box Jumper -->
-        <div class="game-card" data-game-id="box-jumper">
-          <div class="game-thumb gt-box-jumper">
-            <div class="game-thumb-title">BOX<br>JUMPER</div>
-          </div>
-          <div class="game-info">
-            <div class="game-meta">
-              <span class="game-name">Box Jumper</span>
-              <span class="game-more">···</span>
-            </div>
-            <div class="game-genre">Arcade</div>
-            <div class="game-footer">
-              <span class="stars">★ 4.5</span>
-              <button class="btn-play">PLAY</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Color Clash -->
-        <div class="game-card" data-game-id="color-clash">
-          <div class="game-thumb gt-color-clash">
-            <div class="game-thumb-title">COLOR<br>CLASH</div>
-          </div>
-          <div class="game-info">
-            <div class="game-meta">
-              <span class="game-name">Color Clash</span>
-              <span class="game-more">···</span>
-            </div>
-            <div class="game-genre">Puzzle</div>
-            <div class="game-footer">
-              <span class="stars">★ 4.4</span>
-              <button class="btn-play">PLAY</button>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </section>
-
-
-    <!-- ──────────────────────
-        COMMUNITY SPOTLIGHT
-    ────────────────────── -->
-    <section class="panel">
-      <div class="section-header">
-        <h2 class="section-title">
-          <!-- Star icon -->
-          <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
-          Community Spotlight
-        </h2>
-        <a class="view-all" href="?url=games#community-spotlight">View All →</a>
-      </div>
-
-      <div class="spotlight-grid">
-
-        <!-- Wobble Bao -->
-        <div class="spotlight-card" data-game-id="wobble-bao">
-          <div class="spotlight-thumb sp-forest">
-            <span class="badge badge-nominated">Most Nominated</span>
-          </div>
-          <div class="spotlight-info">
-            <div class="spotlight-name">Wobble Bao</div>
-            <div class="spotlight-by"><span class="dev-inline">by </span><a href="?url=developers#dev-christine-arenal" class="dev-name-link">Christine Arenal</a></div>
-              <div class="spotlight-footer">
-                <div class="spotlight-likes">❤️ 28</div>
-                <button class="btn-play">PLAY</button>
-              </div>
-          </div>
-        </div>
-
-        <!-- Cyber Cell -->
-        <div class="spotlight-card" data-game-id="cyber-cell">
-          <div class="spotlight-thumb sp-cyber">
-            <span class="badge badge-rising">Rising Star</span>
-          </div>
-          <div class="spotlight-info">
-            <div class="spotlight-name">Cyber Cell</div>
-            <div class="spotlight-by"><span class="dev-inline">by </span><a href="?url=developers#dev-noah-lonoy" class="dev-name-link">Noah Lonoy</a></div>
-              <div class="spotlight-footer">
-                <div class="spotlight-likes">⭐ 18</div>
-                <button class="btn-play">PLAY</button>
-              </div>
-          </div>
-        </div>
-
-        <!-- Space Cleanup -->
-        <div class="spotlight-card" data-game-id="space-cleanup">
-          <div class="spotlight-thumb sp-space">
-            <span class="badge badge-gem">Hidden Gem ✦</span>
-          </div>
-          <div class="spotlight-info">
-            <div class="spotlight-name">Space Cleanup</div>
-            <div class="spotlight-by"><span class="dev-inline">by </span><a href="?url=developers#dev-james-inopia" class="dev-name-link">James Inopia</a></div>
-              <div class="spotlight-footer">
-                <div class="spotlight-likes">✨ 15</div>
-                <button class="btn-play">PLAY</button>
-              </div>
-          </div>
-        </div>
-
-      </div>
-
-      <div class="spotlight-cta">
-        <p>Nominate games you love and help them get the spotlight!</p>
-        <button class="btn-nominate">Nominate a Game</button>
       </div>
     </section>
 

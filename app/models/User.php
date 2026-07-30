@@ -38,14 +38,14 @@ class User {
     # Function that adds a user to the database
     public function addUser($fullname, $username, $email, $password, $role): bool {
         $pdo = Database::connect();
-        $stmt = $pdo->prepare('INSERT INTO user (fullname, username, email, password, role) VALUES (?, ?, ?, ?, ?)');
+        $stmt = $pdo->prepare('INSERT INTO user_account (fullname, username, email, password, role) VALUES (?, ?, ?, ?, ?)');
         return $stmt->execute([trim($fullname), trim($username), trim($email), trim($password), trim($role)]);
     }
 
     # Function that deletes user in the database
     public function deleteUser($id): bool {
         $pdo = Database::connect();
-        $stmt = $pdo->prepare('DELETE FROM user WHERE id = ?');
+        $stmt = $pdo->prepare('DELETE FROM user_account WHERE id = ?');
         
         return $stmt->execute([$id]);
     }
@@ -53,7 +53,7 @@ class User {
     # Functions that verify user credentials
     public function verifyUsername($username) : ?array {
         $pdo = Database::connect();
-        $stmt = $pdo->prepare('SELECT * FROM user WHERE username = ? LIMIT 1');
+        $stmt = $pdo->prepare('SELECT * FROM user_account WHERE username = ? LIMIT 1');
         $stmt->execute([$username]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -62,7 +62,7 @@ class User {
 
     public function verifyEmail($email) : ?array {
         $pdo = Database::connect();
-        $stmt = $pdo->prepare('SELECT * FROM user WHERE email = ? LIMIT 1');
+        $stmt = $pdo->prepare('SELECT * FROM user_account WHERE email = ? LIMIT 1');
         $stmt->execute([$email]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
