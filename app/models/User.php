@@ -116,4 +116,19 @@ class User {
 
         return $user ?: null;
     }
+
+    public function getAllUsers() {
+        $pdo = Database::connect();
+        $sql = 'SELECT u.userId AS id, u.fullname AS name, u.role, u.bio, 
+                    COUNT(DISTINCT g.gameId) AS games,
+                    AVG(r.rating) AS avgRating,
+                    COUNT(r.rating) AS ratingCount
+                FROM user_account u
+                LEFT JOIN game_devs gd ON u.userId = gd.userId
+                LEFT JOIN game g ON gd.gameId = g.gameId AND g.status = "published"
+                LEFT JOIN rating r ON r.gameId = g.gameId
+                GROUP BY u.userId';
+        $stmt = $pdo->query($sql);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }
