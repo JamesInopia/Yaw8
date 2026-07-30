@@ -14,7 +14,6 @@
     </div>
 </section>
 
-
 <!-- ─────────────────
     TOP DEVELOPERS
 ───────────────── -->
@@ -29,7 +28,6 @@
 
     <div class="top-dev-grid" id="topDevGrid"></div>
 </section>
-
 
 <!-- ─────────────────
     ALL DEVELOPERS
@@ -46,20 +44,12 @@
     <div class="all-dev-grid" id="allDevGrid"></div>
 </section>
 
-
-<!-- ─────────────────
-    GAME COLLABORATIONS
-───────────────── -->
-<section class="panel" id="game-collaborations">
-    <div class="section-header">
-    <h2 class="section-title">
-        <!-- Gamepad icon -->
-        <svg viewBox="0 0 24 24"><path d="M15 7.5V2H9v5.5l3 3 3-3zM7.5 9H2v6h5.5l3-3-3-3zM9 16.5V22h6v-5.5l-3-3-3 3zM16.5 9l-3 3 3 3H22V9h-5.5z"/></svg>
-        Game Collaborations
-    </h2>
-    </div>
-
-    <div class="collab-list" id="collabList"></div>
-</section>
+<!-- Include the Modal Partial -->
+<?php require_once 'developerDetails-modal.php'; ?>
 
 </main><!-- end .main-col -->
+
+<!-- Safely pass the database payload to JavaScript -->
+<script>
+    const developerDatabase = <?= json_encode($data['developerDatabase'] ?? []) ?>;
+</script>

@@ -6,14 +6,16 @@ class User {
     private $email;
     private $password;
     private $role;
+    private $bio;
 
-    public function __construct($userId = '', $fullname = '', $username = '', $email = '', $password = '', $role = ''){
+    public function __construct($userId = '', $fullname = '', $username = '', $email = '', $password = '', $role = '', $bio = ''){
         $this->userId = $userId;
         $this->fullname = $fullname;
         $this->username = $username;
         $this->email = $email;
         $this->password = $password;
         $this->role = $role;
+        $this->bio = $bio;
     }
 
     # Getters and Setters for user ID, Username, and Password
@@ -33,15 +35,22 @@ class User {
     public function setPassword($password) { $this->password = $password; }
 
     public function getRole() {return $this->role; }
-    public function setRole($role) { $this->role = $role; } 
+    public function setRole($role) { $this->role = $role; }
+    
+    public function getBio() {return $this->bio; }
+    public function setBio($bio) { $this->bio = $bio;}
 
     # Function that adds a user to the database
-    public function addUser($fullname, $username, $email, $password, $role): bool {
+    public function addUser($fullname, $username, $email, $password, $role) {
         $pdo = Database::connect();
         $stmt = $pdo->prepare('INSERT INTO user_account (fullname, username, email, password, role) VALUES (?, ?, ?, ?, ?)');
-        return $stmt->execute([trim($fullname), trim($username), trim($email), trim($password), trim($role)]);
+        
+        if ($stmt->execute([trim($fullname), trim($username), trim($email), trim($password), trim($role)])) {
+            return $pdo->lastInsertId();
+        }
+        return false;
     }
-
+    
     # Function that deletes user in the database
     public function deleteUser($id): bool {
         $pdo = Database::connect();
@@ -67,5 +76,59 @@ class User {
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
         return $user ?: null;
+    }
+
+    # Function that edits/updates an existing user's profile
+    public function editUser($id, $fullname, $username, $bio): bool {
+        $pdo = Database::connect();
+        
+        $sql = 'UPDATE user_account SET fullname = ?, username = ?, bio = ? WHERE userId = ?';
+        $stmt = $pdo->prepare($sql);
+        
+        return $stmt->execute([
+            trim($fullname), 
+            trim($username), 
+            trim($bio), 
+            $id
+        ]);
+    }
+
+    # Function to update user email
+    public function updateEmail($userId, $email): bool {
+        $pdo = Database::connect();
+        $stmt = $pdo->prepare('UPDATE user_account SET email = ? WHERE userId = ?');
+        return $stmt->execute([trim($email), $userId]);
+    }
+
+    # Function to update user password
+    public function updatePassword($userId, $hashedPassword): bool {
+        $pdo = Database::connect();
+        $stmt = $pdo->prepare('UPDATE user_account SET password = ? WHERE userId = ?');
+        return $stmt->execute([$hashedPassword, $userId]);
+    }
+
+    public function getUserById($userId) : ?array {
+        $pdo = Database::connect();
+        $stmt = $pdo->prepare('SELECT * FROM user_account WHERE userId = ? LIMIT 1');
+        $stmt->execute([$userId]);
+
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $user ?: null;
+    }
+
+    public function getAllUsers() {
+        $pdo = Database::connect();
+        $sql = 'SELECT u.userId AS id, u.fullname AS name, u.role, u.bio, 
+                    COUNT(DISTINCT g.gameId) AS games,
+                    AVG(r.rating) AS avgRating,
+                    COUNT(r.rating) AS ratingCount
+                FROM user_account u
+                LEFT JOIN game_devs gd ON u.userId = gd.userId
+                LEFT JOIN game g ON gd.gameId = g.gameId AND g.status = "published"
+                LEFT JOIN rating r ON r.gameId = g.gameId
+                GROUP BY u.userId';
+        $stmt = $pdo->query($sql);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }
