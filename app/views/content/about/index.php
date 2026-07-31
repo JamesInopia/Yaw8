@@ -26,7 +26,7 @@
       </h2>
     </div>
     <p style="font-size: 13px; line-height: 1.9; color: var(--muted);">
-      YA!W8 started as a hallway joke....
+      YA!W8 started as a hallway joke. 'What if we made a Y8 but for iAcademy student's games?' and thus a finals project was born. YA!W8 is a game hosting website that allows students to play and upload games from iAcademy Cebu students.
     </p>
   </section>
 

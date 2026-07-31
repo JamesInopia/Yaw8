@@ -131,6 +131,7 @@
     border-radius: 50%;
     object-fit: cover;
     flex-shrink: 0;
+    margin: 0 auto 14px;
 }
 
 /* Profile Background */
