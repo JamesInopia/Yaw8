@@ -12,7 +12,7 @@
   let allGames = [];
 
   try {
-    const response = await fetch("?url=games/all");
+    const response = await fetch("?url=games/all", { headers: authHeaders() });
     if (!response.ok) {
       throw new Error(`An error has occured. Status: ${response.status}`);
     }
@@ -32,7 +32,7 @@
   ];
   let activeGenre = "All";
 
-  const picturedThumbnails = ["sp-forest"];
+  const colorClasses = ["gt-pixel-drift", "gt-tower-tactics", "gt-box-jumper", "gt-color-clash"];
 
   function renderGrid() {
     grid.innerHTML = "";
@@ -42,7 +42,7 @@
       return activeGenre === "All" || genre === activeGenre;
     });
 
-    filteredGames.forEach((game) => {
+    filteredGames.forEach((game, index) => {
       const card = document.createElement("div");
       card.className = "game-card";
 
@@ -70,11 +70,13 @@
       card.setAttribute("data-avg-rating", rating);
       card.setAttribute("data-dev-names", devNames);
 
-      const showTitle = !picturedThumbnails.includes(game.thumbnail);
+      const hasThumbnail = Boolean(thumbnail);
+      const colorClass = colorClasses[index % colorClasses.length];
+      const thumbClass = hasThumbnail ? "sp-forest" : colorClass;
       card.innerHTML = `
-            <div class="game-thumb ${thumbnail}">
+            <div class="game-thumb ${thumbClass}">
                 ${
-                  showTitle && thumbnail
+                  hasThumbnail
                     ? `<img src="${thumbnail}" alt="${title}">`
                     : `<div class="game-thumb-title">${title.toUpperCase().split(" ").join("<br>")}</div>`
                 }

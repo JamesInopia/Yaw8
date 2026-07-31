@@ -200,15 +200,4 @@ class AuthController extends Controller {
             ]
         ]);
     }
-
-    private function jsonInput(): array {
-        $raw = file_get_contents('php://input');
-        $input = json_decode($raw, true);
-
-        if (is_array($input)) {
-            return $input;
-        }
-
-        return $_POST;
-    }
 }

@@ -14,11 +14,13 @@ return [
     # Content routes
         # games
         'games'             => [GamesController::class, 'index'],
-        'games/details'      => [GamesController::class, 'detail'],
+        'games/details'      => [GamesController::class, 'details'],
         'games/player'      => [GamesController::class, 'player'],
         'games/all'         => [GamesController::class, 'all'],
         'games/topPlayed'   => [GamesController::class, 'topPlayed'],
         'games/featured'    => [GamesController::class, 'featured'],
+        'games/play'        => [GamesController::class, 'play'],
+        'games/rate'        => [GamesController::class, 'rate'],
 
         # developers
         'developers'        => [DevelopersController::class, 'index'],

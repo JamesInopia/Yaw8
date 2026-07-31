@@ -46,6 +46,7 @@
     position: relative;
     width: 100%;
     aspect-ratio: 16/9;
+    min-height: 560px;
     background: #000;
     border-radius: 10px;
     overflow: hidden;
@@ -291,6 +292,43 @@
 .gp-action-btn.danger:hover {
     color: #ff7070;
     border-color: #ff5f5f;
+}
+
+/* ── 1-5 star rating widget (replaces the old Like button) ── */
+
+.gp-star-rating {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    background: rgba(255,255,255,.05);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 6px 10px;
+}
+
+.gp-star {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 16px;
+    line-height: 1;
+    color: var(--card-border);
+    cursor: pointer;
+    transition: color .15s, transform .1s;
+}
+
+.gp-star:hover {
+    transform: scale(1.15);
+}
+
+.gp-star.filled,
+.gp-star.hover-preview {
+    color: #fbbf24;
+}
+
+.gp-star-rating.submitting {
+    opacity: .6;
+    pointer-events: none;
 }
 
 /* ── Tabs ── */

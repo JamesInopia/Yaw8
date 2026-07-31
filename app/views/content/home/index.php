@@ -1,6 +1,25 @@
 <!-- ══════════════════════════════════════════
     PAGE BODY (HOME VIEW)
 ══════════════════════════════════════════ -->
+<?php
+if (!function_exists('yaw8_thumbnail_html')) {
+    // Renders a game's thumbnail: the real image if one exists,
+    // otherwise a colored placeholder with the title as text
+    // (cycles through 4 preset color classes so cards don't all look the same).
+    function yaw8_thumbnail_html($thumbnail, $title, $index) {
+        $colorClasses = ['gt-pixel-drift', 'gt-tower-tactics', 'gt-box-jumper', 'gt-color-clash'];
+
+        if (!empty($thumbnail)) {
+            return '<div class="game-thumb sp-forest"><img src="' . htmlspecialchars($thumbnail) . '" alt="' . htmlspecialchars($title) . '"></div>';
+        }
+
+        $colorClass = $colorClasses[$index % count($colorClasses)];
+        $titleText = str_replace(' ', '<br>', strtoupper(htmlspecialchars($title)));
+
+        return '<div class="game-thumb ' . $colorClass . '"><div class="game-thumb-title">' . $titleText . '</div></div>';
+    }
+}
+?>
   <!-- ── MAIN COLUMN ── -->
   <main class="main-col">
 
@@ -46,7 +65,7 @@
 
         <?php if(isset($featuredGames)): ?>
           <section class="top-played-games">
-              <?php foreach($featuredGames as $featuredGame): ?>
+              <?php foreach($featuredGames as $index => $featuredGame): ?>
                   <div class="game-card"
                       data-game-id="<?= htmlspecialchars($featuredGame->getGameId()) ?>"
                       data-title="<?= htmlspecialchars($featuredGame->getTitle()) ?>"
@@ -60,9 +79,7 @@
                       data-avg-rating="<?= htmlspecialchars($featuredGame->getAvgRating()) ?>"
                       data-dev-names="<?= htmlspecialchars($featuredGame->getDevNames()) ?>"
                   >
-                      <div class="game-thumb sp-forest">
-                          <img src="<?= htmlspecialchars($featuredGame->getThumbnail()) ?>" alt="<?= htmlspecialchars($featuredGame->getTitle()) ?>">
-                      </div>
+                      <?= yaw8_thumbnail_html($featuredGame->getThumbnail(), $featuredGame->getTitle(), $index) ?>
                       <div class="game-info">
                           <div class="game-meta">
                               <span class="game-name"><?= htmlspecialchars($featuredGame->getTitle()) ?></span>
@@ -114,100 +131,4 @@
       </div>
       <button class="btn-surprise">Surprise Me!</button>
     </div>
-
-    <!-- DAILY CHALLENGE -->
-    <div class="widget">
-      <div class="daily-row">
-        <div class="trophy-box">
-          <!-- Trophy icon -->
-          <svg viewBox="0 0 24 24"><path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94.63 1.5 1.98 2.63 3.61 2.96V19H7v2h10v-2h-4v-3.1c1.63-.33 2.98-1.46 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1z"/></svg>
-        </div>
-        <div>
-          <strong>Daily Challenge</strong>
-          <p>Play a game and complete the challenge to earn XP!</p>
-        </div>
-      </div>
-      <div class="challenge-task">
-        <p>Play a Platformer game without losing once.</p>
-        <div class="progress-bar"><div class="progress-fill"></div></div>
-        <div class="progress-label">0 / 1</div>
-        <div class="reward">Reward: 50 XP</div>
-      </div>
-    </div>
-
-    <!-- TOP PLAYED THIS WEEK -->
-    <div class="widget">
-      <div class="widget-title">
-        <!-- Fire icon -->
-        <svg viewBox="0 0 24 24"><path d="M13.5.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5.67zM11.71 19c-1.78 0-3.22-1.4-3.22-3.14 0-1.62 1.05-2.76 2.81-3.12 1.77-.36 3.6-1.21 4.62-2.58.39 1.29.59 2.65.59 4.04 0 2.65-2.15 4.8-4.8 4.8z"/></svg>
-        Top Played This Week
-      </div>
-      <div class="leaderboard">
-        <div class="lb-row">
-          <span class="lb-rank">1</span>
-          <div class="lb-thumb lb-t1">PD</div>
-          <span class="lb-name">Pixel Drift</span>
-          <span class="lb-plays">2.1K plays</span>
-        </div>
-        <div class="lb-row">
-          <span class="lb-rank">2</span>
-          <div class="lb-thumb lb-t2">TT</div>
-          <span class="lb-name">Tower Tactics</span>
-          <span class="lb-plays">1.8K plays</span>
-        </div>
-        <div class="lb-row">
-          <span class="lb-rank">3</span>
-          <div class="lb-thumb lb-t3">BJ</div>
-          <span class="lb-name">Box Jumper</span>
-          <span class="lb-plays">1.6K plays</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- TOP DEVELOPERS -->
-    <div class="widget">
-      <div class="section-header" style="margin-bottom:12px">
-        <div class="widget-title" style="margin:0">
-          <!-- People icon -->
-          <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
-          Top Developers
-        </div>
-        <a class="view-all" href="?url=developers">View All →</a>
-      </div>
-      <div class="dev-list">
-        <div class="dev-row">
-          <div class="dev-avatar da-1">JA</div>
-          <div class="dev-info">
-            <div class="dev-name">James Inopia</div>
-            <div class="dev-games">12 Games</div>
-          </div>
-          <div class="dev-rating">★ 4.8</div>
-        </div>
-        <div class="dev-row">
-          <div class="dev-avatar da-2">MC</div>
-          <div class="dev-info">
-            <div class="dev-name">Christine Arenal</div>
-            <div class="dev-games">8 Games</div>
-          </div>
-          <div class="dev-rating">★ 4.7</div>
-        </div>
-        <div class="dev-row">
-          <div class="dev-avatar da-3">NG</div>
-          <div class="dev-info">
-            <div class="dev-name">Noah Lonoy</div>
-            <div class="dev-games">6 Games</div>
-          </div>
-          <div class="dev-rating">★ 4.6</div>
-        </div>
-        <div class="dev-row">
-          <div class="dev-avatar da-4">HT</div>
-          <div class="dev-info">
-            <div class="dev-name">Harvey Ablen</div>
-            <div class="dev-games">5 Games</div>
-          </div>
-          <div class="dev-rating">★ 4.5</div>
-        </div>
-      </div>
-    </div>
-
   </aside><!-- end .side-col -->

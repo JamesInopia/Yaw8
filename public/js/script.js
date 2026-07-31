@@ -10,6 +10,37 @@ const CAROUSEL_VISIBLE_ITEMS = 4; // number of cards shown at a time
 let currentGameId = null;
 let carouselIndex = 0; // current starting card index
 
+// Same pixel-art color themes used as fallback thumbnails on the game
+// cards grid (see games.js).
+const THUMB_COLOR_CLASSES = ["gt-pixel-drift", "gt-tower-tactics", "gt-box-jumper", "gt-color-clash"];
+
+// Deterministically picks one of the color themes for a game so the same
+// game always gets the same fallback look, wherever it's shown.
+function getThumbColorClass(key) {
+  const str = String(key || "");
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
+  }
+  return THUMB_COLOR_CLASSES[hash % THUMB_COLOR_CLASSES.length];
+}
+
+// Fills a thumbnail container (modal header, carousel card, etc.) with the
+// game's image, or — when no thumbnail is set — a colored background plus
+// the game's title, matching the fallback style used on the games grid.
+function renderThumbInto(container, thumbnail, title, key) {
+  if (!container) return;
+  container.classList.remove(...THUMB_COLOR_CLASSES);
+
+  if (thumbnail) {
+    container.innerHTML = `<img src="${thumbnail}" alt="${title || ""}">`;
+  } else {
+    container.classList.add(getThumbColorClass(key));
+    const label = (title || "").toUpperCase().split(" ").join("<br>");
+    container.innerHTML = `<div class="game-thumb-title">${label}</div>`;
+  }
+}
+
 // Open modal only when clicking the card (not the play button)
 document.querySelectorAll(".game-card").forEach((card) => {
   card.addEventListener("click", function (e) {
@@ -21,14 +52,16 @@ document.querySelectorAll(".game-card").forEach((card) => {
   });
 });
 
-function openGameModal(gameData) {
+async function openGameModal(gameData) {
   currentGameId = gameData.gameId;
 
   // Update modal content
   document.getElementById("modalGameName").textContent = gameData.title;
 
   try {
-    const response = await fetch(`?url=games/details&gameId=${gameData.gameId}`);
+    const response = await fetch(`?url=games/details&gameId=${gameData.gameId}`, {
+        headers: authHeaders(),
+    });
     if (!response.ok) {
       throw new Error(`An error has occured. Status: ${response.status}`);
     }
@@ -47,7 +80,7 @@ function openGameModal(gameData) {
     document.getElementById("modalGameReleased").textContent =
       fullGame.dateReleased || "—";
     const modalThumb = document.getElementById("modalThumbnail");
-    modalThumb.innerHTML = `<img src="${fullGame.thumbnail}" alt="${fullGame.title}">`;
+    renderThumbInto(modalThumb, fullGame.thumbnail, fullGame.title, fullGame.gameId);
 
     // Reset carousel
     carouselIndex = 0;
@@ -86,7 +119,7 @@ document.addEventListener("keydown", function (e) {
 });
 
 // ═══════════════════════════════════════════
-// PLAY BUTTON — send the user to the game page
+// PLAY BUTTON
 // ═══════════════════════════════════════════
 // Path detection + resolver
 const pathname = window.location.pathname;
@@ -94,7 +127,7 @@ const inContentFolder = /\/app\/views\/content\//.test(pathname);
 
 // Updated navigation helper
 function goToGamePage(gameId) {
-  window.location.href = `${gamePagePath}?game=${gameId}`;
+  window.location.href = `${gamePagePath}&gameId=${gameId}`;
 }
 
 document.addEventListener("click", function (e) {
@@ -117,13 +150,13 @@ if (modalPlayBtn) {
 
 // ─────────────────────────────────────────────
 // DEVELOPER DISPLAY
-// Always shows first 2 devs. The 3rd dev and beyond
-// are hidden behind "+N more" and revealed on click.
-// Each dev name is a hoverable link to their profile.
 // ─────────────────────────────────────────────
 function renderDevelopers(developerString) {
   const wrap = document.getElementById("modalDeveloperWrap");
   wrap.innerHTML = "";
+
+  // Guard against null/undefined (e.g. a game with no developer linked yet)
+  developerString = developerString || "";
 
   // Strip leading "by " and split on comma
   const cleaned = developerString.replace(/^by\s+/i, "");
@@ -148,6 +181,8 @@ function renderDevelopers(developerString) {
     a.textContent = name;
     return a;
   }
+
+  if (devs.length === 0) return; // no developers linked to this game yet
 
   // "by " prefix
   const byText = document.createElement("span");
@@ -209,9 +244,7 @@ function renderDevelopers(developerString) {
 }
 
 // ═══════════════════════════════════════════
-// CAROUSEL FUNCTIONALITY (RECOMMENDED GAMES)
-// Shows exactly 4 cards at a time. Prev/Next move
-// one full page (4 cards) at a time.
+// CAROUSEL FUNCTIONALITY
 // ═══════════════════════════════════════════
 function populateCarousel(excludeGameId) {
   const carouselTrack = document.getElementById("carouselTrack");
@@ -234,7 +267,7 @@ function populateCarousel(excludeGameId) {
     carouselItem.className = "carousel-item";
     carouselItem.innerHTML = `
             <div class="carousel-card">
-                <div class="carousel-thumb"><img src="${game.thumbnail}" alt=${game.title}></div>
+                <div class="carousel-thumb"></div>
                 <div class="carousel-info">
                 <div class="carousel-name">${game.title}</div>
                 <div class="carousel-by">${game.devNames}</div>
@@ -243,6 +276,12 @@ function populateCarousel(excludeGameId) {
                 </div>
             </div>
             `;
+    renderThumbInto(
+      carouselItem.querySelector(".carousel-thumb"),
+      game.thumbnail,
+      game.title,
+      game.gameId,
+    );
     carouselItem.addEventListener("click", function () {
       openGameModal(game);
     });
@@ -323,9 +362,7 @@ document.querySelectorAll(".nav-links a").forEach((link) => {
 });
 
 // ═══════════════════════════════════════════
-// NAVBAR — User dropdown toggle
-// Clicking the avatar button opens/closes the
-// dropdown. Clicking anywhere else closes it.
+// NAVBAR
 // ═══════════════════════════════════════════
 const avatarBtn = document.getElementById("avatarBtn");
 const userDropdown = document.getElementById("userDropdown");
@@ -483,7 +520,7 @@ document.querySelectorAll("a").forEach((link) => {
 });
 
 // ═══════════════════════════════════════════
-// LOADING SCREEN (Triggers only on Auth transitions)
+// LOADING SCREEN
 // ═══════════════════════════════════════════
 (function () {
   const loadingScreen = document.getElementById("loading-screen");
@@ -541,9 +578,7 @@ document.querySelectorAll("a").forEach((link) => {
 })();
 
 // ═══════════════════════════════════════════
-// EXPLORE NOW — smooth scroll to Featured Games
-// Scrolls a bit short of the very top of the
-// section so the floating navbar doesn't cover it.
+// EXPLORE NOW.
 // ═══════════════════════════════════════════
 const exploreLink = document.querySelector(
   '.btn-primary a[href="#featured-games"]',

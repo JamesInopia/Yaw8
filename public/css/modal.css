@@ -113,6 +113,16 @@
         background-position: center;
     }
 
+    /* The modal thumbnail box is much bigger than a grid card, so scale
+       up the fallback title (colored bg + game name) to match. */
+    .modal-thumb .game-thumb-title {
+        font-size: 16px;
+    }
+
+    .carousel-thumb .game-thumb-title {
+        font-size: 9px;
+    }
+
     .modal-header-info h1 {
         font-size: 32px;
         font-weight: 800;

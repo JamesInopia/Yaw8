@@ -139,7 +139,14 @@ class ProfileController extends Controller {
                 // Hand back the full saved row so the frontend can add it to
                 // the "My Games" grid immediately, without a page refresh.
                 $savedGame = $gameModel->getGameById($newGameId);
-                echo json_encode(['success' => true, 'message' => 'Game submitted successfully.', 'game' => $savedGame]);
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Game submitted successfully.',
+                    'game' => $savedGame,
+                    // TEMPORARY DEBUG — remove once the cause is confirmed.
+                    'debug_files' => $_FILES,
+                    'debug_gameFilePath' => $gameFilePath,
+                ]);
             } else {
                 echo json_encode(['success' => false, 'message' => 'Database error while submitting game.']);
             }

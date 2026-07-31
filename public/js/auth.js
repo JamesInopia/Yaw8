@@ -49,6 +49,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const headingTitle = document.getElementById("authHeadingTitle");
   const headingSub = document.getElementById("authHeadingSub");
 
+  // auth.js now loads on every page (it defines the global authHeaders()/
+  // appUrl() helpers), but the form-loading logic below only applies to
+  // the auth page itself, where #formContainer actually exists.
+  if (!formContainer) return;
+
   // ── CORE FUNCTION: LOAD FORM VIA FETCH ──
   function loadForm(formType) {
     formContainer.style.opacity = "0.5";

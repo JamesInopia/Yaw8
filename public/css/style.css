@@ -653,6 +653,10 @@
         gap: 14px;
     }
 
+    .top-played-games {
+        display: contents;
+    }
+
     .game-card {
         background: #07111d;
         border: 1px solid var(--card-border);

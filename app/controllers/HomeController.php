@@ -6,6 +6,11 @@ class HomeController extends Controller{
 
     # Function that takes user to the index
     public function index(){
-        $this -> view('home/index', []);
+        $gameService = new GameService();
+        $featuredGames = $gameService->getFeaturedGames("", "");
+
+        $this -> view('home/index', [
+            'featuredGames' => $featuredGames
+        ]);
     }
 }

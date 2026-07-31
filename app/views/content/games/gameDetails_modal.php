@@ -47,24 +47,4 @@ GAME DETAILS MODAL
       </div>
     </div>
   </div>
-
-  <!-- Related Games box -->
-  <div class="modal-box modal-related-box">
-    <h3>Related Games</h3>
-    <div class="carousel-wrapper">
-      <button class="carousel-btn carousel-prev">
-        <svg viewBox="0 0 24 24">
-          <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
-        </svg>
-      </button>
-      <div class="carousel-container">
-        <div class="carousel-track" id="carouselTrack"></div>
-      </div>
-      <button class="carousel-btn carousel-next">
-        <svg viewBox="0 0 24 24">
-          <path d="M10 6L8.59 7.41 12.17 11l-3.58 3.59L10 16l6-6z" />
-        </svg>
-      </button>
-    </div>
-  </div>
 </div>

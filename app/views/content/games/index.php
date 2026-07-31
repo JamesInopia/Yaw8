@@ -1,6 +1,25 @@
 <!-- ══════════════════════════════════════════
     PAGE BODY — GAMES PAGE
 ══════════════════════════════════════════ -->
+<?php
+if (!function_exists('yaw8_thumbnail_html')) {
+    // Renders a game's thumbnail: the real image if one exists,
+    // otherwise a colored placeholder with the title as text
+    // (cycles through 4 preset color classes so cards don't all look the same).
+    function yaw8_thumbnail_html($thumbnail, $title, $index) {
+        $colorClasses = ['gt-pixel-drift', 'gt-tower-tactics', 'gt-box-jumper', 'gt-color-clash'];
+
+        if (!empty($thumbnail)) {
+            return '<div class="game-thumb sp-forest"><img src="' . htmlspecialchars($thumbnail) . '" alt="' . htmlspecialchars($title) . '"></div>';
+        }
+
+        $colorClass = $colorClasses[$index % count($colorClasses)];
+        $titleText = str_replace(' ', '<br>', strtoupper(htmlspecialchars($title)));
+
+        return '<div class="game-thumb ' . $colorClass . '"><div class="game-thumb-title">' . $titleText . '</div></div>';
+    }
+}
+?>
 <!-- ─────────────
     PAGE HEADER
 ───────────── -->
@@ -42,9 +61,18 @@
                     data-avg-rating="<?= htmlspecialchars($topPlayedGame->getAvgRating()) ?>"
                     data-dev-names="<?= htmlspecialchars($topPlayedGame->getDevNames()) ?>"
                 >
-                    <div class="game-thumb sp-forest">
+                    <?php
+                        $topHasThumb = !empty($topPlayedGame->getThumbnail());
+                        $topColorClasses = ['gt-pixel-drift', 'gt-tower-tactics', 'gt-box-jumper', 'gt-color-clash'];
+                        $topThumbClass = $topHasThumb ? 'sp-forest' : $topColorClasses[$index % count($topColorClasses)];
+                    ?>
+                    <div class="game-thumb <?= $topThumbClass ?>">
                         <span class="rank-badge rank-<?= $rank ?>"><?= $rank ?></span>
-                        <img src="<?= htmlspecialchars($topPlayedGame->getThumbnail()) ?>" alt="<?= htmlspecialchars($topPlayedGame->getTitle()) ?>">
+                        <?php if ($topHasThumb): ?>
+                            <img src="<?= htmlspecialchars($topPlayedGame->getThumbnail()) ?>" alt="<?= htmlspecialchars($topPlayedGame->getTitle()) ?>">
+                        <?php else: ?>
+                            <div class="game-thumb-title"><?= str_replace(' ', '<br>', strtoupper(htmlspecialchars($topPlayedGame->getTitle()))) ?></div>
+                        <?php endif; ?>
                     </div>
                     <div class="game-info">
                         <div class="game-meta">
@@ -81,7 +109,7 @@
 
     <?php if(isset($featuredGames)): ?>
         <section class="top-played-games">
-            <?php foreach($featuredGames as $featuredGame): ?>
+            <?php foreach($featuredGames as $index => $featuredGame): ?>
                 <div class="game-card"
                     data-game-id="<?= htmlspecialchars($featuredGame->getGameId()) ?>"
                     data-title="<?= htmlspecialchars($featuredGame->getTitle()) ?>"
@@ -95,9 +123,7 @@
                     data-avg-rating="<?= htmlspecialchars($featuredGame->getAvgRating()) ?>"
                     data-dev-names="<?= htmlspecialchars($featuredGame->getDevNames()) ?>"
                 >
-                    <div class="game-thumb sp-forest">
-                        <img src="<?= htmlspecialchars($featuredGame->getThumbnail()) ?>" alt="<?= htmlspecialchars($featuredGame->getTitle()) ?>">
-                    </div>
+                    <?= yaw8_thumbnail_html($featuredGame->getThumbnail(), $featuredGame->getTitle(), $index) ?>
                     <div class="game-info">
                         <div class="game-meta">
                             <span class="game-name"><?= htmlspecialchars($featuredGame->getTitle()) ?></span>
@@ -135,7 +161,7 @@
 
     <?php if(isset($games)): ?>
         <section class="top-played-games">
-            <?php foreach($games as $game): ?>
+            <?php foreach($games as $index => $game): ?>
                 <div class="game-card"
                     data-game-id="<?= htmlspecialchars($game->getGameId()) ?>"
                     data-title="<?= htmlspecialchars($game->getTitle()) ?>"
@@ -149,9 +175,7 @@
                     data-avg-rating="<?= htmlspecialchars($game->getAvgRating()) ?>"
                     data-dev-names="<?= htmlspecialchars($game->getDevNames()) ?>"
                 >
-                    <div class="game-thumb sp-forest">
-                        <img src="<?= htmlspecialchars($game->getThumbnail()) ?>" alt="<?= htmlspecialchars($game->getTitle()) ?>">
-                    </div>
+                    <?= yaw8_thumbnail_html($game->getThumbnail(), $game->getTitle(), $index) ?>
                     <div class="game-info">
                         <div class="game-meta">
                             <span class="game-name"><?= htmlspecialchars($game->getTitle()) ?></span>
@@ -172,18 +196,3 @@
 </section>
 
 </div><!-- end .page-wrap-single -->
-
-
-<!-- ══════════════════════════════════════════
-GAME DETAILS MODAL
-══════════════════════════════════════════ --> 
-<div id="game-modal" class="modal">
-<div class="modal-overlay"></div>
-<div class="modal-content">
-<button class="modal-close">
-    <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-</button>
-
-<?php require __DIR__. "/gameDetails_modal.php" ?>
-
-</div>

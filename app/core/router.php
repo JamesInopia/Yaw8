@@ -20,6 +20,26 @@ class Router {
             return;
         }
 
-        $controller->$method();
+        $args = $this->resolveArgs($controller, $method);
+        $controller->$method(...$args);
+    }
+
+    private function resolveArgs($controller, string $method): array {
+        $reflection = new ReflectionMethod($controller, $method);
+        $args = [];
+
+        foreach ($reflection->getParameters() as $param) {
+            $name = $param->getName();
+
+            if (isset($_GET[$name])) {
+                $args[] = $_GET[$name];
+            } elseif ($param->isDefaultValueAvailable()) {
+                $args[] = $param->getDefaultValue();
+            } else {
+                $args[] = null;
+            }
+        }
+
+        return $args;
     }
 }

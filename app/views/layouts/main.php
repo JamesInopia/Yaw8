@@ -19,7 +19,7 @@
 
     <?php if ($currentRoute === 'auth'): ?>
       <link rel="stylesheet" href="css/auth.css"/>
-    <?php elseif ($currentRoute === 'games'): ?>
+    <?php elseif ($currentRoute === 'games' || $currentRoute === 'games/player'): ?>
       <link rel="stylesheet" href="css/games.css"/>
       <link rel="stylesheet" href="css/gamepage.css"/>
     <?php elseif ($currentRoute === 'developers'): ?>
@@ -72,7 +72,7 @@
         </a>
       </li>
       <li>
-        <a href="?url=games" <?= $currentRoute === 'games' ? 'class="active"' : '' ?> data-nav="games">
+        <a href="?url=games" <?= in_array($currentRoute, ['games', 'games/player']) ? 'class="active"' : '' ?> data-nav="games">
           <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M15 7.5V2H9v5.5l3 3 3-3zM7.5 9H2v6h5.5l3-3-3-3zM9 16.5V22h6v-5.5l-3-3-3 3zM16.5 9l-3 3 3 3H22V9h-5.5z"/></svg>
           Games
         </a>
@@ -138,8 +138,23 @@
 <!-- ══════════════════════════════════════════
     CONTENT
 ══════════════════════════════════════════ -->
-<div class="<?= in_array($currentRoute, ['about', 'games']) ? 'page-wrap-single' : 'page-wrap' ?>" <?= in_array($currentRoute, ['developers', 'profile']) ? 'style="grid-template-columns: 1fr;"' : '' ?>>
+<div class="<?= in_array($currentRoute, ['about', 'games', 'games/player']) ? 'page-wrap-single' : 'page-wrap' ?>" <?= in_array($currentRoute, ['developers', 'profile']) ? 'style="grid-template-columns: 1fr;"' : '' ?>>
     <?= $content ?? '' ?>
+</div>
+
+<!-- ══════════════════════════════════════════
+    GAME DETAILS MODAL (shared across pages)
+══════════════════════════════════════════ -->
+<div id="game-modal" class="modal">
+<div class="modal-overlay"></div>
+<div class="modal-content">
+<button class="modal-close">
+    <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+</button>
+
+<?php require dirname(__DIR__) . "/content/games/gameDetails_modal.php" ?>
+
+</div>
 </div>
 
 <!-- ══════════════════════════════════════════
@@ -212,12 +227,13 @@
 <?php endif; ?>
 
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<?php if ($currentRoute === 'auth'): ?>
-  <script src="js/auth.js"></script>
-<?php else: ?>
+<script src="js/auth.js"></script>
+<?php if ($currentRoute !== 'auth'): ?>
   <script src="js/script.js"></script>
   <?php if ($currentRoute === 'games'): ?>
     <script src="js/games.js"></script>
+  <?php elseif ($currentRoute === 'games/player'): ?>
+    <script src="js/gamepage.js"></script>
   <?php elseif ($currentRoute === 'developers'): ?>
     <script src="js/developers.js"></script>
   <?php elseif ($currentRoute === 'about'): ?>

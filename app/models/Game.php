@@ -13,6 +13,7 @@
         private $genreNames;
         private $avgRating;
         private $devNames;
+        private $userRating;
 
         public function __construct(
             $gameId = "",
@@ -27,7 +28,8 @@
             $status = "",
             $genreNames = "",
             $devNames = "",
-            $avgRating = ""
+            $avgRating = "",
+            $userRating = null
         ) {
             $this->gameId = $gameId;
             $this->title = $title;
@@ -42,6 +44,7 @@
             $this->genreNames = $genreNames;
             $this->devNames = $devNames;
             $this->avgRating = $avgRating;
+            $this->userRating = $userRating;
         }
 
         # getters and setters
@@ -84,6 +87,11 @@
         public function getAvgRating() { return $this->avgRating; }
         public function setAvgRating($avgRating) { $this->avgRating = $avgRating; }
 
+        # The current viewer's own submitted rating (1-5), or null if they
+        # haven't rated this game / aren't logged in.
+        public function getUserRating() { return $this->userRating; }
+        public function setUserRating($userRating) { $this->userRating = $userRating; }
+
         #[\ReturnTypeWillChange]
         public function jsonSerialize(): mixed {
             return [
@@ -100,6 +108,7 @@
                 "genreNames" => $this->genreNames,
                 "avgRating" => $this->avgRating,
                 "devNames" => $this->devNames,
+                "userRating" => $this->userRating,
             ];
         }
 
@@ -154,14 +163,18 @@
 
         # get the full details of a single game (used for the game details modal
         # AND to hand back the saved row after add/edit in the profile page)
-        public function getGameById($gameId) {
+        # $userId (optional): when given, also returns that user's own
+        # rating for this game as userRating, so the star widget can be
+        # pre-filled on load.
+        public function getGameById($gameId, $userId = null) {
             $pdo = Database::connect();
 
             $sql = "SELECT ga.gameId, ga.title, ga.description, ga.controls, ga.totalPlays,
                     ga.dateReleased, ga.lastUpdated, ga.thumbnail, ga.gameFiles, ga.status,
                     GROUP_CONCAT(DISTINCT ge.name SEPARATOR ', ') AS genreNames,
                     GROUP_CONCAT(DISTINCT us.username SEPARATOR ', ') AS devNames,
-                    COALESCE(AVG(ra.rating), 0) AS avgRating
+                    COALESCE(AVG(ra.rating), 0) AS avgRating,
+                    (SELECT r2.rating FROM rating r2 WHERE r2.gameId = ga.gameId AND r2.userId = ?) AS userRating
                 FROM game ga
                 LEFT JOIN game_genre gg ON ga.gameId = gg.gameId
                 LEFT JOIN genre ge ON gg.genreId = ge.genreId
@@ -172,7 +185,7 @@
                 GROUP BY ga.gameId";
 
             $stmt = $pdo->prepare($sql);
-            $stmt->execute([$gameId]);
+            $stmt->execute([$userId, $gameId]);
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if (!$row) {
@@ -193,7 +206,62 @@
                 genreNames: $row["genreNames"],
                 devNames: $row["devNames"],
                 avgRating: $row["avgRating"],
+                userRating: $row["userRating"],
             );
+        }
+
+        # Bumps a game's totalPlays by 1 (called when the player actually
+        # starts a game, not just when they view its page). Returns the
+        # updated total so the caller can refresh the on-screen count
+        # without a second round trip.
+        public function incrementTotalPlays($gameId): int {
+            $pdo = Database::connect();
+
+            $stmt = $pdo->prepare('UPDATE game SET totalPlays = totalPlays + 1 WHERE gameId = ?');
+            $stmt->execute([$gameId]);
+
+            $selectStmt = $pdo->prepare('SELECT totalPlays FROM game WHERE gameId = ?');
+            $selectStmt->execute([$gameId]);
+            $row = $selectStmt->fetch(PDO::FETCH_ASSOC);
+
+            return $row ? (int) $row['totalPlays'] : 0;
+        }
+
+        # Inserts or updates a user's 1-5 star rating for a game, then
+        # returns the game's new average plus the rating that was just
+        # saved (so the caller can immediately re-render both).
+        # rating(userId, gameId) is a composite primary key, so this is a
+        # single atomic upsert rather than a check-then-write.
+        public function rateGame($gameId, $userId, $ratingValue): array {
+            $pdo = Database::connect();
+
+            try {
+                $pdo->beginTransaction();
+
+                $upsertStmt = $pdo->prepare('
+                    INSERT INTO rating (gameId, userId, rating)
+                    VALUES (?, ?, ?)
+                    ON DUPLICATE KEY UPDATE rating = VALUES(rating)
+                ');
+                $upsertStmt->execute([$gameId, $userId, $ratingValue]);
+
+                $avgStmt = $pdo->prepare('SELECT COALESCE(AVG(rating), 0) AS avgRating FROM rating WHERE gameId = ?');
+                $avgStmt->execute([$gameId]);
+                $avgRow = $avgStmt->fetch(PDO::FETCH_ASSOC);
+
+                $pdo->commit();
+
+                return [
+                    'avgRating' => round((float) $avgRow['avgRating'], 1),
+                    'userRating' => (int) $ratingValue,
+                ];
+            } catch (PDOException $e) {
+                if ($pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
+                error_log("Rate Game Error: " . $e->getMessage());
+                throw $e;
+            }
         }
 
         # Function that adds a game to the database
