@@ -381,6 +381,29 @@
     color: #ff7070;
 }
 
+/* Inline form error message — same pink, smooth fade-in style as the login page's .auth-error */
+.auth-error {
+    display: block;
+    visibility: hidden;
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+    font-size: 12px;
+    font-weight: 600;
+    color: #FF4FD8;
+    text-align: center;
+    line-height: 1.4;
+    transition: max-height 0.2s ease, opacity 0.2s ease, visibility 0.2s ease, margin 0.2s ease;
+    margin-bottom: 0;
+}
+
+.auth-error.active {
+    visibility: visible;
+    opacity: 1;
+    max-height: 50px;
+    margin-bottom: 4px;
+}
+
 @media (max-width: 900px) {
     .page-wrap {
         grid-template-columns: 1fr;

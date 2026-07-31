@@ -18,36 +18,29 @@
     </div>
 
     <!-- ─────────────────
-        ACCOUNT INFORMATION
+        CHANGE EMAIL ADDRESS
     ───────────────── -->
     <section class="panel settings-panel" id="account-info">
     <div class="section-header">
         <h2 class="section-title">
         <svg viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
-        Account Information
+        Change Email Address
         </h2>
     </div>
     <p class="settings-panel-desc">This is how your name and username appear across YA!W8.</p>
 
     <form id="accountInfoForm" novalidate>
+        <div class="auth-error" id="accountInfoError"></div>
         <div style="display: flex; flex-direction: column; gap: 16px;">
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-            <div class="form-group">
-            <label class="form-label">Full Name <span class="form-required">*</span></label>
-            <input type="text" class="form-input" id="settingsName" placeholder="Your full name" />
-            </div>
-            <div class="form-group">
-            <label class="form-label">Username <span class="form-required">*</span></label>
-            <input type="text" class="form-input" id="settingsUsername" placeholder="yourusername" />
-            </div>
-        </div>
-
         <div class="form-group">
             <label class="form-label">Email Address</label>
-            <input type="email" class="form-input" id="settingsEmail" disabled />
+            <!-- Placeholder shows the current email; leave blank to keep it unchanged -->
+            <input type="email" class="form-input" id="settingsEmail" placeholder="you@example.com" />
         </div>
-
+        <div class="form-group">
+            <label class="form-label">Current Password <span class="form-required">*</span></label>
+            <input type="password" class="form-input" id="currentPasswordForEmail" placeholder="Enter your current password to confirm this change" autocomplete="current-password" />
+        </div>
         <div class="settings-save-row">
             <span class="settings-save-status" id="accountInfoStatus">Saved!</span>
             <button type="submit" class="form-btn-submit" id="accountInfoSaveBtn">
@@ -73,7 +66,7 @@
     <p class="settings-panel-desc">Choose a strong password you're not using anywhere else.</p>
 
     <form id="passwordForm" novalidate>
-        <div class="auth-error" id="passwordError" style="display:none; margin-bottom: 4px;"></div>
+        <div class="auth-error" id="passwordError"></div>
         <div style="display: flex; flex-direction: column; gap: 16px;">
 
         <div class="form-group">
@@ -105,7 +98,7 @@
     </section>
 
     <!-- ─────────────────
-        DANGER ZONE
+        ACCOUNT DELETION
     ───────────────── -->
     <section class="panel danger-zone settings-panel" id="danger-zone">
     <div class="section-header">
@@ -116,13 +109,7 @@
     </div>
 
     <div id="dangerZoneRegistered">
-        <div class="danger-row">
-        <div class="danger-row-text">
-            <h4>Sign out everywhere</h4>
-            <p>Sign out of YA!W8 on this device. You'll need to log back in to play, rate, and submit games.</p>
-        </div>
-        <button class="btn-danger-outline" id="settingsSignOutBtn">Sign Out</button>
-        </div>
+        <!-- REMOVED the "Sign out everywhere" block entirely -->
         <div class="danger-row">
         <div class="danger-row-text">
             <h4>Delete account</h4>
@@ -151,10 +138,12 @@
 
     <section class="panel">
     <div class="settings-account-card">
-        <div class="settings-account-avatar" id="sideAvatar">S</div>
+        <!-- The JS renderAccountSummary function uses these IDs to populate the info -->
+        <div class="settings-account-avatar" id="sideAvatar">?</div>
         <div class="settings-account-info">
-        <div class="settings-account-name" id="sideName">Student</div>
-        <div class="settings-account-email" id="sideEmail">—</div>
+        <!-- UPDATED to match Fullname and Username from ERD -->
+        <div class="settings-account-name" id="sideFullname">Your Name</div>
+        <div class="settings-account-email" id="sideUsername">@username</div>
         </div>
     </div>
     <nav class="settings-quicknav">
@@ -174,3 +163,26 @@
     </section>
 
 </aside>
+
+<!-- ─────────────────
+    CONFIRM EMAIL CHANGE MODAL
+───────────────── -->
+<div class="modal" id="confirmEmailChangeModal">
+    <div class="modal-overlay" id="confirmEmailChangeOverlay"></div>
+    <div class="modal-content" style="max-width: 400px; margin-top: 120px;">
+        <div class="modal-inner" style="padding: 32px;">
+            <h1 style="font-size: 19px; font-weight: 800; color: #F5F7FA; margin-bottom: 8px;">Change your email?</h1>
+            <p style="font-size: 13px; color: #8892a4; line-height: 1.6; margin-bottom: 24px;">
+                Your email will be changed to <strong id="confirmEmailChangeAddress" style="color:#F5F7FA;"></strong>.
+                You'll be logged out right after and will need to sign back in with your new email.
+            </p>
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button class="form-btn-cancel" id="confirmEmailChangeCancelBtn">Cancel</button>
+                <button class="form-btn-submit" id="confirmEmailChangeConfirmBtn">
+                    <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor;flex-shrink:0;"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                    Yes, Change Email
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

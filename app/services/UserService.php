@@ -55,8 +55,17 @@ class UserService {
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
         $role = 'Member';
 
-        $created = $this->userModel->addUser($fullname, $username, $email, $hashedPassword, $role);
-        return ['success' => $created];
+        $createdUserId = $this->userModel->addUser($fullname, $username, $email, $hashedPassword, $role);
+        
+        if ($createdUserId) {
+            return [
+                'success' => true, 
+                // <-- ADD THIS: Pass the user ID back to the controller
+                'user' => ['id' => $createdUserId] 
+            ];
+        }
+
+        return ['success' => false, 'message' => 'Database error during registration.'];
     }
 
     public function verifyPassword($email, $password){
