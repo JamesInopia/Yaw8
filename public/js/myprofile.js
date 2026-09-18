@@ -90,9 +90,7 @@ function renderProfile(user, myGames) {
     updateProfileStats(myGames, meta);
 }
 
-// Hero + account-details fields only — split out of renderProfile so the
-// edit-profile handler can refresh these after a save without needing to
-// also pass in the games list.
+// Hero + account-details fields only
 function updateProfileDisplay(user) {
     document.getElementById('profileAvatar').textContent = getInitials(user.name);
     document.getElementById('profileName').textContent = user.name;
@@ -453,7 +451,7 @@ function initMyGamesPage(initialGames) {
     });
 
     // ═══════════════════════════════════════════
-    // SUBMIT GAME MODAL (Game Details / Edit Game)
+    // SUBMIT GAME MODAL
     // ═══════════════════════════════════════════
     const submitGameModal = document.getElementById('submit-game-modal');
     const submitModalClose = document.getElementById('submitModalClose');

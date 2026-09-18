@@ -10,12 +10,8 @@ const CAROUSEL_VISIBLE_ITEMS = 4; // number of cards shown at a time
 let currentGameId = null;
 let carouselIndex = 0; // current starting card index
 
-// Same pixel-art color themes used as fallback thumbnails on the game
-// cards grid (see games.js).
 const THUMB_COLOR_CLASSES = ["gt-pixel-drift", "gt-tower-tactics", "gt-box-jumper", "gt-color-clash"];
 
-// Deterministically picks one of the color themes for a game so the same
-// game always gets the same fallback look, wherever it's shown.
 function getThumbColorClass(key) {
   const str = String(key || "");
   let hash = 0;
@@ -25,9 +21,6 @@ function getThumbColorClass(key) {
   return THUMB_COLOR_CLASSES[hash % THUMB_COLOR_CLASSES.length];
 }
 
-// Fills a thumbnail container (modal header, carousel card, etc.) with the
-// game's image, or — when no thumbnail is set — a colored background plus
-// the game's title, matching the fallback style used on the games grid.
 function renderThumbInto(container, thumbnail, title, key) {
   if (!container) return;
   container.classList.remove(...THUMB_COLOR_CLASSES);
@@ -155,7 +148,6 @@ function renderDevelopers(developerString) {
   const wrap = document.getElementById("modalDeveloperWrap");
   wrap.innerHTML = "";
 
-  // Guard against null/undefined (e.g. a game with no developer linked yet)
   developerString = developerString || "";
 
   // Strip leading "by " and split on comma
@@ -165,11 +157,10 @@ function renderDevelopers(developerString) {
     .map((d) => d.trim())
     .filter(Boolean);
 
-  const VISIBLE = 2; // always-visible dev count
+  const VISIBLE = 2;
   const visibleDevs = devs.slice(0, VISIBLE);
-  const hiddenDevs = devs.slice(VISIBLE); // 3rd dev onward is hidden
+  const hiddenDevs = devs.slice(VISIBLE);
 
-  // Helper: build a hoverable dev link
   function makeDevLink(name) {
     const slug = name.toLowerCase().replace(/\s+/g, "-");
     const a = document.createElement("a");
@@ -182,15 +173,13 @@ function renderDevelopers(developerString) {
     return a;
   }
 
-  if (devs.length === 0) return; // no developers linked to this game yet
+  if (devs.length === 0) return;
 
-  // "by " prefix
   const byText = document.createElement("span");
   byText.className = "dev-inline";
   byText.textContent = "by ";
   wrap.appendChild(byText);
 
-  // Visible dev links (first 2), comma-separated
   visibleDevs.forEach((name, i) => {
     wrap.appendChild(makeDevLink(name));
     if (i < visibleDevs.length - 1) {
@@ -343,8 +332,6 @@ if (carouselNext) {
 
 // ═══════════════════════════════════════════
 // NAVBAR — Active link toggling
-// Clicking a nav link marks it active and removes
-// the active class from the previously active link.
 // ═══════════════════════════════════════════
 document.querySelectorAll(".nav-links a").forEach((link) => {
   link.addEventListener("click", function (e) {
@@ -588,7 +575,7 @@ const featuredSection = document.getElementById("featured-games");
 if (exploreLink && featuredSection) {
   exploreLink.addEventListener("click", function (e) {
     e.preventDefault();
-    const offset = 100; // breathing room below the floating navbar
+    const offset = 100;
     const targetY =
       featuredSection.getBoundingClientRect().top + window.scrollY - offset;
     window.scrollTo({ top: targetY, behavior: "smooth" });

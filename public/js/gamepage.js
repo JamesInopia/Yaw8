@@ -1,8 +1,5 @@
 // ═══════════════════════════════════════════
 // GAME PAGE — real backend version
-// (script.js already handles the shared loading screen and nav active
-// state on this page, so this file only covers player-specific logic:
-// the game frame, the star rating widget, and the play counter.)
 // ═══════════════════════════════════════════
 (function () {
   const cabinet = document.getElementById("gpCabinet");
@@ -32,8 +29,7 @@
   }
 
   // ═══════════════════════════════════════════
-  // PLAYER CONTROLS (only present when the game is actually playable —
-  // .jar / unsupported games render a download or notice instead)
+  // PLAYER CONTROLS
   // ═══════════════════════════════════════════
   const screen = document.getElementById("gpScreen");
   const startCard = document.getElementById("gpStartCard");
@@ -52,9 +48,7 @@
     }
   }
 
-  // Tells the server a play just started (increments totalPlays). Only
-  // counted once per page visit, and only for logged-in users — guests
-  // can still play, it just won't add to the count.
+  // Tells the server a play just started (increments totalPlays).
   function registerPlay() {
     if (hasCountedPlay || !gameId || !isLoggedIn()) return;
     hasCountedPlay = true;
@@ -112,7 +106,7 @@
   }
 
   // ═══════════════════════════════════════════
-  // STAR RATING (1-5, replaces the old Like button)
+  // STAR RATING
   // ═══════════════════════════════════════════
   const starWrap = document.getElementById("gpStarRating");
   const ratingDisplay = document.getElementById("gpRating");
@@ -183,7 +177,7 @@
   }
 
   // ═══════════════════════════════════════════
-  // FAVORITE (front-end only for now, no backend endpoint yet)
+  // FAVORITE
   // ═══════════════════════════════════════════
   const favBtn = document.getElementById("gpFavBtn");
   if (favBtn) {

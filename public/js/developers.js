@@ -1,7 +1,5 @@
 // ═══════════════════════════════════════════
 // SAFE DATABASE REFERENCE
-// Ensures the script doesn't crash if the PHP 
-// controller passes nothing.
 // ═══════════════════════════════════════════
 const safeDevDatabase = typeof developerDatabase !== 'undefined' ? developerDatabase : [];
 
