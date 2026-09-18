@@ -29,9 +29,12 @@
   }
 
   // ═══════════════════════════════════════════
-  // PLAYER CONTROLS
+  // PLAYER CONTROLS + RESOLUTION FITTING
   // ═══════════════════════════════════════════
-  const screen = document.getElementById("gpScreen");
+  const screenEl = document.getElementById("gpScreen");
+  const scrollEl = document.getElementById("gpScroll");
+  const viewport = document.getElementById("gpViewport");
+  const stage = document.getElementById("gpStage");
   const startCard = document.getElementById("gpStartCard");
   const playBtn = document.getElementById("gpPlayBtn");
   const frame = document.getElementById("gpFrame");
@@ -40,12 +43,142 @@
   const fullscreenBtn = document.getElementById("gpFullscreenBtn");
   const playsEl = document.getElementById("gpPlays");
 
+  // Logical width the iframe always renders at. The game sees this as its
+  // viewport width, so it lays out exactly once and never reflows.
+  const NATIVE_W = Number(cabinet.dataset.nativeWidth) || 1280;
+  // Starting height guess — replaced by the game's real content height as
+  // soon as it has loaded (see measureContent()).
+  const START_H = Number(cabinet.dataset.nativeHeight) || 720;
+  // Chrome/vertical room reserved for the navbar + toolbar, windowed only.
+  const CHROME_H = 220;
+  const MIN_SCREEN_H = 320;
+
+  let contentH = START_H;
+
+  function isFullscreen() {
+    return Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+  }
+
+  // ── Lay the stage out for the current mode ──────────────────────────────
+  //
+  // Fullscreen  → CONTAIN fit: scale = min(fitW, fitH), so the whole page is
+  //               visible at once. Nothing is cropped, nothing scrolls, the
+  //               leftover space is just letterboxing.
+  //
+  // Windowed    → fit the WIDTH (never upscale past 1:1). If the game is then
+  //               taller than the box, the box scrolls. That's the honest
+  //               answer for a page-shaped game like 2048 — better a scrollbar
+  //               than shrinking it to a postage stamp.
+  function fitStage() {
+    if (!screenEl || !stage || !viewport || !scrollEl) return;
+
+    const full = isFullscreen();
+    let scale, screenH;
+
+    if (full) {
+      const availW = window.innerWidth;
+      const availH = window.innerHeight;
+
+      scale = Math.min(availW / NATIVE_W, availH / contentH);
+      screenH = availH;
+      scrollEl.classList.remove("gp-scrollable");
+    } else {
+      const availW = screenEl.clientWidth || cabinet.clientWidth || NATIVE_W;
+      const maxH = Math.max(MIN_SCREEN_H, window.innerHeight - CHROME_H);
+
+      // Fit width, but don't blow a small game up past its native size.
+      scale = Math.min(1, availW / NATIVE_W);
+
+      const scaledH = contentH * scale;
+      screenH = Math.min(scaledH, maxH);
+
+      // Taller than the box? Then scroll instead of shrinking further.
+      scrollEl.classList.toggle("gp-scrollable", scaledH > screenH + 1);
+    }
+
+    screenEl.style.setProperty("--gp-scale", String(scale));
+    screenEl.style.setProperty("--gp-native-w", NATIVE_W + "px");
+    screenEl.style.setProperty("--gp-native-h", contentH + "px");
+    screenEl.style.setProperty("--gp-vw", NATIVE_W * scale + "px");
+    screenEl.style.setProperty("--gp-vh", contentH * scale + "px");
+    screenEl.style.setProperty("--gp-screen-h", Math.round(screenH) + "px");
+  }
+
+  // ── Measure the game's real content height ──────────────────────────────
+  // Games are served from our own /public/uploads, so the iframe is
+  // same-origin and we can read its document. If that ever fails (a game
+  // pointing at an external URL) we silently keep the fallback height.
+  function measureContent() {
+    if (!frame) return;
+
+    try {
+      const doc = frame.contentDocument;
+      if (!doc || !doc.body) return;
+
+      const measured = Math.max(
+        doc.documentElement.scrollHeight,
+        doc.body.scrollHeight,
+        doc.documentElement.offsetHeight,
+        START_H
+      );
+
+      // Clamp so one badly-built game can't produce a 40,000px stage.
+      const next = Math.min(measured, 6000);
+
+      if (Math.abs(next - contentH) > 4) {
+        contentH = next;
+        fitStage();
+      }
+    } catch (err) {
+      /* cross-origin game — keep the fallback height */
+    }
+  }
+
+  function remeasureSoon() {
+    measureContent();
+    // Web fonts, images and late scripts can change the page height a beat
+    // after load, so take a few more readings.
+    [100, 400, 1200].forEach((ms) => setTimeout(measureContent, ms));
+  }
+
+  if (screenEl && stage) {
+    fitStage();
+
+    window.addEventListener("resize", fitStage);
+    window.addEventListener("orientationchange", fitStage);
+    window.addEventListener("load", fitStage);
+
+    if (typeof ResizeObserver !== "undefined") {
+      new ResizeObserver(fitStage).observe(screenEl);
+    }
+
+    setTimeout(fitStage, 150);
+  }
+
   let hasCountedPlay = false;
 
   function loadGame() {
-    if (playableUrl) {
-      frame.src = playableUrl;
-    }
+    if (!playableUrl) return;
+
+    frame.src = playableUrl;
+    frame.addEventListener(
+      "load",
+      function () {
+        remeasureSoon();
+
+        // Some games grow/shrink as you play (score panels, game-over
+        // overlays). Watch the document and re-fit when it changes.
+        try {
+          const doc = frame.contentDocument;
+          if (doc && doc.body && typeof ResizeObserver !== "undefined") {
+            new ResizeObserver(measureContent).observe(doc.body);
+          }
+        } catch (err) {
+          /* cross-origin — nothing to observe */
+        }
+      },
+      { once: true }
+    );
   }
 
   // Tells the server a play just started (increments totalPlays).
@@ -74,7 +207,8 @@
     loadGame();
     registerPlay();
     startCard.classList.add("hidden");
-    screen.classList.add("playing");
+    screenEl.classList.add("playing");
+    fitStage();
   }
 
   if (playBtn) {
@@ -98,12 +232,36 @@
     });
   }
 
+  // ── Fullscreen: toggle in/out, then re-fit ──
   if (fullscreenBtn) {
     fullscreenBtn.addEventListener("click", function () {
-      if (screen.requestFullscreen) screen.requestFullscreen();
-      else if (screen.webkitRequestFullscreen) screen.webkitRequestFullscreen();
+      if (isFullscreen()) {
+        if (document.exitFullscreen) document.exitFullscreen();
+        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+        return;
+      }
+
+      const request =
+        screenEl.requestFullscreen ||
+        screenEl.webkitRequestFullscreen ||
+        screenEl.msRequestFullscreen;
+
+      if (request) {
+        Promise.resolve(request.call(screenEl)).catch(() => {});
+      }
     });
   }
+
+  // The layout hasn't actually changed yet when fullscreenchange fires on
+  // some browsers, so re-fit over the next few frames as well.
+  ["fullscreenchange", "webkitfullscreenchange"].forEach((evt) => {
+    document.addEventListener(evt, function () {
+      fitStage();
+      requestAnimationFrame(fitStage);
+      setTimeout(fitStage, 120);
+      setTimeout(measureContent, 200);
+    });
+  });
 
   // ═══════════════════════════════════════════
   // STAR RATING

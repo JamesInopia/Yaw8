@@ -21,6 +21,36 @@ if (!function_exists('yaw8_player_thumb_classes')) {
     }
 }
 
+/*
+ * ── NATIVE ("logical") RESOLUTION ───────────────────────────────────────────
+ * The iframe is rendered at a FIXED pixel size and then CSS-scaled to fit the
+ * cabinet. That is what stops a game from overflowing its box (it always gets
+ * the viewport it was designed for) and what removes the need to zoom in
+ * fullscreen (the whole stage is scaled up instead of the page reflowing).
+ *
+ * Default is 1280x720. A game can override it by shipping a `yaw8.json`
+ * next to its index.html:
+ *     { "width": 600, "height": 900 }
+ */
+$nativeWidth  = 1280;
+$nativeHeight = 720;   // starting guess only — JS measures the real height
+
+if (($playable['type'] ?? '') === 'html' && !empty($playable['url'])) {
+    $publicRoot = dirname(__DIR__, 4) . '/public';
+    $indexFull  = $publicRoot . '/' . ltrim($playable['url'], '/');
+    $manifest   = dirname($indexFull) . '/yaw8.json';
+
+    if (is_file($manifest)) {
+        $cfg = json_decode((string) file_get_contents($manifest), true);
+        if (is_array($cfg)) {
+            $w = (int) ($cfg['width']  ?? 0);
+            $h = (int) ($cfg['height'] ?? 0);
+            if ($w >= 240 && $w <= 4096) { $nativeWidth  = $w; }
+            if ($h >= 240 && $h <= 4096) { $nativeHeight = $h; }
+        }
+    }
+}
+
 $devNames = array_filter(array_map('trim', explode(',', (string) $game->getDevNames())));
 $avgRatingDisplay = number_format((float) $game->getAvgRating(), 1);
 $userRating = (int) ($game->getUserRating() ?? 0);
@@ -31,6 +61,8 @@ $thumbClass = yaw8_player_thumb_classes($game->getThumbnail(), $game->getGameId(
     data-game-id="<?= htmlspecialchars($game->getGameId()) ?>"
     data-playable-type="<?= htmlspecialchars($playable['type']) ?>"
     data-playable-url="<?= htmlspecialchars($playable['url'] ?? '') ?>"
+    data-native-width="<?= (int) $nativeWidth ?>"
+    data-native-height="<?= (int) $nativeHeight ?>"
 >
     <div class="gp-cabinet-glow"></div>
 
@@ -68,7 +100,26 @@ $thumbClass = yaw8_player_thumb_classes($game->getThumbnail(), $game->getGameId(
             </div>
         </div>
     <?php else: ?>
-        <div class="gp-screen" id="gpScreen">
+        <div class="gp-screen" id="gpScreen"
+             style="--gp-native-w: <?= (int) $nativeWidth ?>px; --gp-native-h: <?= (int) $nativeHeight ?>px;">
+
+            <!-- Scroll layer: sits under the HUD/overlay so those stay put
+                 while the game itself scrolls (windowed mode only). -->
+            <div class="gp-scroll" id="gpScroll">
+                <!-- Scaled viewport: the stage's post-scale footprint, so
+                     centring and scroll extents are both correct. -->
+                <div class="gp-viewport" id="gpViewport">
+                    <!-- Fixed-size stage: the iframe always gets the same
+                         logical viewport; only this wrapper is scaled. -->
+                    <div class="gp-stage" id="gpStage">
+                        <iframe class="gp-iframe" id="gpFrame" title="Game player"
+                                scrolling="no"
+                                allow="autoplay; fullscreen; gamepad; clipboard-write; cross-origin-isolated"
+                                allowfullscreen></iframe>
+                    </div>
+                </div>
+            </div>
+
             <!-- Insert-coin / start overlay -->
             <div class="gp-startcard" id="gpStartCard">
                 <div class="gp-start-thumb <?= htmlspecialchars($thumbClass) ?>" id="gpStartThumb">
@@ -81,9 +132,6 @@ $thumbClass = yaw8_player_thumb_classes($game->getThumbnail(), $game->getGameId(
                     Play Now
                 </button>
             </div>
-
-            <!-- Game iframe -->
-            <iframe class="gp-iframe" id="gpFrame" title="Game player" allowfullscreen></iframe>
 
             <!-- CRT scanline overlay -->
             <div class="gp-scanlines"></div>
