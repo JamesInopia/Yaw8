@@ -18,6 +18,13 @@ class AuthMiddleware{
             exit;
         }
 
+        # A suspended account can't use the API even if its token hasn't expired yet
+        $suspension = Auth::suspensionOf($payload['sub'] ?? null);
+        if ($suspension !== null) {
+            self::json(['success' => false, 'suspended' => true, 'message' => Auth::suspensionMessage($suspension)], 403);
+            exit;
+        }
+
         return $payload;
     }
 

@@ -137,6 +137,14 @@ class AuthController extends Controller {
         // Standardize extracting the ID field from database arrays
         $userId = $user['id'] ?? $user['userId'] ?? '';
 
+        // Suspended accounts can't log in (a timed suspension ends by itself)
+        $suspension = Auth::suspensionOf($userId);
+        if ($suspension !== null) {
+            $_SESSION = [];
+            $this->json(['success' => false, 'suspended' => true, 'message' => Auth::suspensionMessage($suspension)], 403);
+            return;
+        }
+
         $userModelInstance = new User(
             $userId, 
             $user['fullname'] ?? '', 

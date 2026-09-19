@@ -10,6 +10,30 @@ class Controller {
         }
     }
 
+    # Page guard for the admin area. Guests are sent to the login page;
+    # logged-in users who are not Admin / Supreme Overlord are sent home.
+    protected function requireAdminPage(): void {
+        $this->requireAuth();
+
+        if (!Auth::isAdmin()) {
+            header('Location: ?url=home');
+            exit;
+        }
+    }
+
+    # API guard for the admin area: needs a valid JWT AND an admin role in the
+    # database. Returns the admin's user id. (Responds 401/403 and stops otherwise.)
+    protected function requireAdminApi(): int {
+        $payload = AuthMiddleware::requireAuth();
+        $userId = $payload['sub'] ?? null;
+
+        if (!$userId || !Auth::isAdminUser($userId)) {
+            $this->json(['success' => false, 'message' => 'Admin access required.'], 403);
+        }
+
+        return (int) $userId;
+    }
+
     protected function json($data, int $status = 200) {
         http_response_code($status);
         header("Content-Type: application/json");

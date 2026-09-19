@@ -24,6 +24,9 @@ spl_autoload_register(function ($class) {
     }
 });
 
+# A user who gets suspended while logged in is signed out on their very next request
+Auth::enforceSuspension($_GET['url'] ?? 'home');
+
 $routes = require_once __DIR__ . '/../app/config/routes.php';
 
 $router = new Router($routes);

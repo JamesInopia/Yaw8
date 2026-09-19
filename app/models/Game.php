@@ -1,5 +1,12 @@
 <?php
     class Game implements JsonSerializable {
+        # The three statuses a game can have (stored in game.status).
+        # Only 'published' games appear on the public pages; owners and
+        # admins can still see the other two.
+        public const STATUS_PUBLISHED = 'published';
+        public const STATUS_UNDER_REVIEW = 'under_review';
+        public const STATUS_UNLISTED = 'unlisted';
+
         private $gameId;
         private $title;
         private $description;
@@ -308,7 +315,10 @@
         }
 
         # Function that edits game details
-        public function editGame($gameId, $title, $description, $controls, $genreNames, $thumbnailPath, $gameFilePath, $status): bool {
+        # NOTE: status is deliberately NOT editable here — only admins change it
+        # (see updateStatus()), so an owner editing a game can't un-hide or
+        # publish it themselves.
+        public function editGame($gameId, $title, $description, $controls, $genreNames, $thumbnailPath, $gameFilePath): bool {
             $pdo = Database::connect();
 
             try {
@@ -320,7 +330,6 @@
                         controls = ?,
                         thumbnail = COALESCE(?, thumbnail),
                         gameFiles = COALESCE(?, gameFiles),
-                        status = ?,
                         lastUpdated = NOW()
                     WHERE gameId = ?
                 ');
@@ -331,7 +340,6 @@
                     $controls,
                     $thumbnailPath,
                     $gameFilePath,
-                    $status,
                     $gameId
                 ]);
 
@@ -402,6 +410,9 @@
                 $stmtDevs = $pdo->prepare('DELETE FROM game_devs WHERE gameId = ?');
                 $stmtDevs->execute([$id]);
 
+                $stmtReports = $pdo->prepare('DELETE FROM game_report WHERE gameId = ?');
+                $stmtReports->execute([$id]);
+
                 $stmtGame = $pdo->prepare('DELETE FROM game WHERE gameId = ?');
                 $stmtGame->execute([$id]);
 
@@ -434,6 +445,158 @@
                 }
                 return false;
             }
+        }
+
+        # ───────────────────────────────────────────
+        # STATUS + ADMIN HELPERS
+        # ───────────────────────────────────────────
+
+        # Maps whatever is in the DB to one of the three real statuses.
+        # Legacy / unknown values ('Draft', 'pending', NULL, ...) count as under review.
+        public static function normalizeStatus($status): string {
+            $s = str_replace([' ', '-'], '_', strtolower(trim((string) $status)));
+
+            if ($s === self::STATUS_PUBLISHED) {
+                return self::STATUS_PUBLISHED;
+            }
+            if ($s === self::STATUS_UNLISTED) {
+                return self::STATUS_UNLISTED;
+            }
+
+            return self::STATUS_UNDER_REVIEW;
+        }
+
+        public function exists($gameId): bool {
+            $pdo = Database::connect();
+            $stmt = $pdo->prepare('SELECT 1 FROM game WHERE gameId = ? LIMIT 1');
+            $stmt->execute([$gameId]);
+
+            return (bool) $stmt->fetchColumn();
+        }
+
+        # Is this user one of the game's developers (owner or collaborator)?
+        public function isDeveloper($gameId, $userId): bool {
+            if (empty($userId)) {
+                return false;
+            }
+
+            $pdo = Database::connect();
+            $stmt = $pdo->prepare('SELECT 1 FROM game_devs WHERE gameId = ? AND userId = ? LIMIT 1');
+            $stmt->execute([$gameId, $userId]);
+
+            return (bool) $stmt->fetchColumn();
+        }
+
+        # Admin action: sets game.status to published / under_review / unlisted.
+        public function updateStatus($gameId, $status): bool {
+            $pdo = Database::connect();
+            $stmt = $pdo->prepare('UPDATE game SET status = ? WHERE gameId = ?');
+
+            return $stmt->execute([$status, $gameId]);
+        }
+
+        # Totals per status for the dashboard stat cards.
+        public function getStatusCounts(): array {
+            $pdo = Database::connect();
+            $rows = $pdo->query('SELECT status, COUNT(*) AS total FROM game GROUP BY status')
+                        ->fetchAll(PDO::FETCH_ASSOC);
+
+            $counts = [
+                'total' => 0,
+                self::STATUS_PUBLISHED => 0,
+                self::STATUS_UNDER_REVIEW => 0,
+                self::STATUS_UNLISTED => 0,
+            ];
+
+            foreach ($rows as $row) {
+                $key = self::normalizeStatus($row['status']);
+                $counts[$key] += (int) $row['total'];
+                $counts['total'] += (int) $row['total'];
+            }
+
+            return $counts;
+        }
+
+        # Every game, whatever its status, for the admin dashboard table.
+        # Sub-selects are used (instead of joins) so devs / ratings / reports
+        # can't multiply each other's rows.
+        public function getAllForAdmin(): array {
+            $pdo = Database::connect();
+            $sql = 'SELECT ga.gameId, ga.title, ga.status, ga.dateReleased, ga.lastUpdated,
+                        (SELECT GROUP_CONCAT(u.username ORDER BY u.username SEPARATOR ", ")
+                           FROM game_devs gd
+                           JOIN user_account u ON u.userId = gd.userId
+                          WHERE gd.gameId = ga.gameId) AS devNames,
+                        (SELECT COALESCE(AVG(r.rating), 0) FROM rating r WHERE r.gameId = ga.gameId) AS avgRating,
+                        (SELECT COUNT(*) FROM rating r WHERE r.gameId = ga.gameId) AS ratingCount,
+                        (SELECT COUNT(*) FROM game_report gr
+                          WHERE gr.gameId = ga.gameId AND gr.status = "open") AS openReports
+                    FROM game ga
+                    ORDER BY ga.dateReleased DESC, ga.gameId DESC';
+
+            $rows = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+
+            return array_map(function ($row) {
+                return [
+                    'gameId'       => (int) $row['gameId'],
+                    'title'        => $row['title'],
+                    'status'       => self::normalizeStatus($row['status']),
+                    'devNames'     => $row['devNames'] ?? '',
+                    'avgRating'    => round((float) $row['avgRating'], 1),
+                    'ratingCount'  => (int) $row['ratingCount'],
+                    'openReports'  => (int) $row['openReports'],
+                    'dateReleased' => $row['dateReleased'],
+                    'lastUpdated'  => $row['lastUpdated'],
+                ];
+            }, $rows);
+        }
+
+        # Full read-only details of one game (any status) for the admin details page.
+        # projectType is worked out from the number of developers on the game
+        # (1 = Solo, 2+ = Collaboration), same rule the profile page uses.
+        public function getAdminGameDetail($gameId): ?array {
+            $pdo = Database::connect();
+            $sql = 'SELECT ga.gameId, ga.title, ga.description, ga.controls, ga.totalPlays,
+                        ga.dateReleased, ga.lastUpdated, ga.thumbnail, ga.status,
+                        (SELECT GROUP_CONCAT(DISTINCT ge.name ORDER BY ge.name SEPARATOR ", ")
+                           FROM game_genre gg
+                           JOIN genre ge ON ge.genreId = gg.genreId
+                          WHERE gg.gameId = ga.gameId) AS genreNames,
+                        (SELECT GROUP_CONCAT(DISTINCT u.username ORDER BY u.username SEPARATOR ", ")
+                           FROM game_devs gd
+                           JOIN user_account u ON u.userId = gd.userId
+                          WHERE gd.gameId = ga.gameId) AS devNames,
+                        (SELECT COUNT(DISTINCT gd.userId) FROM game_devs gd WHERE gd.gameId = ga.gameId) AS devCount,
+                        (SELECT COALESCE(AVG(r.rating), 0) FROM rating r WHERE r.gameId = ga.gameId) AS avgRating,
+                        (SELECT COUNT(*) FROM rating r WHERE r.gameId = ga.gameId) AS ratingCount
+                    FROM game ga
+                    WHERE ga.gameId = ?
+                    LIMIT 1';
+
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$gameId]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$row) {
+                return null;
+            }
+
+            return [
+                'gameId'       => (int) $row['gameId'],
+                'title'        => $row['title'],
+                'description'  => $row['description'],
+                'controls'     => $row['controls'],
+                'totalPlays'   => (int) $row['totalPlays'],
+                'dateReleased' => $row['dateReleased'],
+                'lastUpdated'  => $row['lastUpdated'],
+                'thumbnail'    => $row['thumbnail'],
+                'status'       => self::normalizeStatus($row['status']),
+                'genreNames'   => $row['genreNames'] ?? '',
+                'devNames'     => $row['devNames'] ?? '',
+                'projectType'  => ((int) $row['devCount']) > 1 ? 'Collaboration' : 'Solo',
+                'avgRating'    => round((float) $row['avgRating'], 1),
+                'ratingCount'  => (int) $row['ratingCount'],
+            ];
         }
 
         public function getAllGenres() {

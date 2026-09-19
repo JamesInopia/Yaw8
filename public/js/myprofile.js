@@ -210,6 +210,15 @@ function mapDbGame(g) {
     };
 }
 
+// Label + CSS class for a game's status badge.
+// published -> Published, unlisted -> Unlisted, anything else -> Under Review
+function getGameStatusInfo(game) {
+    const val = String(game && game.status !== undefined ? game.status : '').toLowerCase().trim();
+    if (val === 'published' || val === '1' || val === 'true') return { label: 'Published', cls: 'published' };
+    if (val === 'unlisted') return { label: 'Unlisted', cls: 'unlisted' };
+    return { label: 'Under Review', cls: 'review' };
+}
+
 function initMyGamesPage(initialGames) {
     let games = initialGames;
     let sortMode = 'newest';
@@ -237,7 +246,7 @@ function initMyGamesPage(initialGames) {
         const normalizedFilter = (currentFilter || 'all').toLowerCase().trim();
 
         if (['review', 'under_review', 'under-review', 'pending', 'draft'].includes(normalizedFilter)) {
-            filteredGames = games.filter(g => !isGamePublished(g));
+            filteredGames = games.filter(g => getGameStatusInfo(g).cls === 'review');
         } else if (normalizedFilter === 'published') {
             filteredGames = games.filter(g => isGamePublished(g));
         } else {
@@ -283,9 +292,9 @@ function initMyGamesPage(initialGames) {
 
         // 4. Render cards
         grid.innerHTML = sorted.map((game, index) => {
-            const isPublished = isGamePublished(game);
-            const statusLabel = isPublished ? 'Published' : 'Under Review';
-            const statusClass = isPublished ? 'published' : 'review';
+            const statusInfo = getGameStatusInfo(game);
+            const statusLabel = statusInfo.label;
+            const statusClass = statusInfo.cls;
             const ratingDisplay = game.rating ? `★ ${parseFloat(game.rating).toFixed(1)}` : 'New';
             
             const safeName = String(game.name || '').replace(/"/g, '&quot;');
@@ -947,7 +956,7 @@ function initMyGamesPage(initialGames) {
         const game = games.find(g => g.id === gameId);
         if (!game) return;
 
-        const statusLabel = game.status === 'published' ? 'Published' : 'Under Review';
+        const statusLabel = getGameStatusInfo(game).label;
         const ratingDisplay = game.rating ? '★ ' + game.rating : 'Not yet rated';
 
         manageInner.innerHTML = `

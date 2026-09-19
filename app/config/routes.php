@@ -41,10 +41,25 @@ return [
         #settings
         'settings'          => [SettingsController::class, 'index'],
 
+        # admin (Admin / Supreme Overlord only)
+        'admin'             => [AdminController::class, 'index'],
+        'admin/game'        => [AdminController::class, 'gameDetails'],
+
     # API routes
     'api/profile'=> [AuthController::class, 'profile'],
     'api/settings/me' => [SettingsController::class, 'me'],
     'api/settings/verify-email-change' => [SettingsController::class, 'verifyEmailChange'],
     'api/settings/email'  => [SettingsController::class, 'updateEmail'],
     'api/settings/password'=> [SettingsController::class, 'updatePassword'],
+
+    # Admin API routes
+    'api/admin/games'               => [AdminController::class, 'games'],
+    'api/admin/game'                => [AdminController::class, 'gameData'],
+    'api/admin/game/status'         => [AdminController::class, 'updateStatus'],
+    'api/admin/report/resolve'      => [AdminController::class, 'resolveReport'],
+    'api/admin/reports/resolve-all' => [AdminController::class, 'resolveAllReports'],
+    'api/admin/users'               => [AdminController::class, 'users'],
+    'api/admin/user/suspend'        => [AdminController::class, 'suspendUser'],
+    'api/admin/user/unsuspend'      => [AdminController::class, 'unsuspendUser'],
+    'api/admin/user/admin-access'   => [AdminController::class, 'setAdminAccess'],
 ];

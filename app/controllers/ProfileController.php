@@ -109,7 +109,9 @@ class ProfileController extends Controller {
             $controls = $_POST['controls'] ?? '';
             $genresRaw = $_POST['genres'] ?? $_POST['genre'] ?? '[]';
             $genreNames = is_string($genresRaw) ? (json_decode($genresRaw, true) ?: []) : (array) $genresRaw;
-            $status = $_POST['status'] ?? 'Draft';
+            # New games always start "under review" until an admin confirms publication.
+            # (Never trust a status sent from the browser.)
+            $status = Game::STATUS_UNDER_REVIEW;
             $collaborators = isset($_POST['collaborators']) ? json_decode($_POST['collaborators'], true) : [];
 
             // Genre is optional, only checking for user ID and Title
@@ -171,7 +173,6 @@ class ProfileController extends Controller {
             $controls = $_POST['controls'] ?? '';
             $genresRaw = $_POST['genres'] ?? $_POST['genre'] ?? '[]';
             $genreNames = is_string($genresRaw) ? (json_decode($genresRaw, true) ?: []) : (array) $genresRaw;
-            $status = $_POST['status'] ?? 'Draft';
 
             // Genre is no longer required in this check
             if (!$game_id || empty($title)) {
@@ -194,7 +195,8 @@ class ProfileController extends Controller {
             }
 
             $gameModel = new Game();
-            $success = $gameModel->editGame($game_id, $title, $description, $controls, $genreNames, $thumbnailPath, $gameFilePath, $status);
+            // Status is not editable by owners — only admins change it.
+            $success = $gameModel->editGame($game_id, $title, $description, $controls, $genreNames, $thumbnailPath, $gameFilePath);
 
             if ($success) {
                 // Hand back the full updated row so the frontend can patch the

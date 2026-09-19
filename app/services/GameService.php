@@ -36,6 +36,24 @@
             return $game;
         }
 
+        # Who may open a game's details / player?
+        #   - anyone, if it is published
+        #   - otherwise (under review / unlisted) only its developers and admins
+        # This is what keeps under-review / unlisted games off every public page
+        # while the owner can still reach them from their own profile.
+        public function canView(Game $game, $userId): bool {
+            if (Game::normalizeStatus($game->getStatus()) === Game::STATUS_PUBLISHED) {
+                return true;
+            }
+
+            if (empty($userId)) {
+                return false;
+            }
+
+            return Auth::isAdminUser($userId)
+                || $this->gameModel->isDeveloper($game->getGameId(), $userId);
+        }
+
         # Bumps totalPlays by 1. Called once when a game actually starts
         # loading in the player (not just when the page is viewed).
         public function incrementPlays($gameId): int {

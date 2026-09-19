@@ -433,6 +433,12 @@
     border: 1px solid rgba(251,191,36,.4);
 }
 
+.status-badge.unlisted {
+    color: #a5b4cc;
+    background: rgba(148,163,184,.15);
+    border: 1px solid rgba(148,163,184,.4);
+}
+
 /* Generic fallback thumbnail gradients for user-submitted games */
 .gt-my-a { 
     background: linear-gradient(180deg, #05001a 0%, #0d0033 50%, #1a0050 100%); 

@@ -35,7 +35,7 @@ class GamesController extends Controller{
 
         $game = $this->gameService->getGameInfo($gameId, $userId);
 
-        if ($game === null) {
+        if ($game === null || !$this->gameService->canView($game, $userId)) {
             header('Location: ?url=games');
             exit;
         }
@@ -87,7 +87,7 @@ class GamesController extends Controller{
         $userId = $payload['sub'] ?? null;
         $game = $this->gameService->getGameInfo($gameId, $userId);
 
-        if($game === null) {
+        if($game === null || !$this->gameService->canView($game, $userId)) {
             $this->json(["error" => "Game not found"], 404);
             return;
         }
@@ -100,7 +100,7 @@ class GamesController extends Controller{
     # what the iframe should actually load (extracting an HTML5 zip on
     # first play if needed).
     public function play($gameId = null){
-        AuthMiddleware::requireAuth();
+        $payload = AuthMiddleware::requireAuth();
 
         if ($gameId === null) {
             $this->json(["error" => "Missing Game Id"], 400);
@@ -109,7 +109,7 @@ class GamesController extends Controller{
 
         $game = $this->gameService->getGameInfo($gameId);
 
-        if ($game === null) {
+        if ($game === null || !$this->gameService->canView($game, $payload['sub'] ?? null)) {
             $this->json(["error" => "Game not found"], 404);
             return;
         }
