@@ -18,11 +18,15 @@ class AuthController extends Controller {
         $type = $_GET['type'] ?? 'login';
         $viewsPath = dirname(__DIR__) . '/views/content/auth/';
 
-        if ($type === 'signup') {
-            require $viewsPath . 'form-signup.php'; 
-        } else {
-            require $viewsPath . 'form-login.php';
-        }
+        $map = [
+            'login'          => 'form-login.php',
+            'signup'         => 'form-signup.php',
+            'forgot-email'   => 'form-forgot-email.php',
+            'forgot-code'    => 'form-forgot-code.php',
+            'reset-password' => 'form-reset-password.php',
+        ];
+
+        require $viewsPath . ($map[$type] ?? $map['login']);
     }
 
     public function signup() {
@@ -186,6 +190,90 @@ class AuthController extends Controller {
         session_destroy();   
         header('Location: ?url=auth');
         exit;
+    }
+
+    # Forgot password — step 1: send a 6-digit code to the given email
+    public function forgotPassword() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->json(['success' => false, 'message' => 'POST method required'], 405);
+            return;
+        }
+
+        $input = $this->jsonInput();
+        $email = trim($input['email'] ?? '');
+
+        if ($email === '') {
+            $this->json(['success' => false, 'message' => 'Email is required.'], 422);
+            return;
+        }
+
+        $result = $this->userService->sendPasswordResetCode($email);
+        if (empty($result['success'])) {
+            $this->json($result, 400);
+            return;
+        }
+
+        if (session_status() === PHP_SESSION_NONE) session_start();
+        $_SESSION['reset_email'] = $email;
+
+        $this->json(['success' => true, 'message' => 'Code sent.']);
+    }
+
+    # Forgot password — step 2: check the 6-digit code
+    public function verifyResetCode() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->json(['success' => false, 'message' => 'POST method required'], 405);
+            return;
+        }
+
+        if (session_status() === PHP_SESSION_NONE) session_start();
+        $email = $_SESSION['reset_email'] ?? '';
+
+        if ($email === '') {
+            $this->json(['success' => false, 'message' => 'Please start the reset process again.'], 400);
+            return;
+        }
+
+        $input = $this->jsonInput();
+        $result = $this->userService->verifyPasswordResetCode($email, trim($input['code'] ?? ''));
+
+        if (empty($result['success'])) {
+            $this->json($result, 400);
+            return;
+        }
+
+        $this->json(['success' => true]);
+    }
+
+    # Forgot password — step 3: set the new password
+    public function resetPassword() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->json(['success' => false, 'message' => 'POST method required'], 405);
+            return;
+        }
+
+        if (session_status() === PHP_SESSION_NONE) session_start();
+        $email = $_SESSION['reset_email'] ?? '';
+
+        if ($email === '') {
+            $this->json(['success' => false, 'message' => 'Please start the reset process again.'], 400);
+            return;
+        }
+
+        $input = $this->jsonInput();
+        $result = $this->userService->resetPassword(
+            $email,
+            $input['newPassword'] ?? '',
+            $input['confirmPassword'] ?? ''
+        );
+
+        if (empty($result['success'])) {
+            $this->json($result, 400);
+            return;
+        }
+
+        unset($_SESSION['reset_email']);
+        $this->json(['success' => true, 'message' => 'Password updated. You can now log in.']);
     }
 
     // FIXED: Renamed profie to profile

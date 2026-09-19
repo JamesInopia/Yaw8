@@ -10,6 +10,9 @@ return [
     'login'      => [AuthController::class, 'login'],
     'signup'     => [AuthController::class, 'signup'],
     'logout'     => [AuthController::class, 'logout'],
+    'auth/forgot-password'   => [AuthController::class, 'forgotPassword'],
+    'auth/verify-reset-code' => [AuthController::class, 'verifyResetCode'],
+    'auth/reset-password'    => [AuthController::class, 'resetPassword'],
 
     # Content routes
         # games

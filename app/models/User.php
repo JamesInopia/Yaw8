@@ -107,6 +107,14 @@ class User {
         return $stmt->execute([$hashedPassword, $userId]);
     }
 
+    # Function to update user password by email (used by the forgot-password flow,
+    # where the user isn't logged in yet so there's no userId to key off of)
+    public function updatePasswordByEmail($email, $hashedPassword): bool {
+        $pdo = Database::connect();
+        $stmt = $pdo->prepare('UPDATE user_account SET password = ? WHERE email = ?');
+        return $stmt->execute([$hashedPassword, $email]);
+    }
+
     public function getUserById($userId) : ?array {
         $pdo = Database::connect();
         $stmt = $pdo->prepare('SELECT * FROM user_account WHERE userId = ? LIMIT 1');

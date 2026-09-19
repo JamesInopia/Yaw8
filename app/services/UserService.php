@@ -1,9 +1,11 @@
 <?php
 class UserService {
     private User $userModel;
+    private PasswordReset $passwordResetModel;
 
     public function __construct(){
         $this->userModel = new User();
+        $this->passwordResetModel = new PasswordReset();
     }
 
     public function emailExists($email): bool {
@@ -76,5 +78,67 @@ class UserService {
         }
 
         return null;
+    }
+
+    # Forgot password — step 1: generate a 6-digit code, store its hash, email it
+    public function sendPasswordResetCode($email): array {
+        $email = trim($email);
+
+        if (!$this->emailExists($email)) {
+            return ['success' => false, 'message' => 'No account found with that email.'];
+        }
+
+        $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        $codeHash = password_hash($code, PASSWORD_DEFAULT);
+        $expiresAt = date('Y-m-d H:i:s', time() + 600); // valid for 10 minutes
+
+        if (!$this->passwordResetModel->createCode($email, $codeHash, $expiresAt)) {
+            return ['success' => false, 'message' => 'Could not start password reset. Try again.'];
+        }
+
+        if (!Mailer::sendResetCode($email, $code)) {
+            return ['success' => false, 'message' => 'Could not send the email. Try again later.'];
+        }
+
+        return ['success' => true];
+    }
+
+    # Forgot password — step 2: check the 6-digit code the user typed
+    public function verifyPasswordResetCode($email, $code): array {
+        $row = $this->passwordResetModel->getActiveCode($email);
+
+        if (!$row) {
+            return ['success' => false, 'message' => 'That code expired. Please request a new one.'];
+        }
+
+        if (!password_verify($code, $row['code_hash'])) {
+            return ['success' => false, 'message' => 'Incorrect code. Please try again.'];
+        }
+
+        $this->passwordResetModel->markVerified($row['id']);
+        return ['success' => true];
+    }
+
+    # Forgot password — step 3: set the new password, but only if step 2 actually passed
+    public function resetPassword($email, $newPassword, $confirmPassword): array {
+        if (!$this->passwordResetModel->isVerified($email)) {
+            return ['success' => false, 'message' => 'Please verify your code first.'];
+        }
+
+        if (strlen($newPassword) < 8) {
+            return ['success' => false, 'message' => 'Password must be at least 8 characters long.'];
+        }
+
+        if ($newPassword !== $confirmPassword) {
+            return ['success' => false, 'message' => 'Passwords do not match!'];
+        }
+
+        $hashed = password_hash($newPassword, PASSWORD_DEFAULT);
+        if (!$this->userModel->updatePasswordByEmail($email, $hashed)) {
+            return ['success' => false, 'message' => 'Database error while resetting password.'];
+        }
+
+        $this->passwordResetModel->deleteForEmail($email);
+        return ['success' => true];
     }
 }
