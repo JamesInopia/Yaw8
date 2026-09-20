@@ -24,6 +24,7 @@ return [
         'games/featured'    => [GamesController::class, 'featured'],
         'games/play'        => [GamesController::class, 'play'],
         'games/rate'        => [GamesController::class, 'rate'],
+        'games/report'      => [GamesController::class, 'report'],
 
         # developers
         'developers'        => [DevelopersController::class, 'index'],

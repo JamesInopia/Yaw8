@@ -19,6 +19,23 @@ if (!function_exists('yaw8_thumbnail_html')) {
         return '<div class="game-thumb ' . $colorClass . '"><div class="game-thumb-title">' . $titleText . '</div></div>';
     }
 }
+
+if (!function_exists('yaw8_quick_actions_html')) {
+    // Favorite + Report icon buttons, overlaid on the top-right corner of
+    // every game card (see .game-quick-actions in style.css). Wired up in
+    // script.js via wireCardQuickActions().
+    function yaw8_quick_actions_html() {
+        return '
+                    <div class="game-quick-actions">
+                        <button type="button" class="game-quick-btn game-favorite-btn" title="Favorite" aria-label="Favorite">
+                            <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                        </button>
+                        <button type="button" class="game-quick-btn game-report-btn" title="Report" aria-label="Report">
+                            <svg viewBox="0 0 24 24"><path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/></svg>
+                        </button>
+                    </div>';
+    }
+}
 ?>
 <!-- ─────────────
     PAGE HEADER
@@ -61,6 +78,7 @@ if (!function_exists('yaw8_thumbnail_html')) {
                     data-avg-rating="<?= htmlspecialchars($topPlayedGame->getAvgRating()) ?>"
                     data-dev-names="<?= htmlspecialchars($topPlayedGame->getDevNames()) ?>"
                 >
+                    <?= yaw8_quick_actions_html() ?>
                     <?php
                         $topHasThumb = !empty($topPlayedGame->getThumbnail());
                         $topColorClasses = ['gt-pixel-drift', 'gt-tower-tactics', 'gt-box-jumper', 'gt-color-clash'];
@@ -123,6 +141,7 @@ if (!function_exists('yaw8_thumbnail_html')) {
                     data-avg-rating="<?= htmlspecialchars($featuredGame->getAvgRating()) ?>"
                     data-dev-names="<?= htmlspecialchars($featuredGame->getDevNames()) ?>"
                 >
+                    <?= yaw8_quick_actions_html() ?>
                     <?= yaw8_thumbnail_html($featuredGame->getThumbnail(), $featuredGame->getTitle(), $index) ?>
                     <div class="game-info">
                         <div class="game-meta">
@@ -175,6 +194,7 @@ if (!function_exists('yaw8_thumbnail_html')) {
                     data-avg-rating="<?= htmlspecialchars($game->getAvgRating()) ?>"
                     data-dev-names="<?= htmlspecialchars($game->getDevNames()) ?>"
                 >
+                    <?= yaw8_quick_actions_html() ?>
                     <?= yaw8_thumbnail_html($game->getThumbnail(), $game->getTitle(), $index) ?>
                     <div class="game-info">
                         <div class="game-meta">

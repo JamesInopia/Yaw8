@@ -14,6 +14,10 @@ function authHeaders() {
   };
 }
 
+function isLoggedIn() {
+  return Boolean(localStorage.getItem("jwt_token"));
+}
+
 // ═══════════════════════════════════════════
 // LOADING SCREEN
 // ═══════════════════════════════════════════

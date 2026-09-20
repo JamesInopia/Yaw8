@@ -5,6 +5,26 @@ class GameReport {
     public const STATUS_OPEN = 'open';
     public const STATUS_RESOLVED = 'resolved';
 
+    # Files a new report submitted by a user against a game.
+    # $reason should already be trimmed/validated by the caller; empty
+    # reasons fall back to "Other" so the column (NOT NULL) is never blank.
+    public function create($gameId, $reporterId, $reason, $details = null): int {
+        $pdo = Database::connect();
+        $stmt = $pdo->prepare(
+            'INSERT INTO game_report (gameId, reporterId, reason, details, status, createdAt)
+             VALUES (?, ?, ?, ?, ?, NOW())'
+        );
+        $stmt->execute([
+            $gameId,
+            $reporterId,
+            ($reason !== null && $reason !== '') ? $reason : 'Other',
+            ($details !== null && $details !== '') ? $details : null,
+            self::STATUS_OPEN,
+        ]);
+
+        return (int) $pdo->lastInsertId();
+    }
+
     # All reports for one game — open ones first, newest first within each group.
     public function getByGame($gameId): array {
         $pdo = Database::connect();

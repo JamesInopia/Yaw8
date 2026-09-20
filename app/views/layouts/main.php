@@ -170,6 +170,8 @@
 </div>
 </div>
 
+<?php require dirname(__DIR__) . "/content/games/reportGame-modal.php" ?>
+
 <!-- ══════════════════════════════════════════
     FOOTER
 ══════════════════════════════════════════ -->

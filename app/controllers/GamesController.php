@@ -151,4 +151,45 @@ class GamesController extends Controller{
 
         $this->json($result);
     }
+
+    # Files a report against a game: a reason (from the dropdown, or the
+    # user's own free-text if they picked "Others") plus an optional
+    # description of what's wrong.
+    public function report($gameId = null){
+        $payload = AuthMiddleware::requireAuth();
+
+        if ($gameId === null) {
+            $this->json(["error" => "Missing Game Id"], 400);
+            return;
+        }
+
+        if (!$this->gameService->gameExists($gameId)) {
+            $this->json(["error" => "Game not found"], 404);
+            return;
+        }
+
+        $input = $this->jsonInput();
+        $reason = trim((string) ($input['reason'] ?? ''));
+        $details = trim((string) ($input['details'] ?? ''));
+
+        if ($reason === '') {
+            $this->json(["error" => "Please choose a reason for this report."], 400);
+            return;
+        }
+
+        if (mb_strlen($reason) > 100) {
+            $reason = mb_substr($reason, 0, 100);
+        }
+
+        $userId = $payload['sub'] ?? null;
+
+        if ($userId === null) {
+            $this->json(["error" => "Invalid session"], 401);
+            return;
+        }
+
+        $reportId = $this->gameService->reportGame($gameId, $userId, $reason, $details);
+
+        $this->json(["success" => true, "reportId" => $reportId]);
+    }
 }

@@ -1,9 +1,23 @@
 <?php
     class GameService{
         private Game $gameModel;
+        private GameReport $gameReportModel;
 
         public function __construct() {
             $this->gameModel = new Game();
+            $this->gameReportModel = new GameReport();
+        }
+
+        # Does this game exist at all (any status)? Used to validate an
+        # incoming report before we bother inserting it.
+        public function gameExists($gameId): bool {
+            return $this->gameModel->exists($gameId);
+        }
+
+        # Files a new report against a game on behalf of the given user.
+        # Returns the new report's id.
+        public function reportGame($gameId, $userId, $reason, $details = null): int {
+            return $this->gameReportModel->create($gameId, $userId, $reason, $details);
         }
         
         # function that returns certain info of all games
