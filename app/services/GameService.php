@@ -102,6 +102,9 @@
             $extension = strtolower(pathinfo($gameFiles, PATHINFO_EXTENSION));
 
             if ($extension === 'html' || $extension === 'htm') {
+                $publicRoot = dirname(__DIR__, 2) . '/public';
+                $this->injectAudioShim($publicRoot . '/' . ltrim($gameFiles, '/'));
+
                 return ['type' => 'html', 'url' => $gameFiles];
             }
 
@@ -151,7 +154,209 @@
                 return ['type' => 'unsupported', 'url' => null];
             }
 
+            // Always (re)check the shim — games extracted before it existed, or
+            // before this version, would otherwise never get volume control.
+            // It's idempotent, so an up-to-date file is left alone.
+            $this->injectAudioShim($extractFullDir . $indexRelativePath);
+
             return ['type' => 'html', 'url' => $extractRelativeDir . $indexRelativePath];
+        }
+
+        # Injects a small script into a game's entry HTML that gives the parent page
+        # (this site) real control over that game's audio, whatever engine made it
+        # and whether it uses <audio>/<video>/new Audio() or the Web Audio API
+        # (which is what Unity WebGL and most game engines actually use).
+        #
+        # Without it, the postMessage({type:'setVolume'/'setMuted'}) sent by
+        # gamepage.js does nothing — an arbitrary uploaded game has no idea what
+        # that message means.
+        #
+        # Idempotent: a file that already has the current version is left alone,
+        # and an older version (v1) is replaced.
+        private function injectAudioShim(string $indexFullPath): void {
+            if (!is_file($indexFullPath) || !is_writable($indexFullPath)) {
+                return;
+            }
+
+            $html = file_get_contents($indexFullPath);
+            if ($html === false || strpos($html, self::AUDIO_SHIM_MARKER) !== false) {
+                return; // already up to date, or couldn't read the file
+            }
+
+            // Drop the older shim (its marker comment has no " v2" after it)
+            $html = preg_replace('#<script>\s*/\* yaw8-audio-shim(?! v2).*?</script>#s', '', $html) ?? $html;
+
+            $shim = $this->buildAudioShimScript();
+            $insert = function (array $m) use ($shim) {
+                return $m[0] . $shim;
+            };
+
+            // As early as possible, so our wrapped AudioContext / media setters are
+            // the ones the game's own scripts get. preg_replace_callback (not
+            // preg_replace) so nothing in the script is read as a "$1" reference.
+            $count = 0;
+            $patched = preg_replace_callback('/<head(?:\s[^>]*)?>/i', $insert, $html, 1, $count);
+
+            if ($count === 0) {
+                $patched = preg_replace_callback('/<html(?:\s[^>]*)?>/i', $insert, $html, 1, $count);
+            }
+            if ($count === 0) {
+                // A doctype must stay first, or the browser drops into quirks mode
+                $patched = preg_replace_callback('/<!DOCTYPE[^>]*>/i', $insert, $html, 1, $count);
+            }
+            if ($count === 0 || $patched === null) {
+                $patched = $shim . $html;
+            }
+
+            file_put_contents($indexFullPath, $patched, LOCK_EX);
+        }
+
+        private const AUDIO_SHIM_MARKER = 'yaw8-audio-shim v2';
+
+        private function buildAudioShimScript(): string {
+            return <<<'HTML'
+
+<script>
+/* yaw8-audio-shim v2 — injected by YAW8. Lets the parent page control this
+   game's volume/mute via postMessage, whether it plays sound through
+   <audio>/<video>/new Audio() or the Web Audio API (Unity, Godot, Phaser, Howler...). */
+(function () {
+  if (window.__yaw8AudioShim) return;
+  window.__yaw8AudioShim = true;
+
+  var master = { volume: 1, muted: false };
+  function eff() { return master.muted ? 0 : master.volume; }
+
+  // ── <audio> / <video> / new Audio() ─────────────────────────────────────
+  // The game keeps reading/writing el.volume and el.muted as normal; we remember what
+  // it asked for and apply (that x our master volume) to the real element.
+  var proto = window.HTMLMediaElement && window.HTMLMediaElement.prototype;
+  var wantedVol = new WeakMap();
+  var wantedMuted = new WeakMap();
+  var seen = new WeakSet();
+  var tracked = [];
+  var volDesc = proto && Object.getOwnPropertyDescriptor(proto, 'volume');
+  var mutedDesc = proto && Object.getOwnPropertyDescriptor(proto, 'muted');
+
+  function track(el) {
+    if (seen.has(el)) return;
+    seen.add(el);
+    tracked.push(typeof WeakRef === 'function' ? new WeakRef(el) : { deref: function () { return el; } });
+    if (tracked.length > 2000) {
+      tracked = tracked.filter(function (r) { return r.deref() !== undefined; });
+    }
+  }
+
+  function applyMedia(el) {
+    try {
+      if (!wantedVol.has(el)) wantedVol.set(el, volDesc.get.call(el));
+      if (!wantedMuted.has(el)) wantedMuted.set(el, mutedDesc.get.call(el));
+      volDesc.set.call(el, wantedVol.get(el) * eff());
+      mutedDesc.set.call(el, wantedMuted.get(el) || master.muted);
+    } catch (e) {}
+  }
+
+  if (proto && volDesc && mutedDesc && volDesc.set && mutedDesc.set) {
+    Object.defineProperty(proto, 'volume', {
+      configurable: true,
+      enumerable: volDesc.enumerable,
+      get: function () { return wantedVol.has(this) ? wantedVol.get(this) : volDesc.get.call(this); },
+      set: function (v) {
+        var n = Number(v);
+        if (!(n >= 0 && n <= 1)) return volDesc.set.call(this, v); // let the browser throw as usual
+        wantedVol.set(this, n);
+        track(this);
+        applyMedia(this);
+      }
+    });
+
+    Object.defineProperty(proto, 'muted', {
+      configurable: true,
+      enumerable: mutedDesc.enumerable,
+      get: function () { return wantedMuted.has(this) ? wantedMuted.get(this) : mutedDesc.get.call(this); },
+      set: function (v) {
+        wantedMuted.set(this, !!v);
+        track(this);
+        applyMedia(this);
+      }
+    });
+
+    var origPlay = proto.play;
+    proto.play = function () {
+      track(this);
+      applyMedia(this);
+      return origPlay.apply(this, arguments);
+    };
+  }
+
+  // ── Web Audio ───────────────────────────────────────────────────────────
+  // Every AudioContext gets one master GainNode in front of its real destination,
+  // and ctx.destination is redirected to it, so the game's whole graph goes through it.
+  var contexts = [];
+
+  function wrapContext(name) {
+    var Native = window[name];
+    if (typeof Native !== 'function') return;
+
+    var Wrapped = function () {
+      var args = Array.prototype.slice.call(arguments);
+      var ctx = new (Function.prototype.bind.apply(Native, [null].concat(args)))();
+      try {
+        var gain = ctx.createGain();
+        gain.gain.value = eff();
+        gain.connect(ctx.destination);
+        Object.defineProperty(ctx, 'destination', {
+          configurable: true,
+          get: function () { return gain; }
+        });
+        ctx.__yaw8Gain = gain;
+        contexts.push(ctx);
+      } catch (e) {}
+      return ctx;
+    };
+    Wrapped.prototype = Native.prototype;
+    try { Object.setPrototypeOf(Wrapped, Native); } catch (e) {}
+    window[name] = Wrapped;
+  }
+
+  wrapContext('AudioContext');
+  wrapContext('webkitAudioContext');
+
+  // ── Apply master volume / mute everywhere ───────────────────────────────
+  function applyAll() {
+    contexts.forEach(function (ctx) {
+      try { ctx.__yaw8Gain.gain.value = eff(); } catch (e) {}
+    });
+    tracked.forEach(function (ref) {
+      var el = ref.deref();
+      if (el) applyMedia(el);
+    });
+    try {
+      document.querySelectorAll('audio, video').forEach(function (el) {
+        track(el);
+        applyMedia(el);
+      });
+    } catch (e) {}
+  }
+
+  window.addEventListener('message', function (e) {
+    if (e.source !== window.parent) return;
+    var d = e.data;
+    if (!d || typeof d !== 'object') return;
+
+    if (d.type === 'setVolume') {
+      var v = Number(d.volume);
+      master.volume = isFinite(v) ? Math.max(0, Math.min(1, v)) : 1;
+      applyAll();
+    } else if (d.type === 'setMuted') {
+      master.muted = !!d.muted;
+      applyAll();
+    }
+  });
+
+})();
+</script>
+HTML;
         }
 
         # Recursively looks for an index.html under $dir (some HTML5 exports

@@ -1,11 +1,13 @@
 <?php
     class Game implements JsonSerializable {
-        # The three statuses a game can have (stored in game.status).
-        # Only 'published' games appear on the public pages; owners and
-        # admins can still see the other two.
+        # The three statuses a game can have
         public const STATUS_PUBLISHED = 'published';
         public const STATUS_UNDER_REVIEW = 'under_review';
         public const STATUS_UNLISTED = 'unlisted';
+
+        # How a game can be obtained
+        public const ACCESS_ONLINE = 'online';
+        public const ACCESS_DOWNLOAD_ONLY = 'download_only';
 
         private $gameId;
         private $title;
@@ -21,6 +23,9 @@
         private $avgRating;
         private $devNames;
         private $userRating;
+        private $accessType;
+        private $allowDownload;
+        private $featureGraphics;
 
         public function __construct(
             $gameId = "",
@@ -36,7 +41,10 @@
             $genreNames = "",
             $devNames = "",
             $avgRating = "",
-            $userRating = null
+            $userRating = null,
+            $accessType = self::ACCESS_ONLINE,
+            $allowDownload = false,
+            $featureGraphics = []
         ) {
             $this->gameId = $gameId;
             $this->title = $title;
@@ -52,6 +60,9 @@
             $this->devNames = $devNames;
             $this->avgRating = $avgRating;
             $this->userRating = $userRating;
+            $this->accessType = $accessType ?: self::ACCESS_ONLINE;
+            $this->allowDownload = (bool) $allowDownload;
+            $this->featureGraphics = $featureGraphics;
         }
 
         # getters and setters
@@ -94,10 +105,36 @@
         public function getAvgRating() { return $this->avgRating; }
         public function setAvgRating($avgRating) { $this->avgRating = $avgRating; }
 
-        # The current viewer's own submitted rating (1-5), or null if they
-        # haven't rated this game / aren't logged in.
+        # The current viewer's own submitted rating
         public function getUserRating() { return $this->userRating; }
         public function setUserRating($userRating) { $this->userRating = $userRating; }
+
+        public function getAccessType() { return $this->accessType; }
+        public function setAccessType($accessType) {
+            $this->accessType = $accessType === self::ACCESS_DOWNLOAD_ONLY
+                ? self::ACCESS_DOWNLOAD_ONLY
+                : self::ACCESS_ONLINE;
+        }
+
+        public function isDownloadOnly(): bool {
+            return $this->accessType === self::ACCESS_DOWNLOAD_ONLY;
+        }
+
+        # Raw "also allow download" flag as stored (only meaningful when
+        # the game IS online — a download-only game has no such flag to
+        # toggle). Use isDownloadable() for "can this actually be
+        # downloaded" checks.
+        public function getAllowDownload() { return $this->allowDownload; }
+        public function setAllowDownload($allowDownload) { $this->allowDownload = (bool) $allowDownload; }
+
+        # Can this game be downloaded
+        public function isDownloadable(): bool {
+            return $this->isDownloadOnly() || $this->allowDownload;
+        }
+
+        # Screenshots/video clips for the details-modal carousel, videos first.
+        public function getFeatureGraphics() { return $this->featureGraphics; }
+        public function setFeatureGraphics($featureGraphics) { $this->featureGraphics = $featureGraphics; }
 
         #[\ReturnTypeWillChange]
         public function jsonSerialize(): mixed {
@@ -116,17 +153,21 @@
                 "avgRating" => $this->avgRating,
                 "devNames" => $this->devNames,
                 "userRating" => $this->userRating,
+                "accessType" => $this->accessType,
+                "allowDownload" => $this->allowDownload,
+                "isDownloadable" => $this->isDownloadable(),
+                "featureGraphics" => $this->featureGraphics,
             ];
         }
 
-        # searches all games in the database (public catalog: games/all, /topPlayed, /featured)
+        # searches all games in the database
         public function getAllGames($title = "", $genre = "") {
             $pdo = Database::connect();
 
             $params = [];
             $sql = (
                 "SELECT
-                    ga.gameId, ga.title, ga.totalPlays, ga.thumbnail,
+                    ga.gameId, ga.title, ga.totalPlays, ga.thumbnail, ga.accessType, ga.allowDownload,
                     GROUP_CONCAT(DISTINCT ge.name SEPARATOR ', ') AS genreNames,
                     COALESCE(AVG(ra.rating), 0) AS avgRating
                 FROM game ga
@@ -162,22 +203,21 @@
                     thumbnail: $row["thumbnail"],
                     genreNames: $row["genreNames"],
                     avgRating: $row["avgRating"],
+                    accessType: $row["accessType"] ?? self::ACCESS_ONLINE,
+                    allowDownload: (bool) ($row["allowDownload"] ?? false),
                 );
             }
 
             return $games;
         }
 
-        # get the full details of a single game (used for the game details modal
-        # AND to hand back the saved row after add/edit in the profile page)
-        # $userId (optional): when given, also returns that user's own
-        # rating for this game as userRating, so the star widget can be
-        # pre-filled on load.
+        # get the full details of a single game
         public function getGameById($gameId, $userId = null) {
             $pdo = Database::connect();
 
             $sql = "SELECT ga.gameId, ga.title, ga.description, ga.controls, ga.totalPlays,
                     ga.dateReleased, ga.lastUpdated, ga.thumbnail, ga.gameFiles, ga.status,
+                    ga.accessType, ga.allowDownload,
                     GROUP_CONCAT(DISTINCT ge.name SEPARATOR ', ') AS genreNames,
                     GROUP_CONCAT(DISTINCT us.username SEPARATOR ', ') AS devNames,
                     COALESCE(AVG(ra.rating), 0) AS avgRating,
@@ -199,6 +239,8 @@
                 return null;
             }
 
+            $featureGraphicModel = new GameFeatureGraphic();
+
             return new Game(
                 gameId: $row["gameId"],
                 title: $row["title"],
@@ -214,13 +256,13 @@
                 devNames: $row["devNames"],
                 avgRating: $row["avgRating"],
                 userRating: $row["userRating"],
+                accessType: $row["accessType"] ?? self::ACCESS_ONLINE,
+                allowDownload: (bool) ($row["allowDownload"] ?? false),
+                featureGraphics: $featureGraphicModel->getByGame($gameId),
             );
         }
 
-        # Bumps a game's totalPlays by 1 (called when the player actually
-        # starts a game, not just when they view its page). Returns the
-        # updated total so the caller can refresh the on-screen count
-        # without a second round trip.
+        # Bumps a game's totalPlays by 1
         public function incrementTotalPlays($gameId): int {
             $pdo = Database::connect();
 
@@ -234,23 +276,26 @@
             return $row ? (int) $row['totalPlays'] : 0;
         }
 
-        # Inserts or updates a user's 1-5 star rating for a game, then
-        # returns the game's new average plus the rating that was just
-        # saved (so the caller can immediately re-render both).
-        # rating(userId, gameId) is a composite primary key, so this is a
-        # single atomic upsert rather than a check-then-write.
+        # Inserts or updates a user's 1-5 star rating for a game
         public function rateGame($gameId, $userId, $ratingValue): array {
             $pdo = Database::connect();
 
             try {
                 $pdo->beginTransaction();
 
-                $upsertStmt = $pdo->prepare('
-                    INSERT INTO rating (gameId, userId, rating)
-                    VALUES (?, ?, ?)
-                    ON DUPLICATE KEY UPDATE rating = VALUES(rating)
-                ');
-                $upsertStmt->execute([$gameId, $userId, $ratingValue]);
+                # Update the user's existing rating, or insert the first one. Done in two
+                # steps (instead of ON DUPLICATE KEY UPDATE) so it works even if the
+                # rating table has no UNIQUE (gameId, userId) key.
+                $existsStmt = $pdo->prepare('SELECT 1 FROM rating WHERE gameId = ? AND userId = ? LIMIT 1');
+                $existsStmt->execute([$gameId, $userId]);
+
+                if ($existsStmt->fetchColumn()) {
+                    $saveStmt = $pdo->prepare('UPDATE rating SET rating = ? WHERE gameId = ? AND userId = ?');
+                    $saveStmt->execute([$ratingValue, $gameId, $userId]);
+                } else {
+                    $saveStmt = $pdo->prepare('INSERT INTO rating (gameId, userId, rating) VALUES (?, ?, ?)');
+                    $saveStmt->execute([$gameId, $userId, $ratingValue]);
+                }
 
                 $avgStmt = $pdo->prepare('SELECT COALESCE(AVG(rating), 0) AS avgRating FROM rating WHERE gameId = ?');
                 $avgStmt->execute([$gameId]);
@@ -272,14 +317,14 @@
         }
 
         # Function that adds a game to the database
-        public function addGame($creatorUserId, $title, $description, $controls, $genreNames, $thumbnailPath, $gameFilePath, $status, $collaboratorUserIds = []) {
+        public function addGame($creatorUserId, $title, $description, $controls, $genreNames, $thumbnailPath, $gameFilePath, $status, $collaboratorUserIds = [], $accessType = self::ACCESS_ONLINE, $allowDownload = false) {
             $pdo = Database::connect();
 
             try {
                 $pdo->beginTransaction();
                 $stmt = $pdo->prepare('
-                    INSERT INTO game (title, description, controls, thumbnail, gameFiles, status, dateReleased, lastUpdated)
-                    VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
+                    INSERT INTO game (title, description, controls, thumbnail, gameFiles, status, accessType, allowDownload, dateReleased, lastUpdated)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
                 ');
 
                 $stmt->execute([
@@ -288,7 +333,9 @@
                     $controls,
                     $thumbnailPath,
                     $gameFilePath,
-                    $status
+                    $status,
+                    $accessType === self::ACCESS_DOWNLOAD_ONLY ? self::ACCESS_DOWNLOAD_ONLY : self::ACCESS_ONLINE,
+                    $allowDownload ? 1 : 0,
                 ]);
 
                 $gameId = $pdo->lastInsertId();
@@ -315,10 +362,7 @@
         }
 
         # Function that edits game details
-        # NOTE: status is deliberately NOT editable here — only admins change it
-        # (see updateStatus()), so an owner editing a game can't un-hide or
-        # publish it themselves.
-        public function editGame($gameId, $title, $description, $controls, $genreNames, $thumbnailPath, $gameFilePath): bool {
+        public function editGame($gameId, $title, $description, $controls, $genreNames, $thumbnailPath, $gameFilePath, $accessType = null, $allowDownload = null): bool {
             $pdo = Database::connect();
 
             try {
@@ -330,6 +374,8 @@
                         controls = ?,
                         thumbnail = COALESCE(?, thumbnail),
                         gameFiles = COALESCE(?, gameFiles),
+                        accessType = COALESCE(?, accessType),
+                        allowDownload = COALESCE(?, allowDownload),
                         lastUpdated = NOW()
                     WHERE gameId = ?
                 ');
@@ -340,6 +386,8 @@
                     $controls,
                     $thumbnailPath,
                     $gameFilePath,
+                    $accessType === null ? null : ($accessType === self::ACCESS_DOWNLOAD_ONLY ? self::ACCESS_DOWNLOAD_ONLY : self::ACCESS_ONLINE),
+                    $allowDownload === null ? null : ($allowDownload ? 1 : 0),
                     $gameId
                 ]);
 
@@ -355,6 +403,29 @@
                 error_log("Edit Game Error: " . $e->getMessage());
                 throw $e;
             }
+        }
+
+        # Recursively deletes a folder and everything in it
+        private function deleteDirectoryRecursive(string $dir): void {
+            $items = @scandir($dir);
+            if ($items === false) {
+                return;
+            }
+
+            foreach ($items as $item) {
+                if ($item === '.' || $item === '..') {
+                    continue;
+                }
+
+                $path = $dir . DIRECTORY_SEPARATOR . $item;
+                if (is_dir($path)) {
+                    $this->deleteDirectoryRecursive($path);
+                } else {
+                    @unlink($path);
+                }
+            }
+
+            @rmdir($dir);
         }
 
         private function syncGameGenres($pdo, $gameId, $genreNames): void {
@@ -377,8 +448,7 @@
             }
         }
 
-        # Function that gets games made by the user (raw rows — consumed as
-        # $game['gameId'], $game['status'], etc. in the profile view/JS)
+        # Function that gets games made by the user
         public function getGamesByUser($userId) {
             $pdo = Database::connect();
             $sql = 'SELECT g.*, GROUP_CONCAT(gen.name ORDER BY gen.name SEPARATOR ", ") AS genre
@@ -435,6 +505,11 @@
                             unlink($gameFilePath); // Physically deletes the game file
                         }
                     }
+
+                    $featureGraphicsDir = $publicDir . '/uploads/feature-graphics/' . $id;
+                    if (is_dir($featureGraphicsDir)) {
+                        $this->deleteDirectoryRecursive($featureGraphicsDir);
+                    }
                 }
 
                 return true;
@@ -451,8 +526,7 @@
         # STATUS + ADMIN HELPERS
         # ───────────────────────────────────────────
 
-        # Maps whatever is in the DB to one of the three real statuses.
-        # Legacy / unknown values ('Draft', 'pending', NULL, ...) count as under review.
+        # Maps whatever is in the DB to one of the three real statuses
         public static function normalizeStatus($status): string {
             $s = str_replace([' ', '-'], '_', strtolower(trim((string) $status)));
 
@@ -517,9 +591,7 @@
             return $counts;
         }
 
-        # Every game, whatever its status, for the admin dashboard table.
-        # Sub-selects are used (instead of joins) so devs / ratings / reports
-        # can't multiply each other's rows.
+        # Every game, whatever its status, for the admin dashboard table
         public function getAllForAdmin(): array {
             $pdo = Database::connect();
             $sql = 'SELECT ga.gameId, ga.title, ga.status, ga.dateReleased, ga.lastUpdated,
@@ -551,9 +623,7 @@
             }, $rows);
         }
 
-        # Full read-only details of one game (any status) for the admin details page.
-        # projectType is worked out from the number of developers on the game
-        # (1 = Solo, 2+ = Collaboration), same rule the profile page uses.
+        # Full read-only details of one game
         public function getAdminGameDetail($gameId): ?array {
             $pdo = Database::connect();
             $sql = 'SELECT ga.gameId, ga.title, ga.description, ga.controls, ga.totalPlays,

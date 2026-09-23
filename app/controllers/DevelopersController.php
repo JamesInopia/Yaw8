@@ -9,8 +9,8 @@ class DevelopersController extends Controller {
         $gameModel = new Game();
         $users = $userModel->getAllUsers();
 
-        $m = 10;   // minimum-votes damping constant
-        $C = 4.0;  // platform-wide average rating
+        $m = 10;
+        $C = 4.0;
 
         foreach ($users as &$user) {
             $games = $gameModel->getGamesByUser($user['id']);
@@ -27,7 +27,6 @@ class DevelopersController extends Controller {
                 ];
             }, $published);
 
-            // NEW: weighted rating + display rating
             $v = (int) $user['ratingCount'];
             $R = $user['avgRating'] !== null ? (float) $user['avgRating'] : 0;
 
@@ -35,8 +34,6 @@ class DevelopersController extends Controller {
             $user['weightedScore'] = ($v / ($v + $m)) * $R + ($m / ($v + $m)) * $C;
         }
         unset($user);
-
-        // NEW: rank and flag the top developers
         usort($users, fn($a, $b) => $b['weightedScore'] <=> $a['weightedScore']);
         $topCount = 5;
         foreach ($users as $i => &$user) {

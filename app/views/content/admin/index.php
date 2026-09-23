@@ -1,7 +1,5 @@
 <!-- ══════════════════════════════════════════
     PAGE BODY — ADMIN DASHBOARD
-    Rendered by AdminController::index(); $stats holds the numbers for the
-    stat cards. The games table is filled in by public/js/admin.js.
 ══════════════════════════════════════════ -->
 <?php
 $stats = $stats ?? [];
@@ -49,7 +47,7 @@ $statCards = [
 </section>
 
 <!-- ─────────────────────────────
-    MANAGEMENT PANEL (tabs)
+    MANAGEMENT PANEL
 ───────────────────────────── -->
 <section class="panel admin-panel">
     <div class="admin-tabs" role="tablist" aria-label="Manage">

@@ -1,11 +1,5 @@
 <?php
 # Admin dashboard — only Admin / Supreme Overlord accounts may use anything here.
-#
-# Two kinds of routes:
-#   * PAGES (admin, admin/game)        -> guarded by requireAdminPage()  (PHP session)
-#   * JSON API (api/admin/...)         -> guarded by requireAdminApi()   (JWT + role check)
-# Every single method calls its guard first, so hitting an API URL directly
-# gets a non-admin a 401/403, not data.
 class AdminController extends Controller {
     private AdminService $adminService;
 
@@ -27,7 +21,7 @@ class AdminController extends Controller {
         ]);
     }
 
-    # Read-only details page for one game (works for every game) + its reports
+    # Read-only details page for one game
     public function gameDetails($gameId = null) {
         $this->requireAdminPage();
 
@@ -45,7 +39,7 @@ class AdminController extends Controller {
     // JSON API
     // ═════════════════════════════════════════
 
-    # GET api/admin/games -> every game + fresh stats
+    # GET api/admin/games
     public function games() {
         $this->requireAdminApi();
 
@@ -56,7 +50,7 @@ class AdminController extends Controller {
         ]);
     }
 
-    # GET api/admin/game&gameId=5 -> one game + its reports
+    # GET api/admin/game&gameId=5
     public function gameData($gameId = null) {
         $this->requireAdminApi();
 
@@ -73,7 +67,7 @@ class AdminController extends Controller {
         $this->json(['success' => true] + $detail);
     }
 
-    # POST api/admin/game/status   { gameId, status: published|under_review|unlisted }
+    # POST api/admin/game/status
     public function updateStatus() {
         $adminId = $this->requireAdminApi();
         $this->requirePost();
@@ -90,7 +84,7 @@ class AdminController extends Controller {
         $this->respond($result);
     }
 
-    # POST api/admin/report/resolve   { reportId }
+    # POST api/admin/report/resolve
     public function resolveReport() {
         $adminId = $this->requireAdminApi();
         $this->requirePost();
@@ -105,7 +99,7 @@ class AdminController extends Controller {
         $this->respond($this->adminService->resolveReport((int) $reportId, $adminId));
     }
 
-    # POST api/admin/reports/resolve-all   { gameId }
+    # POST api/admin/reports/resolve-all
     public function resolveAllReports() {
         $adminId = $this->requireAdminApi();
         $this->requirePost();
@@ -120,14 +114,14 @@ class AdminController extends Controller {
         $this->respond($this->adminService->resolveAllReports((int) $gameId, $adminId));
     }
 
-    # GET api/admin/users -> the accounts this admin may see (+ whether they're a Supreme Overlord)
+    # GET api/admin/users
     public function users() {
         $adminId = $this->requireAdminApi();
 
         $this->json($this->adminService->getUsers($adminId));
     }
 
-    # POST api/admin/user/suspend   { userId, mode: indefinite|timed, days? }
+    # POST api/admin/user/suspend
     public function suspendUser() {
         $adminId = $this->requireAdminApi();
         $this->requirePost();
@@ -143,7 +137,7 @@ class AdminController extends Controller {
         ));
     }
 
-    # POST api/admin/user/unsuspend   { userId }
+    # POST api/admin/user/unsuspend
     public function unsuspendUser() {
         $adminId = $this->requireAdminApi();
         $this->requirePost();
@@ -154,7 +148,7 @@ class AdminController extends Controller {
         $this->respond($this->adminService->unsuspendUser($adminId, $userId));
     }
 
-    # POST api/admin/user/admin-access   { userId, makeAdmin: true|false }   (Supreme Overlord only)
+    # POST api/admin/user/admin-access
     public function setAdminAccess() {
         $adminId = $this->requireAdminApi();
         $this->requirePost();

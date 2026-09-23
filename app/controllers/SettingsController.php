@@ -13,8 +13,7 @@ class SettingsController extends Controller {
         $this->view('settings/index', ['user' => $_SESSION['user'] ?? null]);
     }
 
-    # Returns the logged-in user's info as JSON, using the same PHP session
-    # the rest of the app already relies on (no JWT bearer token involved).
+    # Returns the logged-in user's info as JSON
     public function me() {
         $this->requireAuth();
         header('Content-Type: application/json');
@@ -38,9 +37,7 @@ class SettingsController extends Controller {
         ]);
     }
 
-    # Lightweight pre-check used BEFORE the confirmation modal is shown.
-    # Verifies the email format/domain and the current password, but makes
-    # no changes to the account yet.
+    # Verifies the email format/domain and the current password, but makes no changes to the account yet.
     public function verifyEmailChange() {
         $this->requireAuth();
         header('Content-Type: application/json');
@@ -78,7 +75,6 @@ class SettingsController extends Controller {
             return;
         }
 
-        // Everything checks out — safe for the frontend to show the "are you sure?" modal
         echo json_encode(['success' => true]);
     }
 
@@ -108,7 +104,7 @@ class SettingsController extends Controller {
         $userModel = new User();
         $userData = $userModel->getUserById($userId);
 
-        // Verify the password BEFORE touching the email, per requirement (b)
+        // Verify the password BEFORE touching the email, per requirement
         if (!$userData || !password_verify($currentPassword, $userData['password'])) {
             echo json_encode(['success' => false, 'message' => 'Current password is incorrect.']);
             return;
@@ -122,9 +118,6 @@ class SettingsController extends Controller {
         }
 
         if ($userModel->updateEmail($userId, $email)) {
-            // Email changed successfully. The frontend will force a logout
-            // immediately after this response so the user has to log back
-            // in with their new email, for security.
             echo json_encode([
                 'success' => true,
                 'message' => 'Email updated successfully. Logging you out...',

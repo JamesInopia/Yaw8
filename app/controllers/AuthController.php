@@ -284,7 +284,6 @@ class AuthController extends Controller {
         $this->json(['success' => true, 'message' => 'Password updated. You can now log in.']);
     }
 
-    // FIXED: Renamed profie to profile
     public function profile(): void {
         $payload = AuthMiddleware::requireAuth();
 

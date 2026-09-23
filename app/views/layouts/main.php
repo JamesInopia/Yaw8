@@ -11,6 +11,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <?php if ($isLoggedIn): ?><meta name="yaw8-logged-in" content="1"/><?php endif; ?>
     <title>YAW8 - Play What Students Create</title>
 
     <!-- ICONS -->
@@ -22,9 +23,12 @@
 
     <?php if ($currentRoute === 'auth'): ?>
       <link rel="stylesheet" href="css/auth.css"/>
-    <?php elseif ($currentRoute === 'games' || $currentRoute === 'games/player'): ?>
+    <?php elseif ($currentRoute === 'games' || $currentRoute === 'games/player' || $currentRoute === 'downloader'): ?>
       <link rel="stylesheet" href="css/games.css"/>
       <link rel="stylesheet" href="css/gamepage.css"/>
+      <?php if ($currentRoute === 'downloader'): ?>
+      <link rel="stylesheet" href="css/downloader.css"/>
+      <?php endif; ?>
     <?php elseif ($currentRoute === 'developers'): ?>
       <link rel="stylesheet" href="css/developers.css"/>
     <?php elseif ($currentRoute === 'about'): ?>
@@ -160,7 +164,7 @@
 ══════════════════════════════════════════ -->
 <div id="game-modal" class="modal">
 <div class="modal-overlay"></div>
-<div class="modal-content">
+<div class="modal-content modal-content-game-view">
 <button class="modal-close">
     <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
 </button>
@@ -249,6 +253,8 @@
     <script src="js/games.js"></script>
   <?php elseif ($currentRoute === 'games/player'): ?>
     <script src="js/gamepage.js"></script>
+  <?php elseif ($currentRoute === 'downloader'): ?>
+    <script src="js/downloader.js"></script>
   <?php elseif ($currentRoute === 'developers'): ?>
     <script src="js/developers.js"></script>
   <?php elseif ($currentRoute === 'about'): ?>

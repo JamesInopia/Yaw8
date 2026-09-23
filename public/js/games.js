@@ -69,6 +69,7 @@
       card.setAttribute("data-genre-names", genre);
       card.setAttribute("data-avg-rating", rating);
       card.setAttribute("data-dev-names", devNames);
+      card.setAttribute("data-access-type", game.accessType || "online");
 
       const hasThumbnail = Boolean(thumbnail);
       const colorClass = colorClasses[index % colorClasses.length];

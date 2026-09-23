@@ -40,6 +40,27 @@
                             </div>
                         </div>
 
+                        <!-- Access Type: Playable Online vs Download Only -->
+                        <div class="form-group">
+                            <label class="form-label">Availability <span class="form-required">*</span></label>
+                            <div class="access-type-toggle" id="submitAccessTypeToggle">
+                                <button type="button" class="access-type-btn active" data-value="online">Playable Online</button>
+                                <button type="button" class="access-type-btn" data-value="download_only">Download Only</button>
+                            </div>
+                            <input type="hidden" id="submitAccessType" value="online" />
+                        </div>
+
+                        <div class="form-group" id="submitAllowDownloadGroup">
+                            <label class="form-checkbox-label">
+                                <input type="checkbox" id="submitAllowDownload" />
+                                Also let players download this game
+                            </label>
+                            <span class="form-hint">Players will still be able to play it in-browser — this just adds a Download button too.</span>
+                        </div>
+                        <p class="form-hint" id="submitDownloadOnlyNote" style="display: none;">
+                            This game will have no in-browser player — players will only be able to download it.
+                        </p>
+
                         <!-- Collaborators Section -->
                         <div class="form-group" id="collabSection">
                             <label class="form-label">Add Collaborators</label>
@@ -83,6 +104,18 @@
                                 </div>
                                 <input type="file" id="thumbnailFileInput" accept="image/*" hidden />
                             </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Feature Graphics</label>
+                            <span class="form-hint" style="margin-top: 0; margin-bottom: 8px;">Screenshots or short clips shown in the game's carousel. Videos are shown first.</span>
+
+                            <div class="feature-graphics-dropzone" id="submitFeatureGraphicsDropzone">
+                                <svg viewBox="0 0 24 24"><line x1="12" y1="4" x2="12" y2="20"/><line x1="4" y1="12" x2="20" y2="12"/></svg>
+                                <span>Add images or videos</span>
+                            </div>
+                            <input type="file" id="submitFeatureGraphicsInput" accept="image/*,video/*" multiple hidden />
+                            <div class="feature-graphics-preview-list" id="submitFeatureGraphicsPreviewList"></div>
                         </div>
 
                         <div class="genre-box">

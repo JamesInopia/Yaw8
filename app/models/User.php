@@ -107,8 +107,7 @@ class User {
         return $stmt->execute([$hashedPassword, $userId]);
     }
 
-    # Function to update user password by email (used by the forgot-password flow,
-    # where the user isn't logged in yet so there's no userId to key off of)
+    # Function to update user password by emai
     public function updatePasswordByEmail($email, $hashedPassword): bool {
         $pdo = Database::connect();
         $stmt = $pdo->prepare('UPDATE user_account SET password = ? WHERE email = ?');
@@ -129,9 +128,7 @@ class User {
     # AUTH STATE + ADMIN USER MANAGEMENT
     # ───────────────────────────────────────────
 
-    # Role + whether the account is suspended RIGHT NOW (a timed suspension
-    # whose end date has passed no longer counts). Uses the database clock for
-    # both writing and comparing, so PHP/MySQL timezone differences can't matter.
+    # Checks if account is suspended
     public function getAuthState($userId): ?array {
         $pdo = Database::connect();
         $stmt = $pdo->prepare(
@@ -147,11 +144,7 @@ class User {
         return $row ?: null;
     }
 
-    # Accounts for the admin "Users" tab.
-    #   $includeAdmins = false -> only non-admin accounts (what a normal Admin sees)
-    #   $includeAdmins = true  -> also Admin accounts (Supreme Overlord only)
-    # Supreme Overlord accounts and the person asking are never listed.
-    # Rating = average of all ratings received on the games this user made.
+    # Accounts for the admin Users tab.
     public function getUsersForAdmin(bool $includeAdmins, $excludeUserId): array {
         $params = [];
         $where = ['1 = 1'];
@@ -175,7 +168,7 @@ class User {
         return array_map([$this, 'shapeAdminUser'], $stmt->fetchAll(PDO::FETCH_ASSOC));
     }
 
-    # One account in the same shape as the list (any role — callers check permissions).
+    # Checks account permissions
     public function getUserForAdmin($userId): ?array {
         $pdo = Database::connect();
         $stmt = $pdo->prepare($this->adminUserSelect() . ' WHERE u.userId = ? LIMIT 1');
@@ -216,7 +209,6 @@ class User {
         ];
     }
 
-    # $days = null -> indefinite (only an admin can lift it); $days = N -> N days from now.
     public function suspend($userId, ?int $days): bool {
         $pdo = Database::connect();
 
@@ -243,7 +235,6 @@ class User {
         return $stmt->execute([$role, $userId]);
     }
 
-    # Total number of registered accounts (admin dashboard stat card)
     public function countAll(): int {
         $pdo = Database::connect();
         return (int) $pdo->query('SELECT COUNT(*) FROM user_account')->fetchColumn();

@@ -6,9 +6,15 @@ const modalClose = document.querySelector(".modal-close");
 const carouselPrev = document.querySelector(".carousel-prev");
 const carouselNext = document.querySelector(".carousel-next");
 const gamePagePath = "?url=games/player";
+const downloaderPagePath = "?url=downloader";
 const CAROUSEL_VISIBLE_ITEMS = 4; // number of cards shown at a time
 let currentGameId = null;
+let currentGameAccessType = "online";
 let carouselIndex = 0; // current starting card index
+
+// Feature-graphics carousel (modal's thumbnail area)
+let modalCarouselItems = [];
+let modalCarouselIndex = 0;
 
 const THUMB_COLOR_CLASSES = ["gt-pixel-drift", "gt-tower-tactics", "gt-box-jumper", "gt-color-clash"];
 
@@ -32,6 +38,60 @@ function renderThumbInto(container, thumbnail, title, key) {
     const label = (title || "").toUpperCase().split(" ").join("<br>");
     container.innerHTML = `<div class="game-thumb-title">${label}</div>`;
   }
+}
+
+// ═══════════════════════════════════════════
+// MODAL FEATURE-GRAPHICS CAROUSEL
+// Shows a game's feature graphics (screenshots/video clips), videos
+// first. Falls back to a single item — the game's thumbnail — when it
+// has no feature graphics at all, in which case the arrows are simply
+// disabled (nothing to scroll to).
+// ═══════════════════════════════════════════
+function buildModalCarouselItems(fullGame) {
+  const graphics = Array.isArray(fullGame.featureGraphics) ? fullGame.featureGraphics : [];
+
+  if (graphics.length > 0) {
+    return graphics.map((fg) => ({
+      type: fg.mediaType === "video" ? "video" : "image",
+      path: fg.filePath,
+    }));
+  }
+
+  // No feature graphics — fall back to the thumbnail (or colored default).
+  return [{ type: "thumbnail", path: fullGame.thumbnail, title: fullGame.title, key: fullGame.gameId }];
+}
+
+function renderModalCarouselItem() {
+  const container = document.getElementById("modalThumbnail");
+  if (!container) return;
+
+  const item = modalCarouselItems[modalCarouselIndex];
+  if (!item) return;
+
+  if (item.type === "video") {
+    container.classList.remove(...THUMB_COLOR_CLASSES);
+    // Never autoplay — the person presses play themselves.
+    container.innerHTML = `<video src="${item.path}" controls preload="metadata" playsinline></video>`;
+  } else if (item.type === "image") {
+    container.classList.remove(...THUMB_COLOR_CLASSES);
+    container.innerHTML = `<img src="${item.path}" alt="">`;
+  } else {
+    renderThumbInto(container, item.path, item.title, item.key);
+  }
+}
+
+function updateModalCarouselArrows() {
+  const prevBtn = document.getElementById("modalThumbPrev");
+  const nextBtn = document.getElementById("modalThumbNext");
+  if (!prevBtn || !nextBtn) return;
+
+  prevBtn.classList.toggle("disabled", modalCarouselIndex <= 0);
+  nextBtn.classList.toggle("disabled", modalCarouselIndex >= modalCarouselItems.length - 1);
+}
+
+function renderModalCarousel() {
+  renderModalCarouselItem();
+  updateModalCarouselArrows();
 }
 
 // ═══════════════════════════════════════════
@@ -164,8 +224,11 @@ async function openGameModal(gameData) {
       fullGame.lastUpdated || "—";
     document.getElementById("modalGameReleased").textContent =
       fullGame.dateReleased || "—";
-    const modalThumb = document.getElementById("modalThumbnail");
-    renderThumbInto(modalThumb, fullGame.thumbnail, fullGame.title, fullGame.gameId);
+
+    // Feature-graphics carousel (falls back to the thumbnail alone)
+    modalCarouselItems = buildModalCarouselItems(fullGame);
+    modalCarouselIndex = 0;
+    renderModalCarousel();
 
     // Sync the rate / favorite action row to this game
     if (modalStarWrap) {
@@ -174,6 +237,23 @@ async function openGameModal(gameData) {
     }
     if (modalFavBtn) {
       modalFavBtn.classList.toggle("active", isFavorited(fullGame.gameId));
+    }
+
+    // Availability: online (playable, maybe also downloadable) vs
+    // download-only (no in-browser player — PLAY NOW leads to the
+    // Downloader page instead).
+    currentGameAccessType = fullGame.accessType || "online";
+    const isDownloadOnly = currentGameAccessType === "download_only";
+
+    if (modalPlayBtn) {
+      modalPlayBtn.textContent = isDownloadOnly ? "VIEW & DOWNLOAD" : "PLAY NOW";
+    }
+
+    const modalActionRow = document.getElementById("modalActionRow");
+    if (modalDownloadBtn) {
+      const showDownload = !!fullGame.isDownloadable;
+      modalDownloadBtn.style.display = showDownload ? "" : "none";
+      if (modalActionRow) modalActionRow.classList.toggle("has-download", showDownload);
     }
 
     // Reset carousel
@@ -224,6 +304,10 @@ function goToGamePage(gameId) {
   window.location.href = `${gamePagePath}&gameId=${gameId}`;
 }
 
+function goToDownloaderPage(gameId) {
+  window.location.href = `${downloaderPagePath}&gameId=${gameId}`;
+}
+
 document.addEventListener("click", function (e) {
   const playBtn = e.target.closest(".btn-play");
   if (!playBtn) return;
@@ -231,14 +315,51 @@ document.addEventListener("click", function (e) {
   const card = playBtn.closest("[data-game-id]");
   if (!card) return;
 
-  goToGamePage(card.getAttribute("data-game-id"));
+  const gameId = card.getAttribute("data-game-id");
+  if (card.getAttribute("data-access-type") === "download_only") {
+    goToDownloaderPage(gameId);
+  } else {
+    goToGamePage(gameId);
+  }
 });
+
+// Feature-graphics carousel arrows (modal)
+const modalThumbPrev = document.getElementById("modalThumbPrev");
+const modalThumbNext = document.getElementById("modalThumbNext");
+
+if (modalThumbPrev) {
+  modalThumbPrev.addEventListener("click", function () {
+    if (modalCarouselIndex <= 0) return;
+    modalCarouselIndex -= 1;
+    renderModalCarousel();
+  });
+}
+
+if (modalThumbNext) {
+  modalThumbNext.addEventListener("click", function () {
+    if (modalCarouselIndex >= modalCarouselItems.length - 1) return;
+    modalCarouselIndex += 1;
+    renderModalCarousel();
+  });
+}
 
 const modalPlayBtn = document.querySelector(".btn-play-modal");
 if (modalPlayBtn) {
   modalPlayBtn.addEventListener("click", function () {
     if (!currentGameId) return;
-    goToGamePage(currentGameId);
+    if (currentGameAccessType === "download_only") {
+      goToDownloaderPage(currentGameId);
+    } else {
+      goToGamePage(currentGameId);
+    }
+  });
+}
+
+const modalDownloadBtn = document.getElementById("modalDownloadBtn");
+if (modalDownloadBtn) {
+  modalDownloadBtn.addEventListener("click", function () {
+    if (!currentGameId) return;
+    window.location.href = `?url=games/download&gameId=${currentGameId}`;
   });
 }
 

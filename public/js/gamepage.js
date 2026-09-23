@@ -9,9 +9,7 @@
   const playableType = cabinet.dataset.playableType;
   let playableUrl = cabinet.dataset.playableUrl || "";
 
-  function isLoggedIn() {
-    return Boolean(localStorage.getItem("jwt_token"));
-  }
+  // isLoggedIn() comes from auth.js (session meta tag OR stored JWT)
 
   // ── Lightweight toast (used for "log in to rate" nudges) ──
   function showToast(text) {
@@ -165,6 +163,11 @@
       "load",
       function () {
         remeasureSoon();
+        // The shim resets to full volume/unmuted on every fresh page load
+        // (restart included) — reapply whatever the user had set. Sent a few
+        // times because some engines only set up their audio after load.
+        sendAudioState();
+        [150, 600, 1800].forEach((ms) => setTimeout(sendAudioState, ms));
 
         // Some games grow/shrink as you play (score panels, game-over
         // overlays). Watch the document and re-fit when it changes.
@@ -222,40 +225,112 @@
     });
   }
 
-  let muted = false;
+  // ═══════════════════════════════════════════
+  // VOLUME / MUTE
+  // Talks to the audio shim injected into the extracted game's index.html
+  // (see GameService::injectAudioShim) — postMessage alone does nothing
+  // unless something on the other end is listening for it.
+  // ═══════════════════════════════════════════
+  const volumeControl = document.getElementById("gpVolumeControl");
+  const volumeSlider = document.getElementById("gpVolumeSlider");
+  const muteIcon = document.getElementById("gpMuteIcon");
+
+  const UNMUTED_ICON = '<path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>';
+  const MUTED_ICON = '<path d="M16.5 12A4.5 4.5 0 0014 7.97v1.79l2.48 2.48c.01-.08.02-.16.02-.24zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06a8.99 8.99 0 003.69-1.81L18.73 21 20 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>';
+
+  function isMutedOrSilent() {
+    return mutedByUser || volume === 0;
+  }
+
+  function updateMuteUi() {
+    if (!muteBtn) return;
+    const silent = isMutedOrSilent();
+    muteBtn.classList.toggle("active", silent);
+    muteBtn.setAttribute("aria-pressed", String(silent));
+    muteBtn.title = silent ? "Unmute" : "Mute";
+    if (muteIcon) muteIcon.innerHTML = silent ? MUTED_ICON : UNMUTED_ICON;
+  }
+
+  function sendAudioState() {
+    if (!frame || !frame.contentWindow) return;
+    frame.contentWindow.postMessage({ type: "setVolume", volume }, "*");
+    frame.contentWindow.postMessage({ type: "setMuted", muted: mutedByUser }, "*");
+  }
+
+  let volume = 1; // 0–1
+  let mutedByUser = false;
+
   if (muteBtn) {
     muteBtn.addEventListener("click", function () {
-      muted = !muted;
-      muteBtn.classList.toggle("active", muted);
-      frame.contentWindow &&
-        frame.contentWindow.postMessage({ type: "setMuted", muted }, "*");
+      mutedByUser = !mutedByUser;
+      updateMuteUi();
+      sendAudioState();
     });
   }
+
+  if (volumeSlider) {
+    volumeSlider.addEventListener("input", function () {
+      volume = Number(volumeSlider.value) / 100;
+      // Dragging the slider back up should un-mute, matching how every
+      // other volume slider (YouTube, Spotify, etc.) behaves.
+      if (volume > 0 && mutedByUser) mutedByUser = false;
+      updateMuteUi();
+      sendAudioState();
+    });
+  }
+
+  updateMuteUi();
 
   // ── Fullscreen: toggle in/out, then re-fit ──
+  // Cross-browser fullscreen helpers (Safari still needs the webkit-
+  // prefixed versions; everything else supports the standard API).
+  function fsElement() {
+    return document.fullscreenElement || document.webkitFullscreenElement || null;
+  }
+
+  function requestFs(el) {
+    const request = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (!request) return Promise.reject(new Error("Fullscreen API unavailable"));
+    return Promise.resolve(request.call(el));
+  }
+
+  function exitFs() {
+    const exit = document.exitFullscreen || document.webkitExitFullscreen;
+    if (!exit) return Promise.reject(new Error("Fullscreen API unavailable"));
+    return Promise.resolve(exit.call(document));
+  }
+
+  function updateFullscreenUi() {
+    if (!fullscreenBtn) return;
+    const active = isFullscreen();
+    fullscreenBtn.classList.toggle("active", active);
+    fullscreenBtn.setAttribute("aria-pressed", String(active));
+    fullscreenBtn.title = active ? "Exit fullscreen" : "Fullscreen";
+    const icon = document.getElementById("gpFullscreenIcon");
+    if (icon) {
+      icon.innerHTML = active
+        ? '<path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/>'
+        : '<path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>';
+    }
+  }
+
   if (fullscreenBtn) {
     fullscreenBtn.addEventListener("click", function () {
-      if (isFullscreen()) {
-        if (document.exitFullscreen) document.exitFullscreen();
-        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-        return;
-      }
-
-      const request =
-        screenEl.requestFullscreen ||
-        screenEl.webkitRequestFullscreen ||
-        screenEl.msRequestFullscreen;
-
-      if (request) {
-        Promise.resolve(request.call(screenEl)).catch(() => {});
+      if (fsElement()) {
+        exitFs().catch((err) => console.error("Failed to exit fullscreen:", err));
+      } else if (screenEl) {
+        requestFs(screenEl).catch((err) => console.error("Failed to enter fullscreen:", err));
       }
     });
   }
+
+  updateFullscreenUi();
 
   // The layout hasn't actually changed yet when fullscreenchange fires on
   // some browsers, so re-fit over the next few frames as well.
   ["fullscreenchange", "webkitfullscreenchange"].forEach((evt) => {
     document.addEventListener(evt, function () {
+      updateFullscreenUi();
       fitStage();
       requestAnimationFrame(fitStage);
       setTimeout(fitStage, 120);
@@ -339,8 +414,42 @@
   // ═══════════════════════════════════════════
   const favBtn = document.getElementById("gpFavBtn");
   if (favBtn) {
+    if (typeof isFavorited === "function") {
+      favBtn.classList.toggle("active", isFavorited(gameId));
+    }
     favBtn.addEventListener("click", function () {
-      this.classList.toggle("active");
+      if (typeof toggleFavoriteId === "function") {
+        const nowFavorited = toggleFavoriteId(gameId);
+        this.classList.toggle("active", nowFavorited);
+        if (typeof showSiteToast === "function") {
+          showSiteToast(nowFavorited ? "Added to Favorites" : "Removed from Favorites");
+        }
+      } else {
+        this.classList.toggle("active");
+      }
+    });
+  }
+
+  // ═══════════════════════════════════════════
+  // REPORT
+  // ═══════════════════════════════════════════
+  const reportBtn = document.getElementById("gpReportBtn");
+  if (reportBtn) {
+    reportBtn.addEventListener("click", function () {
+      if (typeof openReportModal === "function") {
+        const title = document.getElementById("gpTitle");
+        openReportModal(gameId, title ? title.textContent : "");
+      }
+    });
+  }
+
+  // ═══════════════════════════════════════════
+  // DOWNLOAD
+  // ═══════════════════════════════════════════
+  const downloadBtn = document.getElementById("gpDownloadBtn");
+  if (downloadBtn) {
+    downloadBtn.addEventListener("click", function () {
+      window.location.href = `?url=games/download&gameId=${gameId}`;
     });
   }
 })();

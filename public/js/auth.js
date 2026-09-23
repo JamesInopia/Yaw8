@@ -7,15 +7,24 @@ function appUrl(path) {
 
 function authHeaders() {
   const token = localStorage.getItem("jwt_token");
-  return {
-    Authorization: "Bearer " + token,
+  const headers = {
     "Content-Type": "application/json",
     Accept: "application/json",
+    // Tells the server this came from our own JS, so it may fall back to the
+    // PHP session if the JWT above is missing or has expired.
+    "X-Requested-With": "XMLHttpRequest",
   };
+  if (token) headers.Authorization = "Bearer " + token;
+  return headers;
 }
 
+// True if the server rendered this page for a logged-in user (see the
+// yaw8-logged-in meta tag in layouts/main.php) OR a JWT is stored locally.
 function isLoggedIn() {
-  return Boolean(localStorage.getItem("jwt_token"));
+  return (
+    Boolean(document.querySelector('meta[name="yaw8-logged-in"]')) ||
+    Boolean(localStorage.getItem("jwt_token"))
+  );
 }
 
 // ═══════════════════════════════════════════
@@ -60,7 +69,13 @@ document.addEventListener("DOMContentLoaded", () => {
     formContainer.style.opacity = "0.5";
     formContainer.style.transition = "opacity 0.15s ease-in-out";
 
-    fetch(`?url=auth/form&type=${formType}`)
+    fetch(`?url=auth/form&type=${formType}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+    })
       .then((response) => {
         if (!response.ok) throw new Error("Network response was not ok");
         return response.text();

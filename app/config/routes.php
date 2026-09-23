@@ -19,12 +19,14 @@ return [
         'games'             => [GamesController::class, 'index'],
         'games/details'      => [GamesController::class, 'details'],
         'games/player'      => [GamesController::class, 'player'],
+        'downloader'        => [GamesController::class, 'downloader'],
         'games/all'         => [GamesController::class, 'all'],
         'games/topPlayed'   => [GamesController::class, 'topPlayed'],
         'games/featured'    => [GamesController::class, 'featured'],
         'games/play'        => [GamesController::class, 'play'],
         'games/rate'        => [GamesController::class, 'rate'],
         'games/report'      => [GamesController::class, 'report'],
+        'games/download'    => [GamesController::class, 'download'],
 
         # developers
         'developers'        => [DevelopersController::class, 'index'],

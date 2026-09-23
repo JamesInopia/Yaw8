@@ -3,9 +3,7 @@
 ══════════════════════════════════════════ -->
 <?php
 if (!function_exists('yaw8_thumbnail_html')) {
-    // Renders a game's thumbnail: the real image if one exists,
-    // otherwise a colored placeholder with the title as text
-    // (cycles through 4 preset color classes so cards don't all look the same).
+    // Renders a game's thumbnail if it has, otherwise a colored placeholder with the title as text
     function yaw8_thumbnail_html($thumbnail, $title, $index) {
         $colorClasses = ['gt-pixel-drift', 'gt-tower-tactics', 'gt-box-jumper', 'gt-color-clash'];
 
@@ -21,9 +19,7 @@ if (!function_exists('yaw8_thumbnail_html')) {
 }
 
 if (!function_exists('yaw8_quick_actions_html')) {
-    // Favorite + Report icon buttons, overlaid on the top-right corner of
-    // every game card (see .game-quick-actions in style.css). Wired up in
-    // script.js via wireCardQuickActions().
+    // Favorite + Report icon buttons
     function yaw8_quick_actions_html() {
         return '
                     <div class="game-quick-actions">
@@ -40,7 +36,7 @@ if (!function_exists('yaw8_quick_actions_html')) {
 <!-- ─────────────
     PAGE HEADER
 ───────────── -->
-<section class="page-header"> <!--Change the image/background-->
+<section class="page-header">
 <div class="page-header-content">
     <h1>All The <span class="accent">Games</span></h1>
     <p>Featured picks, community favorites, and every single game the YA!W8 crew has shipped — all in one place. Filter by genre and find your next favorite.</p>
@@ -77,6 +73,7 @@ if (!function_exists('yaw8_quick_actions_html')) {
                     data-genre-names="<?= htmlspecialchars($topPlayedGame->getGenreNames()) ?>"
                     data-avg-rating="<?= htmlspecialchars($topPlayedGame->getAvgRating()) ?>"
                     data-dev-names="<?= htmlspecialchars($topPlayedGame->getDevNames()) ?>"
+                    data-access-type="<?= htmlspecialchars($topPlayedGame->getAccessType()) ?>"
                 >
                     <?= yaw8_quick_actions_html() ?>
                     <?php
@@ -140,6 +137,7 @@ if (!function_exists('yaw8_quick_actions_html')) {
                     data-genre-names="<?= htmlspecialchars($featuredGame->getGenreNames()) ?>"
                     data-avg-rating="<?= htmlspecialchars($featuredGame->getAvgRating()) ?>"
                     data-dev-names="<?= htmlspecialchars($featuredGame->getDevNames()) ?>"
+                    data-access-type="<?= htmlspecialchars($featuredGame->getAccessType()) ?>"
                 >
                     <?= yaw8_quick_actions_html() ?>
                     <?= yaw8_thumbnail_html($featuredGame->getThumbnail(), $featuredGame->getTitle(), $index) ?>
@@ -193,6 +191,7 @@ if (!function_exists('yaw8_quick_actions_html')) {
                     data-genre-names="<?= htmlspecialchars($game->getGenreNames()) ?>"
                     data-avg-rating="<?= htmlspecialchars($game->getAvgRating()) ?>"
                     data-dev-names="<?= htmlspecialchars($game->getDevNames()) ?>"
+                    data-access-type="<?= htmlspecialchars($game->getAccessType()) ?>"
                 >
                     <?= yaw8_quick_actions_html() ?>
                     <?= yaw8_thumbnail_html($game->getThumbnail(), $game->getTitle(), $index) ?>
@@ -215,4 +214,4 @@ if (!function_exists('yaw8_quick_actions_html')) {
 </div>
 </section>
 
-</div><!-- end .page-wrap-single -->
+</div>

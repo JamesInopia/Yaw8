@@ -28,9 +28,6 @@ class GamesController extends Controller{
         }
 
         // Soft auth: a plain page navigation never carries the JWT Bearer
-        // header (that's only attached by fetch() calls), so we read the
-        // PHP session instead. Guests can still view/play; rating still
-        // requires being logged in (enforced in rate()).
         $userId = $this->currentUserIdOrNull();
 
         $game = $this->gameService->getGameInfo($gameId, $userId);
@@ -40,11 +37,43 @@ class GamesController extends Controller{
             exit;
         }
 
+
+        if ($game->isDownloadOnly()) {
+            header('Location: ?url=downloader&gameId=' . $gameId);
+            exit;
+        }
+
         $playable = $this->gameService->resolvePlayable($game);
 
         $this->view('games/player', [
             'game' => $game,
             'playable' => $playable,
+        ]);
+    }
+
+    # Function that takes user to the Downloader page — the equivalent of
+    # player() for games with no in-browser experience at all.
+    public function downloader($gameId = null){
+        if ($gameId === null) {
+            header('Location: ?url=games');
+            exit;
+        }
+
+        $userId = $this->currentUserIdOrNull();
+        $game = $this->gameService->getGameInfo($gameId, $userId);
+
+        if ($game === null || !$this->gameService->canView($game, $userId)) {
+            header('Location: ?url=games');
+            exit;
+        }
+
+        if (!$game->isDownloadOnly()) {
+            header('Location: ?url=games/player&gameId=' . $gameId);
+            exit;
+        }
+
+        $this->view('games/downloader', [
+            'game' => $game,
         ]);
     }
 
@@ -95,10 +124,7 @@ class GamesController extends Controller{
         $this->json($game);
     }
 
-    # Called once the player actually starts a game (not just views its
-    # page). Increments totalPlays and, in the same round trip, resolves
-    # what the iframe should actually load (extracting an HTML5 zip on
-    # first play if needed).
+    # Called once the player actually starts a game
     public function play($gameId = null){
         $payload = AuthMiddleware::requireAuth();
 
@@ -147,14 +173,23 @@ class GamesController extends Controller{
             return;
         }
 
-        $result = $this->gameService->rateGame($gameId, $userId, $rating);
+        if (!$this->gameService->gameExists($gameId)) {
+            $this->json(["error" => "Game not found"], 404);
+            return;
+        }
+
+        try {
+            $result = $this->gameService->rateGame($gameId, $userId, $rating);
+        } catch (Throwable $e) {
+            error_log("Rate Game failed: " . $e->getMessage());
+            $this->json(["error" => "Couldn't save your rating."], 500);
+            return;
+        }
 
         $this->json($result);
     }
 
-    # Files a report against a game: a reason (from the dropdown, or the
-    # user's own free-text if they picked "Others") plus an optional
-    # description of what's wrong.
+    # Files a report against a game
     public function report($gameId = null){
         $payload = AuthMiddleware::requireAuth();
 
@@ -191,5 +226,56 @@ class GamesController extends Controller{
         $reportId = $this->gameService->reportGame($gameId, $userId, $reason, $details);
 
         $this->json(["success" => true, "reportId" => $reportId]);
+    }
+
+    # Streams a game's uploaded file to the browser as a download
+    public function download($gameId = null) {
+        if ($gameId === null) {
+            http_response_code(400);
+            echo "Missing Game Id";
+            exit;
+        }
+
+        $userId = $this->currentUserIdOrNull();
+        $game = $this->gameService->getGameInfo($gameId, $userId);
+
+        if ($game === null || !$this->gameService->canView($game, $userId)) {
+            http_response_code(404);
+            echo "Game not found.";
+            exit;
+        }
+
+        if (!$game->isDownloadable()) {
+            http_response_code(403);
+            echo "This game isn't available for download.";
+            exit;
+        }
+
+        $relativePath = $game->getGameFiles();
+        if (empty($relativePath)) {
+            http_response_code(404);
+            echo "No downloadable file for this game.";
+            exit;
+        }
+
+        $publicRoot = realpath(__DIR__ . '/../../public');
+        $absolutePath = realpath($publicRoot . '/' . ltrim($relativePath, '/'));
+
+        if ($absolutePath === false || strpos($absolutePath, $publicRoot) !== 0 || !is_file($absolutePath)) {
+            http_response_code(404);
+            echo "File not found.";
+            exit;
+        }
+
+        $downloadName = preg_replace('/[^A-Za-z0-9_\-]+/', '_', $game->getTitle()) ?: 'game';
+        $extension = pathinfo($absolutePath, PATHINFO_EXTENSION) ?: 'zip';
+
+        if (ob_get_length()) ob_clean();
+        header('Content-Type: application/octet-stream');
+        header('Content-Disposition: attachment; filename="' . $downloadName . '.' . $extension . '"');
+        header('Content-Length: ' . filesize($absolutePath));
+        header('X-Content-Type-Options: nosniff');
+        readfile($absolutePath);
+        exit;
     }
 }

@@ -25,7 +25,7 @@ class PasswordReset {
         return $stmt->execute([$id]);
     }
 
-    # Confirms this email passed step 2 with a still-valid (unexpired) row
+    # Confirms this email passed
     public function isVerified($email): bool {
         $pdo = Database::connect();
         $stmt = $pdo->prepare(

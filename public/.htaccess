@@ -1,7 +1,62 @@
-RewriteEngine On
-RewriteCond %{HTTP:Authorization} ^(.*)
-RewriteRule .* - [E=HTTP_AUTHORIZATION:%1]
+# Serves uploaded/extracted HTML5 games correctly — in particular Unity
+# WebGL builds, which ship .wasm files and (unless "Decompression
+# Fallback" was enabled at build time) pre-compressed .br/.gz files that
+# Apache doesn't know how to label correctly by default. Without this,
+# WebAssembly.instantiate() fails to parse the response and the game
+# never loads.
+#
+# Applies recursively to everything under uploads/games/ (including
+# uploads/games/extracted/{gameId}/...), so it doesn't matter that the
+# extracted/ folder is created lazily per game.
 
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^ index.php [QSA,L]
+<IfModule mod_mime.c>
+    # WebAssembly needs this exact MIME type for streaming compilation.
+    AddType application/wasm .wasm
+    AddType application/octet-stream .data
+    AddType application/octet-stream .unityweb
+
+    # Pre-compressed build files: tell the browser they're compressed
+    # (AddEncoding) and what they actually are underneath (ForceType),
+    # since the real content-type is hidden behind the .br/.gz extension.
+    <FilesMatch "\.wasm\.br$">
+        AddEncoding br .br
+        ForceType application/wasm
+    </FilesMatch>
+    <FilesMatch "\.js\.br$">
+        AddEncoding br .br
+        ForceType application/javascript
+    </FilesMatch>
+    <FilesMatch "\.data\.br$">
+        AddEncoding br .br
+        ForceType application/octet-stream
+    </FilesMatch>
+    <FilesMatch "\.symbols\.json\.br$">
+        AddEncoding br .br
+        ForceType application/json
+    </FilesMatch>
+
+    <FilesMatch "\.wasm\.gz$">
+        AddEncoding gzip .gz
+        ForceType application/wasm
+    </FilesMatch>
+    <FilesMatch "\.js\.gz$">
+        AddEncoding gzip .gz
+        ForceType application/javascript
+    </FilesMatch>
+    <FilesMatch "\.data\.gz$">
+        AddEncoding gzip .gz
+        ForceType application/octet-stream
+    </FilesMatch>
+    <FilesMatch "\.symbols\.json\.gz$">
+        AddEncoding gzip .gz
+        ForceType application/json
+    </FilesMatch>
+</IfModule>
+
+<IfModule mod_headers.c>
+    # Proxies/CDNs sometimes try to re-compress an already-compressed
+    # response, corrupting it. This forbids that.
+    <FilesMatch "\.(br|gz)$">
+        Header set Cache-Control "no-transform"
+    </FilesMatch>
+</IfModule>

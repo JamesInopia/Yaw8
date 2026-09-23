@@ -1,17 +1,10 @@
 <?php
-# Small helpers that answer "who is the current user and what may they do?"
-#
-# The role and the suspension state are ALWAYS read from the database (once per
-# request, then cached), never from the session or the JWT. That way promoting,
-# demoting or suspending someone takes effect immediately instead of when their
-# session/token expires.
 class Auth {
-    # Roles (user_account.role) that may use the admin area.
-    # Compared case-insensitively and ignoring surrounding spaces.
+    # Defines what roles are in the system
     public const ADMIN_ROLES = ['admin', 'supreme overlord'];
     public const SUPREME_ROLE = 'supreme overlord';
 
-    # Routes a suspended person is still allowed to reach (login / logout screens).
+    # Routes a suspended person
     private const AUTH_ROUTES = [
         'auth', 'auth/form', 'login', 'signup', 'logout',
         'auth/forgot-password', 'auth/verify-reset-code', 'auth/reset-password',
@@ -27,7 +20,7 @@ class Auth {
         return $_SESSION['user_id'] ?? null;
     }
 
-    # role + suspension state for one user (one DB query per user per request).
+    # role + suspension state for one user
     private static function state($userId): array {
         $empty = ['role' => '', 'suspended' => false, 'until' => null];
 
@@ -42,8 +35,6 @@ class Auth {
             try {
                 $row = $userModel->getAuthState($userId);
             } catch (Throwable $e) {
-                # Most likely the suspension columns don't exist yet (migration not run).
-                # Fall back to "role only" so the rest of the site keeps working.
                 error_log('Auth::state failed: ' . $e->getMessage());
 
                 try {
@@ -66,7 +57,7 @@ class Auth {
 
     # ── Roles ──────────────────────────────────────────────
 
-    # The role stored in the database for a user id ('' if unknown).
+    # The role stored in the database
     public static function roleOf($userId): string {
         return self::state($userId)['role'];
     }
@@ -88,20 +79,17 @@ class Auth {
         return self::isSupremeOverlordRole(self::roleOf($userId));
     }
 
-    # Is whoever is browsing right now an Admin / Supreme Overlord?
+    # For Supreme Overlord
     public static function isAdmin(): bool {
         return self::isAdminUser(self::currentUserId());
     }
 
-    # Is whoever is browsing right now a Supreme Overlord?
     public static function isSupremeOverlord(): bool {
         return self::isSupremeOverlordUser(self::currentUserId());
     }
 
     # ── Suspension ─────────────────────────────────────────
-
-    # null if the account is fine, otherwise ['until' => 'Y-m-d H:i:s'|null, 'indefinite' => bool].
-    # A timed suspension whose end date has passed counts as "not suspended".
+    # A timed suspension
     public static function suspensionOf($userId): ?array {
         $state = self::state($userId);
 
@@ -121,10 +109,6 @@ class Auth {
         return 'Your account is suspended until ' . date('M j, Y, g:i A', strtotime($suspension['until'])) . '.';
     }
 
-    # Called on every request (see public/index.php). If the logged-in user has
-    # been suspended, their session is ended immediately:
-    #   - page navigations are sent to the login page
-    #   - fetch()/API calls get a JSON 403
     public static function enforceSuspension(string $route): void {
         $userId = self::currentUserId();
 

@@ -1,13 +1,10 @@
 <?php
-# Reports that users have made against a game (table: game_report).
-# See db/admin_migration.sql for the table definition.
+# Reports that users have made against a game
 class GameReport {
     public const STATUS_OPEN = 'open';
     public const STATUS_RESOLVED = 'resolved';
 
-    # Files a new report submitted by a user against a game.
-    # $reason should already be trimmed/validated by the caller; empty
-    # reasons fall back to "Other" so the column (NOT NULL) is never blank.
+    # Files a new report submitted by a user against a game
     public function create($gameId, $reporterId, $reason, $details = null): int {
         $pdo = Database::connect();
         $stmt = $pdo->prepare(
@@ -25,7 +22,7 @@ class GameReport {
         return (int) $pdo->lastInsertId();
     }
 
-    # All reports for one game — open ones first, newest first within each group.
+    # All reports for one game — open ones first, newest first within each group
     public function getByGame($gameId): array {
         $pdo = Database::connect();
         $stmt = $pdo->prepare(
@@ -68,8 +65,7 @@ class GameReport {
         return $row ?: null;
     }
 
-    # Marks one report as resolved. Does nothing (returns false) if it was
-    # already resolved.
+    # Marks one report as resolved
     public function resolve($reportId, $adminId): bool {
         $pdo = Database::connect();
         $stmt = $pdo->prepare(
@@ -82,7 +78,7 @@ class GameReport {
         return $stmt->rowCount() > 0;
     }
 
-    # Marks every open report on a game as resolved. Returns how many changed.
+    # Marks every open report on a game as resolved. Returns how many changed
     public function resolveAllForGame($gameId, $adminId): int {
         $pdo = Database::connect();
         $stmt = $pdo->prepare(

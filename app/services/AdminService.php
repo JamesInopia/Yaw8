@@ -106,10 +106,6 @@ class AdminService {
     public const MAX_SUSPEND_DAYS = 365;
 
     # Accounts the acting admin is allowed to see.
-    #   Admin              -> only non-admin accounts
-    #   Supreme Overlord   -> non-admin accounts AND admins (never other Supreme Overlords or themselves)
-    # Admin-related fields are only included for a Supreme Overlord, so a
-    # normal Admin can never see them in the response either.
     public function getUsers($actorId): array {
         $isSupreme = Auth::isSupremeOverlordUser($actorId);
         $users = $this->userModel->getUsersForAdmin($isSupreme, $actorId);
@@ -121,7 +117,7 @@ class AdminService {
         ];
     }
 
-    # Suspend an account: $mode is 'indefinite' or 'timed' (then $days is 1..MAX_SUSPEND_DAYS).
+    # Suspend an account
     public function suspendUser($actorId, $targetId, $mode, $days): array {
         $target = $this->loadModeratableUser($actorId, $targetId);
         if (isset($target['success'])) {
@@ -160,7 +156,7 @@ class AdminService {
         return $this->userPayload($actorId, $targetId);
     }
 
-    # Supreme Overlord only: $makeAdmin = true promotes a member to Admin, false demotes an Admin to Member.
+    # Admin management for Supreme Overlord
     public function setAdminAccess($actorId, $targetId, bool $makeAdmin): array {
         if (!Auth::isSupremeOverlordUser($actorId)) {
             return ['success' => false, 'code' => 403, 'message' => 'Only a Supreme Overlord can do that.'];
@@ -187,12 +183,7 @@ class AdminService {
         return $this->userPayload($actorId, $targetId);
     }
 
-    # Loads the target account and checks the acting admin may touch it.
-    # Returns the account array, or an error result (which has a 'success' key).
-    #   - nobody can act on their own account
-    #   - Supreme Overlord accounts can't be changed by anyone
-    #   - a normal Admin can't touch admins at all (answered with "not found",
-    #     so it doesn't even confirm that such an account exists)
+    # Loads the target account and checks the acting admin may touch it
     private function loadModeratableUser($actorId, $targetId): array {
         $notFound = ['success' => false, 'code' => 404, 'message' => 'User not found.'];
         $target = $this->userModel->getUserForAdmin($targetId);
@@ -220,7 +211,7 @@ class AdminService {
         return $target;
     }
 
-    # The refreshed account, in the shape the Users table expects.
+    # The refreshed account, in the shape the Users table expects
     private function userPayload($actorId, $targetId): array {
         $isSupreme = Auth::isSupremeOverlordUser($actorId);
         $user = $this->userModel->getUserForAdmin($targetId);
@@ -231,8 +222,7 @@ class AdminService {
         ];
     }
 
-    # What the browser receives for one account. 'role' / 'isAdmin' are only
-    # sent to a Supreme Overlord.
+    # What the browser receives for one account
     private function presentUser(array $user, bool $viewerIsSupreme): array {
         $out = [
             'userId'         => $user['userId'],

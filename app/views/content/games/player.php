@@ -141,11 +141,14 @@ $thumbClass = yaw8_player_thumb_classes($game->getThumbnail(), $game->getGameId(
                 <button class="gp-hud-btn" id="gpRestartBtn" title="Restart">
                     <svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
                 </button>
-                <button class="gp-hud-btn" id="gpMuteBtn" title="Mute">
-                    <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
-                </button>
-                <button class="gp-hud-btn" id="gpFullscreenBtn" title="Fullscreen">
-                    <svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+                <div class="gp-volume-control" id="gpVolumeControl">
+                    <button class="gp-hud-btn" id="gpMuteBtn" title="Mute" aria-pressed="false">
+                        <svg viewBox="0 0 24 24" id="gpMuteIcon"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                    </button>
+                    <input type="range" class="gp-volume-slider" id="gpVolumeSlider" min="0" max="100" value="100" title="Volume" aria-label="Volume">
+                </div>
+                <button class="gp-hud-btn" id="gpFullscreenBtn" title="Fullscreen" aria-pressed="false">
+                    <svg viewBox="0 0 24 24" id="gpFullscreenIcon"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
                 </button>
             </div>
         </div>
@@ -181,6 +184,16 @@ $thumbClass = yaw8_player_thumb_classes($game->getThumbnail(), $game->getGameId(
         <button class="gp-action-btn" id="gpFavBtn">
             <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
             Favorite
+        </button>
+        <?php if ($game->isDownloadable()): ?>
+        <button class="gp-action-btn" id="gpDownloadBtn">
+            <svg viewBox="0 0 24 24"><path d="M5 20h14v-2H5v2zM13 4h-2v8H7l5 5 5-5h-4V4z"/></svg>
+            Download
+        </button>
+        <?php endif; ?>
+        <button class="gp-action-btn danger" id="gpReportBtn">
+            <svg viewBox="0 0 24 24"><path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/></svg>
+            Report
         </button>
     </div>
 </div>

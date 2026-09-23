@@ -1,8 +1,5 @@
 <!-- ══════════════════════════════════════════
     PAGE BODY — ADMIN GAME DETAILS
-    Rendered by AdminController::gameDetails(); works for every game.
-    $gameId is the id from the URL. Everything else is filled in by
-    public/js/admin-game.js (read-only: nothing here edits the game).
 ══════════════════════════════════════════ -->
 <div id="adminGamePage" data-game-id="<?= (int) $gameId ?>" style="display:contents;">
 
@@ -72,7 +69,7 @@
                 <p class="detail-text" id="dControls"></p>
             </div>
 
-            <!-- Status actions (same three as the "⋯" menu on the dashboard) -->
+            <!-- Status actions -->
             <div class="detail-actions" role="group" aria-label="Change game status">
                 <button type="button" class="admin-btn admin-btn-green" data-set-status="published">Confirm publication</button>
                 <button type="button" class="admin-btn admin-btn-amber" data-set-status="under_review">Put under review</button>
