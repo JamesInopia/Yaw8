@@ -316,6 +316,53 @@
             }
         }
 
+        # A random published game that actually has a file to play/download.
+        # If $excludeId is the only such game, it is returned anyway.
+        public function getRandomPublishedGameId($excludeId = null): ?int {
+            $pdo = Database::connect();
+            $base = "SELECT gameId FROM game WHERE status = 'published' AND gameFiles IS NOT NULL AND gameFiles <> ''";
+
+            if ($excludeId !== null && ctype_digit((string) $excludeId)) {
+                $stmt = $pdo->prepare($base . ' AND gameId <> ? ORDER BY RAND() LIMIT 1');
+                $stmt->execute([(int) $excludeId]);
+                $id = $stmt->fetchColumn();
+
+                if ($id !== false) {
+                    return (int) $id;
+                }
+            }
+
+            $id = $pdo->query($base . ' ORDER BY RAND() LIMIT 1')->fetchColumn();
+
+            return $id === false ? null : (int) $id;
+        }
+
+        # Navbar search: published games whose title or genre matches.
+        # $like / $prefix are already-escaped LIKE patterns ("%q%" and "q%").
+        public function searchPublished(string $like, string $prefix, int $limit = 6): array {
+            $pdo = Database::connect();
+
+            $stmt = $pdo->prepare(
+                "SELECT ga.gameId, ga.title, ga.thumbnail, ga.accessType,
+                    (SELECT GROUP_CONCAT(DISTINCT ge.name ORDER BY ge.name SEPARATOR ', ')
+                       FROM game_genre gg JOIN genre ge ON ge.genreId = gg.genreId
+                      WHERE gg.gameId = ga.gameId) AS genreNames,
+                    (SELECT GROUP_CONCAT(DISTINCT us.username ORDER BY us.username SEPARATOR ', ')
+                       FROM game_devs gd JOIN user_account us ON us.userId = gd.userId
+                      WHERE gd.gameId = ga.gameId) AS devNames
+                 FROM game ga
+                 WHERE ga.status = 'published'
+                   AND (ga.title LIKE ?
+                        OR EXISTS (SELECT 1 FROM game_genre gg2 JOIN genre ge2 ON ge2.genreId = gg2.genreId
+                                    WHERE gg2.gameId = ga.gameId AND ge2.name LIKE ?))
+                 ORDER BY (ga.title LIKE ?) DESC, ga.totalPlays DESC, ga.title ASC
+                 LIMIT " . max(1, $limit)
+            );
+            $stmt->execute([$like, $like, $prefix]);
+
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
+
         # Function that adds a game to the database
         public function addGame($creatorUserId, $title, $description, $controls, $genreNames, $thumbnailPath, $gameFilePath, $status, $collaboratorUserIds = [], $accessType = self::ACCESS_ONLINE, $allowDownload = false) {
             $pdo = Database::connect();

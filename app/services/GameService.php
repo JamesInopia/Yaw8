@@ -20,6 +20,11 @@
             return $this->gameReportModel->create($gameId, $userId, $reason, $details);
         }
         
+        # Id of a random published game (or null if there are none yet)
+        public function getRandomGameId($excludeGameId = null): ?int {
+            return $this->gameModel->getRandomPublishedGameId($excludeGameId);
+        }
+
         # function that returns certain info of all games
         public function getAllGames($title, $genre) : array {
             $games = $this->gameModel->getAllGames($title, $genre);

@@ -729,6 +729,15 @@ function initMyGamesPage(initialGames) {
     document.getElementById('addGameBtn')?.addEventListener('click', () => openUploadModal());
     document.getElementById('emptyAddGameBtn')?.addEventListener('click', () => openUploadModal());
 
+    // "Submit Game" / "Submit Your Game" elsewhere on the site link here with
+    // ?upload=1 — open the upload flow straight away (once the loading screen is gone).
+    if (new URLSearchParams(window.location.search).has('upload')) {
+        history.replaceState(null, '', '?url=profile');
+        const openFromLink = () => setTimeout(openUploadModal, 700);
+        if (document.readyState === 'complete') openFromLink();
+        else window.addEventListener('load', openFromLink);
+    }
+
     if (submitModalClose) submitModalClose.addEventListener('click', closeSubmitModal);
     if (submitCancelBtn) submitCancelBtn.addEventListener('click', closeSubmitModal);
     

@@ -149,6 +149,22 @@ class GamesController extends Controller{
         ]);
     }
 
+    # "Random Challenge" / "Surprise Me!": sends the person straight to a random
+    # published game. player() then decides between the in-browser player and the
+    # downloader page, so online and download-only games are both covered.
+    # ?exclude=<gameId> avoids handing back the game they're already on.
+    public function random($exclude = null){
+        $gameId = $this->gameService->getRandomGameId($exclude);
+
+        if ($gameId === null) {
+            header('Location: ?url=games');
+            exit;
+        }
+
+        header('Location: ?url=games/player&gameId=' . $gameId);
+        exit;
+    }
+
     # Submits (or updates) the current user's 1-5 star rating for a game.
     public function rate($gameId = null){
         $payload = AuthMiddleware::requireAuth();

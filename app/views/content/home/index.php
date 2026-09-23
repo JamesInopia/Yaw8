@@ -114,7 +114,7 @@ if (!function_exists('yaw8_thumbnail_html')) {
           </div>
           <div class="got-game-sprite">👾</div>
         </div>
-        <button class="btn-submit-game">Submit Game</button>
+        <button type="button" class="btn-submit-game" data-go="?url=profile&upload=1">Submit Game</button>
       </div>
 
     <!-- SURPRISE CHALLENGE -->
@@ -129,6 +129,6 @@ if (!function_exists('yaw8_thumbnail_html')) {
           <p>Press the button for a random game and challenge!</p>
         </div>
       </div>
-      <button class="btn-surprise">Surprise Me!</button>
+      <button type="button" class="btn-surprise" data-go="?url=games/random">Surprise Me!</button>
     </div>
   </aside><!-- end .side-col -->

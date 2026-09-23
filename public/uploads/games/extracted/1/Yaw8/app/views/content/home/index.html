@@ -1,6 +1,146 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>
+/* yaw8-audio-shim v2 — injected by YAW8. Lets the parent page control this
+   game's volume/mute via postMessage, whether it plays sound through
+   <audio>/<video>/new Audio() or the Web Audio API (Unity, Godot, Phaser, Howler...). */
+(function () {
+  if (window.__yaw8AudioShim) return;
+  window.__yaw8AudioShim = true;
+
+  var master = { volume: 1, muted: false };
+  function eff() { return master.muted ? 0 : master.volume; }
+
+  // ── <audio> / <video> / new Audio() ─────────────────────────────────────
+  // The game keeps reading/writing el.volume and el.muted as normal; we remember what
+  // it asked for and apply (that x our master volume) to the real element.
+  var proto = window.HTMLMediaElement && window.HTMLMediaElement.prototype;
+  var wantedVol = new WeakMap();
+  var wantedMuted = new WeakMap();
+  var seen = new WeakSet();
+  var tracked = [];
+  var volDesc = proto && Object.getOwnPropertyDescriptor(proto, 'volume');
+  var mutedDesc = proto && Object.getOwnPropertyDescriptor(proto, 'muted');
+
+  function track(el) {
+    if (seen.has(el)) return;
+    seen.add(el);
+    tracked.push(typeof WeakRef === 'function' ? new WeakRef(el) : { deref: function () { return el; } });
+    if (tracked.length > 2000) {
+      tracked = tracked.filter(function (r) { return r.deref() !== undefined; });
+    }
+  }
+
+  function applyMedia(el) {
+    try {
+      if (!wantedVol.has(el)) wantedVol.set(el, volDesc.get.call(el));
+      if (!wantedMuted.has(el)) wantedMuted.set(el, mutedDesc.get.call(el));
+      volDesc.set.call(el, wantedVol.get(el) * eff());
+      mutedDesc.set.call(el, wantedMuted.get(el) || master.muted);
+    } catch (e) {}
+  }
+
+  if (proto && volDesc && mutedDesc && volDesc.set && mutedDesc.set) {
+    Object.defineProperty(proto, 'volume', {
+      configurable: true,
+      enumerable: volDesc.enumerable,
+      get: function () { return wantedVol.has(this) ? wantedVol.get(this) : volDesc.get.call(this); },
+      set: function (v) {
+        var n = Number(v);
+        if (!(n >= 0 && n <= 1)) return volDesc.set.call(this, v); // let the browser throw as usual
+        wantedVol.set(this, n);
+        track(this);
+        applyMedia(this);
+      }
+    });
+
+    Object.defineProperty(proto, 'muted', {
+      configurable: true,
+      enumerable: mutedDesc.enumerable,
+      get: function () { return wantedMuted.has(this) ? wantedMuted.get(this) : mutedDesc.get.call(this); },
+      set: function (v) {
+        wantedMuted.set(this, !!v);
+        track(this);
+        applyMedia(this);
+      }
+    });
+
+    var origPlay = proto.play;
+    proto.play = function () {
+      track(this);
+      applyMedia(this);
+      return origPlay.apply(this, arguments);
+    };
+  }
+
+  // ── Web Audio ───────────────────────────────────────────────────────────
+  // Every AudioContext gets one master GainNode in front of its real destination,
+  // and ctx.destination is redirected to it, so the game's whole graph goes through it.
+  var contexts = [];
+
+  function wrapContext(name) {
+    var Native = window[name];
+    if (typeof Native !== 'function') return;
+
+    var Wrapped = function () {
+      var args = Array.prototype.slice.call(arguments);
+      var ctx = new (Function.prototype.bind.apply(Native, [null].concat(args)))();
+      try {
+        var gain = ctx.createGain();
+        gain.gain.value = eff();
+        gain.connect(ctx.destination);
+        Object.defineProperty(ctx, 'destination', {
+          configurable: true,
+          get: function () { return gain; }
+        });
+        ctx.__yaw8Gain = gain;
+        contexts.push(ctx);
+      } catch (e) {}
+      return ctx;
+    };
+    Wrapped.prototype = Native.prototype;
+    try { Object.setPrototypeOf(Wrapped, Native); } catch (e) {}
+    window[name] = Wrapped;
+  }
+
+  wrapContext('AudioContext');
+  wrapContext('webkitAudioContext');
+
+  // ── Apply master volume / mute everywhere ───────────────────────────────
+  function applyAll() {
+    contexts.forEach(function (ctx) {
+      try { ctx.__yaw8Gain.gain.value = eff(); } catch (e) {}
+    });
+    tracked.forEach(function (ref) {
+      var el = ref.deref();
+      if (el) applyMedia(el);
+    });
+    try {
+      document.querySelectorAll('audio, video').forEach(function (el) {
+        track(el);
+        applyMedia(el);
+      });
+    } catch (e) {}
+  }
+
+  window.addEventListener('message', function (e) {
+    if (e.source !== window.parent) return;
+    var d = e.data;
+    if (!d || typeof d !== 'object') return;
+
+    if (d.type === 'setVolume') {
+      var v = Number(d.volume);
+      master.volume = isFinite(v) ? Math.max(0, Math.min(1, v)) : 1;
+      applyAll();
+    } else if (d.type === 'setMuted') {
+      master.muted = !!d.muted;
+      applyAll();
+    }
+  });
+
+})();
+</script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 

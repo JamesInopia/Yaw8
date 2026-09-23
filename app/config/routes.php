@@ -25,6 +25,7 @@ return [
         'games/featured'    => [GamesController::class, 'featured'],
         'games/play'        => [GamesController::class, 'play'],
         'games/rate'        => [GamesController::class, 'rate'],
+        'games/random'      => [GamesController::class, 'random'],
         'games/report'      => [GamesController::class, 'report'],
         'games/download'    => [GamesController::class, 'download'],
 
@@ -51,6 +52,7 @@ return [
     # API routes
     'api/profile'=> [AuthController::class, 'profile'],
     'api/settings/me' => [SettingsController::class, 'me'],
+    'api/search'      => [SearchController::class, 'index'],
     'api/settings/verify-email-change' => [SettingsController::class, 'verifyEmailChange'],
     'api/settings/email'  => [SettingsController::class, 'updateEmail'],
     'api/settings/password'=> [SettingsController::class, 'updatePassword'],

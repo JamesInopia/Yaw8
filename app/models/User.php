@@ -240,6 +240,26 @@ class User {
         return (int) $pdo->query('SELECT COUNT(*) FROM user_account')->fetchColumn();
     }
 
+    # Navbar search: accounts whose username or full name matches. Same people the
+    # Developers page lists. $like / $prefix are already-escaped LIKE patterns.
+    public function searchDevelopers(string $like, string $prefix, int $limit = 5): array {
+        $pdo = Database::connect();
+
+        $stmt = $pdo->prepare(
+            "SELECT u.userId AS id, u.fullname AS name, u.username,
+                (SELECT COUNT(DISTINCT gd.gameId)
+                   FROM game_devs gd JOIN game g ON g.gameId = gd.gameId AND g.status = 'published'
+                  WHERE gd.userId = u.userId) AS games
+             FROM user_account u
+             WHERE u.username LIKE ? OR u.fullname LIKE ?
+             ORDER BY (u.username LIKE ? OR u.fullname LIKE ?) DESC, games DESC, u.username ASC
+             LIMIT " . max(1, $limit)
+        );
+        $stmt->execute([$like, $like, $prefix, $prefix]);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public function getAllUsers() {
         $pdo = Database::connect();
         $sql = 'SELECT u.userId AS id, u.fullname AS name, u.role, u.bio, 
