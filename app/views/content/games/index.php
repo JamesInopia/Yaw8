@@ -31,9 +31,9 @@ if (!function_exists('yaw8_thumbnail_html')) {
 </section>
 
 <!-- ─────────────────
-    TOP PLAYED GAMES
+    TOP PLAYED GAMES (ALL TIME)
 ───────────────── -->
-<section class="panel" id="top-played">
+<section class="panel" id="top-played-games-all-time">
 <div class="section-header">
     <h2 class="section-title">
     <!-- Trophy icon -->
@@ -45,7 +45,7 @@ if (!function_exists('yaw8_thumbnail_html')) {
 <div class="games-grid">
 
     <?php if(isset($topPlayedGames)): ?>
-        <section class="top-played-games">
+        <section class="top-played-games-all-time">
             <?php foreach($topPlayedGames as $index => $topPlayedGame): ?>
                 <?php $rank = $index + 1; ?>
                 <div class="game-card"
@@ -94,44 +94,207 @@ if (!function_exists('yaw8_thumbnail_html')) {
 </section>
 
 <!-- ─────────────────
-    FEATURED GAMES
+    TOP PLAYED GAMES (WEEKLY)
 ───────────────── -->
-<section class="panel" id="featured-games">
+<section class="panel" id="top-played-games-weekly">
 <div class="section-header">
     <h2 class="section-title">
     <!-- Gamepad icon -->
     <svg viewBox="0 0 24 24"><path d="M15 7.5V2H9v5.5l3 3 3-3zM7.5 9H2v6h5.5l3-3-3-3zM9 16.5V22h6v-5.5l-3-3-3 3zM16.5 9l-3 3 3 3H22V9h-5.5z"/></svg>
-    Featured Games
+    Top Rated Games (Weekly)
     </h2>
 </div>
 
 <div class="games-grid">
 
-    <?php if(isset($featuredGames)): ?>
-        <section class="top-played-games">
-            <?php foreach($featuredGames as $index => $featuredGame): ?>
+    <?php if(isset($topWeeklyPlayedGames)): ?>
+        <section class="top-played-games-weekly">
+            <?php foreach($topWeeklyPlayedGames as $index => $topWeeklyPlayedGame): ?>
                 <div class="game-card"
-                    data-game-id="<?= htmlspecialchars($featuredGame->getGameId()) ?>"
-                    data-title="<?= htmlspecialchars($featuredGame->getTitle()) ?>"
-                    data-description="<?= htmlspecialchars($featuredGame->getDescription()) ?>"
-                    data-controls="<?= htmlspecialchars($featuredGame->getControls()) ?>"
-                    data-total-plays="<?= htmlspecialchars($featuredGame->getTotalPlays()) ?>"
-                    data-date-released="<?= htmlspecialchars($featuredGame->getDateReleased()) ?>"
-                    data-last-updated="<?= htmlspecialchars($featuredGame->getLastUpdated()) ?>"
-                    data-thumbnail="<?= htmlspecialchars($featuredGame->getThumbnail()) ?>"
-                    data-genre-names="<?= htmlspecialchars($featuredGame->getGenreNames()) ?>"
-                    data-avg-rating="<?= htmlspecialchars($featuredGame->getAvgRating()) ?>"
-                    data-dev-names="<?= htmlspecialchars($featuredGame->getDevNames()) ?>"
+                    data-game-id="<?= htmlspecialchars($topWeeklyPlayedGame->getGameId()) ?>"
+                    data-title="<?= htmlspecialchars($topWeeklyPlayedGame->getTitle()) ?>"
+                    data-description="<?= htmlspecialchars($topWeeklyPlayedGame->getDescription()) ?>"
+                    data-controls="<?= htmlspecialchars($topWeeklyPlayedGame->getControls()) ?>"
+                    data-total-plays="<?= htmlspecialchars($topWeeklyPlayedGame->getTotalPlays()) ?>"
+                    data-date-released="<?= htmlspecialchars($topWeeklyPlayedGame->getDateReleased()) ?>"
+                    data-last-updated="<?= htmlspecialchars($topWeeklyPlayedGame->getLastUpdated()) ?>"
+                    data-thumbnail="<?= htmlspecialchars($topWeeklyPlayedGame->getThumbnail()) ?>"
+                    data-genre-names="<?= htmlspecialchars($topWeeklyPlayedGame->getGenreNames()) ?>"
+                    data-avg-rating="<?= htmlspecialchars($topWeeklyPlayedGame->getAvgRating()) ?>"
+                    data-dev-names="<?= htmlspecialchars($topWeeklyPlayedGame->getDevNames()) ?>"
                 >
-                    <?= yaw8_thumbnail_html($featuredGame->getThumbnail(), $featuredGame->getTitle(), $index) ?>
+                    <?= yaw8_thumbnail_html($topWeeklyPlayedGame->getThumbnail(), $topWeeklyPlayedGame->getTitle(), $index) ?>
                     <div class="game-info">
                         <div class="game-meta">
-                            <span class="game-name"><?= htmlspecialchars($featuredGame->getTitle()) ?></span>
+                            <span class="game-name"><?= htmlspecialchars($topWeeklyPlayedGame->getTitle()) ?></span>
                             <span class="game-more">···</span>
                         </div>
-                        <div class="game-genre"><?= htmlspecialchars($featuredGame->getGenreNames()) ?></div>
+                        <div class="game-genre"><?= htmlspecialchars($topWeeklyPlayedGame->getGenreNames()) ?></div>
                         <div class="game-footer">
-                            <span class="stars"><?= htmlspecialchars($featuredGame->getAvgRating()) ?></span>
+                            <span class="stars"><?= htmlspecialchars($topWeeklyPlayedGame->getAvgRating()) ?></span>
+                            <button class="btn-play">PLAY</button>
+                        </div>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </section>
+    <?php endif; ?>
+
+</div>
+</section>
+
+<!-- ─────────────────
+    TOP RATED GAMES (ALL TIME)
+───────────────── -->
+<section class="panel" id="top-all-time">
+<div class="section-header">
+    <h2 class="section-title">
+    <!-- Trophy icon -->
+    <svg viewBox="0 0 24 24"><path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94A5.03 5.03 0 0 0 11 15.9V19H7v2h10v-2h-4v-3.1a5.03 5.03 0 0 0 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1z"/></svg>
+    Top Rating Games (All Time)
+    </h2>
+</div>
+
+<div class="games-grid">
+
+    <?php if(isset($topRatedGames)): ?>
+        <section class="top-played-games-all-time">
+            <?php foreach($topRatedGames as $index => $topRatedGame): ?>
+                <?php $rank = $index + 1; ?>
+                <div class="game-card"
+                    data-game-id="<?= htmlspecialchars($topRatedGame->getGameId()) ?>"
+                    data-title="<?= htmlspecialchars($topRatedGame->getTitle()) ?>"
+                    data-description="<?= htmlspecialchars($topRatedGame->getDescription()) ?>"
+                    data-controls="<?= htmlspecialchars($topRatedGame->getControls()) ?>"
+                    data-total-plays="<?= htmlspecialchars($topRatedGame->getTotalPlays()) ?>"
+                    data-date-released="<?= htmlspecialchars($topRatedGame->getDateReleased()) ?>"
+                    data-last-updated="<?= htmlspecialchars($topRatedGame->getLastUpdated()) ?>"
+                    data-thumbnail="<?= htmlspecialchars($topRatedGame->getThumbnail()) ?>"
+                    data-genre-names="<?= htmlspecialchars($topRatedGame->getGenreNames()) ?>"
+                    data-avg-rating="<?= htmlspecialchars($topRatedGame->getAvgRating()) ?>"
+                    data-dev-names="<?= htmlspecialchars($topRatedGame->getDevNames()) ?>"
+                >
+                    <?php
+                        $topHasThumb = !empty($topRatedGame->getThumbnail());
+                        $topColorClasses = ['gt-pixel-drift', 'gt-tower-tactics', 'gt-box-jumper', 'gt-color-clash'];
+                        $topThumbClass = $topHasThumb ? 'sp-forest' : $topColorClasses[$index % count($topColorClasses)];
+                    ?>
+                    <div class="game-thumb <?= $topThumbClass ?>">
+                        <span class="rank-badge rank-<?= $rank ?>"><?= $rank ?></span>
+                        <?php if ($topHasThumb): ?>
+                            <img src="<?= htmlspecialchars($topRatedGame->getThumbnail()) ?>" alt="<?= htmlspecialchars($topRatedGame->getTitle()) ?>">
+                        <?php else: ?>
+                            <div class="game-thumb-title"><?= str_replace(' ', '<br>', strtoupper(htmlspecialchars($topRatedGame->getTitle()))) ?></div>
+                        <?php endif; ?>
+                    </div>
+                    <div class="game-info">
+                        <div class="game-meta">
+                            <span class="game-name"><?= htmlspecialchars($topRatedGame->getTitle()) ?></span>
+                            <span class="game-more">···</span>
+                        </div>
+                        <div class="game-genre"><?= htmlspecialchars($topRatedGame->getGenreNames()) ?></div>
+                        <div class="game-footer">
+                            <span class="stars"><?= htmlspecialchars($topRatedGame->getAvgRating()) ?></span>
+                            <button class="btn-play">PLAY</button>
+                        </div>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </section>
+    <?php endif; ?>
+    
+</div>
+</section>
+
+<!-- ─────────────────
+    TOP RATED GAMES (WEEKLY)
+───────────────── -->
+<section class="panel" id="top-weekly">
+<div class="section-header">
+    <h2 class="section-title">
+    <!-- Gamepad icon -->
+    <svg viewBox="0 0 24 24"><path d="M15 7.5V2H9v5.5l3 3 3-3zM7.5 9H2v6h5.5l3-3-3-3zM9 16.5V22h6v-5.5l-3-3-3 3zM16.5 9l-3 3 3 3H22V9h-5.5z"/></svg>
+    Top Rating Games (Weekly)
+    </h2>
+</div>
+
+<div class="games-grid">
+
+    <?php if(isset($topWeeklyRatedGames)): ?>
+        <section class="top-played-games-weekly">
+            <?php foreach($topWeeklyRatedGames as $index => $topWeeklyRatedGame): ?>
+                <div class="game-card"
+                    data-game-id="<?= htmlspecialchars($topWeeklyRatedGame->getGameId()) ?>"
+                    data-title="<?= htmlspecialchars($topWeeklyRatedGame->getTitle()) ?>"
+                    data-description="<?= htmlspecialchars($topWeeklyRatedGame->getDescription()) ?>"
+                    data-controls="<?= htmlspecialchars($topWeeklyRatedGame->getControls()) ?>"
+                    data-total-plays="<?= htmlspecialchars($topWeeklyRatedGame->getTotalPlays()) ?>"
+                    data-date-released="<?= htmlspecialchars($topWeeklyRatedGame->getDateReleased()) ?>"
+                    data-last-updated="<?= htmlspecialchars($topWeeklyRatedGame->getLastUpdated()) ?>"
+                    data-thumbnail="<?= htmlspecialchars($topWeeklyRatedGame->getThumbnail()) ?>"
+                    data-genre-names="<?= htmlspecialchars($topWeeklyRatedGame->getGenreNames()) ?>"
+                    data-avg-rating="<?= htmlspecialchars($topWeeklyRatedGame->getAvgRating()) ?>"
+                    data-dev-names="<?= htmlspecialchars($topWeeklyRatedGame->getDevNames()) ?>"
+                >
+                    <?= yaw8_thumbnail_html($topWeeklyRatedGame->getThumbnail(), $topWeeklyRatedGame->getTitle(), $index) ?>
+                    <div class="game-info">
+                        <div class="game-meta">
+                            <span class="game-name"><?= htmlspecialchars($topWeeklyRatedGame->getTitle()) ?></span>
+                            <span class="game-more">···</span>
+                        </div>
+                        <div class="game-genre"><?= htmlspecialchars($topWeeklyRatedGame->getGenreNames()) ?></div>
+                        <div class="game-footer">
+                            <span class="stars"><?= htmlspecialchars($topWeeklyRatedGame->getAvgRating()) ?></span>
+                            <button class="btn-play">PLAY</button>
+                        </div>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </section>
+    <?php endif; ?>
+
+</div>
+</section>
+
+<!-- ─────────────────
+    TRENDING GAMES
+───────────────── -->
+<section class="panel" id="trending">
+<div class="section-header">
+    <h2 class="section-title">
+    <!-- Gamepad icon -->
+    <svg viewBox="0 0 24 24"><path d="M15 7.5V2H9v5.5l3 3 3-3zM7.5 9H2v6h5.5l3-3-3-3zM9 16.5V22h6v-5.5l-3-3-3 3zM16.5 9l-3 3 3 3H22V9h-5.5z"/></svg>
+    Trending Games
+    </h2>
+</div>
+
+<div class="games-grid">
+
+    <?php if(isset($trendingGames)): ?>
+        <section class="top-played-games-weekly">
+            <?php foreach($trendingGames as $index => $trendingGame): ?>
+                <div class="game-card"
+                    data-game-id="<?= htmlspecialchars($trendingGame->getGameId()) ?>"
+                    data-title="<?= htmlspecialchars($trendingGame->getTitle()) ?>"
+                    data-description="<?= htmlspecialchars($trendingGame->getDescription()) ?>"
+                    data-controls="<?= htmlspecialchars($trendingGame->getControls()) ?>"
+                    data-total-plays="<?= htmlspecialchars($trendingGame->getTotalPlays()) ?>"
+                    data-date-released="<?= htmlspecialchars($trendingGame->getDateReleased()) ?>"
+                    data-last-updated="<?= htmlspecialchars($trendingGame->getLastUpdated()) ?>"
+                    data-thumbnail="<?= htmlspecialchars($trendingGame->getThumbnail()) ?>"
+                    data-genre-names="<?= htmlspecialchars($trendingGame->getGenreNames()) ?>"
+                    data-avg-rating="<?= htmlspecialchars($trendingGame->getAvgRating()) ?>"
+                    data-dev-names="<?= htmlspecialchars($trendingGame->getDevNames()) ?>"
+                >
+                    <?= yaw8_thumbnail_html($trendingGame->getThumbnail(), $trendingGame->getTitle(), $index) ?>
+                    <div class="game-info">
+                        <div class="game-meta">
+                            <span class="game-name"><?= htmlspecialchars($trendingGame->getTitle()) ?></span>
+                            <span class="game-more">···</span>
+                        </div>
+                        <div class="game-genre"><?= htmlspecialchars($trendingGame->getGenreNames()) ?></div>
+                        <div class="game-footer">
+                            <span class="stars"><?= htmlspecialchars($trendingGame->getAvgRating()) ?></span>
                             <button class="btn-play">PLAY</button>
                         </div>
                     </div>

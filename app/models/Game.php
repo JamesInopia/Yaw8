@@ -14,6 +14,9 @@
         private $avgRating;
         private $devNames;
         private $userRating;
+        private $totalRatingWeekly;
+        private $totalPlaysWeekly;
+        private $bayesianScore;
 
         public function __construct(
             $gameId = "",
@@ -29,7 +32,10 @@
             $genreNames = "",
             $devNames = "",
             $avgRating = "",
-            $userRating = null
+            $userRating = null,
+            $totalRatingWeekly = "",
+            $totalPlaysWeekly = "",
+            $bayesianScore = "",
         ) {
             $this->gameId = $gameId;
             $this->title = $title;
@@ -45,6 +51,9 @@
             $this->devNames = $devNames;
             $this->avgRating = $avgRating;
             $this->userRating = $userRating;
+            $this->totalRatingWeekly = $totalRatingWeekly;
+            $this->totalPlaysWeekly = $totalPlaysWeekly;
+            $this->bayesianScore = $bayesianScore;
         }
 
         # getters and setters
@@ -92,6 +101,15 @@
         public function getUserRating() { return $this->userRating; }
         public function setUserRating($userRating) { $this->userRating = $userRating; }
 
+        public function getTotalRatingWeekly() { return $this->totalRatingWeekly; }
+        public function setTotalRatingWeekly($totalRatingWeekly) { $this->totalRatingWeekly = $totalRatingWeekly; }
+
+        public function getTotalPlaysWeekly() { return $this->totalPlaysWeekly; }
+        public function setTotalPlaysWeekly($totalPlaysWeekly) { $this->totalPlaysWeekly = $totalPlaysWeekly; }
+
+        public function getBayesianScore() { return $this->bayesianScore; }
+        public function setBayesianScore($bayesianScore) { $this->bayesianScore = $bayesianScore; }
+
         #[\ReturnTypeWillChange]
         public function jsonSerialize(): mixed {
             return [
@@ -109,6 +127,9 @@
                 "avgRating" => $this->avgRating,
                 "devNames" => $this->devNames,
                 "userRating" => $this->userRating,
+                "totalRatingWeekly" => $this->totalRatingWeekly,
+                "totalPlaysWeekly" => $this->totalPlaysWeekly,
+                "bayesianScore" => $this->bayesianScore,    
             ];
         }
 
@@ -117,30 +138,75 @@
             $pdo = Database::connect();
 
             $params = [];
-            $sql = (
-                "SELECT
-                    ga.gameId, ga.title, ga.totalPlays, ga.thumbnail,
-                    GROUP_CONCAT(DISTINCT ge.name SEPARATOR ', ') AS genreNames,
-                    COALESCE(AVG(ra.rating), 0) AS avgRating
-                FROM game ga
-                LEFT JOIN game_genre gg ON ga.gameId = gg.gameId
-                LEFT JOIN genre ge ON gg.genreId = ge.genreId
-                LEFT JOIN rating ra ON ga.gameId = ra.gameId
-                WHERE ga.status = 'published'"
-            );
+            $sql = "WITH RatingStats AS (
+                        SELECT
+                            gameId,
+                            AVG(rating) AS avgRating,
+                            COUNT(CASE WHEN date_rated >= CURDATE() - INTERVAL 7 DAY THEN 1 END) AS weeklyRatings,
+                            AVG(CASE WHEN date_rated >= CURDATE() - INTERVAL 7 DAY THEN rating END) AS weeklyAvgRating
+                        FROM rating
+                        GROUP BY gameId
+                    ),
+                    PlayStats AS (
+                        SELECT
+                            gameId,
+                            COUNT(CASE WHEN date_played >= CURDATE() - INTERVAL 7 DAY THEN 1 END) AS weeklyPlays
+                        FROM play
+                        GROUP BY gameId
+                    ),
+                    GameWeeklyStats AS (
+                        SELECT
+                            ga.gameId,
+                            ga.title,
+                            ga.totalPlays,
+                            ga.thumbnail,
+                            GROUP_CONCAT(DISTINCT ge.name SEPARATOR ', ') AS genreNames,
+                            COALESCE(rs.avgRating, 0) AS avgRating,
+                            COALESCE(rs.weeklyRatings, 0) AS weeklyRatings,
+                            COALESCE(rs.weeklyAvgRating, 0) AS weeklyAvgRating,
+                            COALESCE(ps.weeklyPlays, 0) AS weeklyPlays
+                        FROM game ga
+                        LEFT JOIN game_genre gg ON ga.gameId = gg.gameId
+                        LEFT JOIN genre ge ON gg.genreId = ge.genreId
+                        LEFT JOIN RatingStats rs ON ga.gameId = rs.gameId
+                        LEFT JOIN PlayStats ps ON ga.gameId = ps.gameId
+                        WHERE ga.status = 'published'
+                        GROUP BY ga.gameId, ga.title, ga.totalPlays, ga.thumbnail,
+                                rs.avgRating, rs.weeklyRatings, rs.weeklyAvgRating, ps.weeklyPlays
+                    ),
+                    GlobalStats AS (
+                        SELECT
+                            AVG(weeklyAvgRating) AS global_avg_rating,
+                            AVG(weeklyRatings) AS rating_threshold
+                        FROM GameWeeklyStats
+                        WHERE weeklyRatings > 0
+                    )
+                    SELECT
+                        gws.gameId,
+                        gws.title,
+                        gws.totalPlays,
+                        gws.thumbnail,
+                        gws.genreNames,
+                        gws.avgRating,
+                        gws.weeklyRatings AS totalRatingWeekly,
+                        gws.weeklyAvgRating,
+                        gws.weeklyPlays,
+                        (
+                            (gws.weeklyRatings / NULLIF(gws.weeklyRatings + gs.rating_threshold, 0)) * gws.weeklyAvgRating +
+                            (gs.rating_threshold / NULLIF(gws.weeklyRatings + gs.rating_threshold, 0)) * gs.global_avg_rating
+                        ) AS bayesianScore
+                    FROM GameWeeklyStats gws
+                    CROSS JOIN GlobalStats gs
+                    WHERE 1=1";
 
-            # append for search function
             if ($title !== "") {
-                $sql .= " AND ga.title LIKE ?";
+                $sql .= " AND gws.title LIKE ?";
                 $params[] = "%" . $title . "%";
             }
-            # append for filter by genre function
             if ($genre !== "") {
-                $sql .= " AND ge.name LIKE ?";
+                $sql .= " AND gws.genreNames LIKE ?";
                 $params[] = "%" . $genre . "%";
             }
-
-            $sql .= " GROUP BY ga.gameId";
 
             $stmt = $pdo->prepare($sql);
             $stmt->execute($params);
@@ -148,15 +214,18 @@
 
             $games = [];
             foreach ($rows as $row) {
-                $games[] = new Game(
-                    gameId: $row["gameId"],
-                    title: $row["title"],
-                    totalPlays: $row["totalPlays"],
-                    thumbnail: $row["thumbnail"],
-                    genreNames: $row["genreNames"],
-                    avgRating: $row["avgRating"],
-                );
-            }
+            $games[] = new Game(
+                gameId: $row["gameId"],
+                title: $row["title"],
+                totalPlays: $row["totalPlays"],
+                thumbnail: $row["thumbnail"],
+                genreNames: $row["genreNames"],
+                avgRating: $row["avgRating"],
+                totalRatingWeekly: $row["totalRatingWeekly"],
+                totalPlaysWeekly: $row["weeklyPlays"],
+                bayesianScore: $row["bayesianScore"],
+            );
+        }
 
             return $games;
         }
@@ -214,9 +283,14 @@
         # starts a game, not just when they view its page). Returns the
         # updated total so the caller can refresh the on-screen count
         # without a second round trip.
-        public function incrementTotalPlays($gameId): int {
+        public function incrementTotalPlays($gameId, $userId = null): int {
             $pdo = Database::connect();
 
+            // Insert an individual play record (for weekly tracking)
+            $insertStmt = $pdo->prepare('INSERT INTO play (gameId, userId, date_played) VALUES (?, ?, CURDATE())');
+            $insertStmt->execute([$gameId, $userId]);
+
+            // Keep the lifetime running counter (unchanged behavior)
             $stmt = $pdo->prepare('UPDATE game SET totalPlays = totalPlays + 1 WHERE gameId = ?');
             $stmt->execute([$gameId]);
 

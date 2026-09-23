@@ -21,10 +21,31 @@
         }
 
         # function that returns certain info of all games
-        public function getFeaturedGames($title, $genre) : array {
+        public function getTopRatedGames($title, $genre) : array {
             $games = $this->gameModel->getAllGames($title, $genre);
 
             return $this->sortByRating($games);
+        }
+
+        # function that returns certain info of all games
+        public function getTopWeeklyRatedGames($title, $genre) : array {
+            $games = $this->gameModel->getAllGames($title, $genre);
+
+            return $this->sortByWeeklyRating($games);
+        }
+
+        # function that returns certain info of all games
+        public function getTopWeeklyPlayedGames($title, $genre) : array {
+            $games = $this->gameModel->getAllGames($title, $genre);
+
+            return $this->sortByWeeklyPlays($games);
+        }
+
+        # function that returns certain info of all games
+        public function getTrendingGames($title, $genre) : array {
+            $games = $this->gameModel->getAllGames($title, $genre);
+
+            return $this->sortByBayesianScore($games);
         }
 
         # function that returns full game info into the game details modal
@@ -156,6 +177,31 @@
         private function sortByRating(array $games): array {
             usort($games, function (Game $first, Game $second) {
                 return $second->getAvgRating() <=> $first->getAvgRating();
+            });
+
+            return $games;
+        }
+
+        # sorts games by average rating
+        private function sortByWeeklyRating(array $games): array {
+            usort($games, function (Game $first, Game $second) {
+                return $second->getTotalRatingWeekly() <=> $first->getTotalRatingWeekly();
+            });
+
+            return $games;
+        }
+
+        private function sortByWeeklyPlays(array $games): array {
+            usort($games, function (Game $first, Game $second) {
+                return $second->getTotalPlaysWeekly() <=> $first->getTotalPlaysWeekly();
+            });
+
+            return $games;
+        }
+
+        private function sortByBayesianScore(array $games): array {
+            usort($games, function (Game $first, Game $second) {
+                return $second->getBayesianScore() <=> $first->getBayesianScore();
             });
 
             return $games;

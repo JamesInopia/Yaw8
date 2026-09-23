@@ -56,38 +56,38 @@ if (!function_exists('yaw8_thumbnail_html')) {
         <h2 class="section-title">
           <!-- Gamepad icon -->
           <svg viewBox="0 0 24 24"><path d="M15 7.5V2H9v5.5l3 3 3-3zM7.5 9H2v6h5.5l3-3-3-3zM9 16.5V22h6v-5.5l-3-3-3 3zM16.5 9l-3 3 3 3H22V9h-5.5z"/></svg>
-          Featured Games
+          Top Played Games
         </h2>
         <a class="view-all" href="?url=games#featured-games">View All →</a>
       </div>
 
       <div class="games-grid">
 
-        <?php if(isset($featuredGames)): ?>
+        <?php if(isset($topPlayedGames)): ?>
           <section class="top-played-games">
-              <?php foreach($featuredGames as $index => $featuredGame): ?>
+              <?php foreach($topPlayedGames as $index => $topPlayedGame): ?>
                   <div class="game-card"
-                      data-game-id="<?= htmlspecialchars($featuredGame->getGameId()) ?>"
-                      data-title="<?= htmlspecialchars($featuredGame->getTitle()) ?>"
-                      data-description="<?= htmlspecialchars($featuredGame->getDescription()) ?>"
-                      data-controls="<?= htmlspecialchars($featuredGame->getControls()) ?>"
-                      data-total-plays="<?= htmlspecialchars($featuredGame->getTotalPlays()) ?>"
-                      data-date-released="<?= htmlspecialchars($featuredGame->getDateReleased()) ?>"
-                      data-last-updated="<?= htmlspecialchars($featuredGame->getLastUpdated()) ?>"
-                      data-thumbnail="<?= htmlspecialchars($featuredGame->getThumbnail()) ?>"
-                      data-genre-names="<?= htmlspecialchars($featuredGame->getGenreNames()) ?>"
-                      data-avg-rating="<?= htmlspecialchars($featuredGame->getAvgRating()) ?>"
-                      data-dev-names="<?= htmlspecialchars($featuredGame->getDevNames()) ?>"
+                      data-game-id="<?= htmlspecialchars($topPlayedGame->getGameId()) ?>"
+                      data-title="<?= htmlspecialchars($topPlayedGame->getTitle()) ?>"
+                      data-description="<?= htmlspecialchars($topPlayedGame->getDescription()) ?>"
+                      data-controls="<?= htmlspecialchars($topPlayedGame->getControls()) ?>"
+                      data-total-plays="<?= htmlspecialchars($topPlayedGame->getTotalPlays()) ?>"
+                      data-date-released="<?= htmlspecialchars($topPlayedGame->getDateReleased()) ?>"
+                      data-last-updated="<?= htmlspecialchars($topPlayedGame->getLastUpdated()) ?>"
+                      data-thumbnail="<?= htmlspecialchars($topPlayedGame->getThumbnail()) ?>"
+                      data-genre-names="<?= htmlspecialchars($topPlayedGame->getGenreNames()) ?>"
+                      data-avg-rating="<?= htmlspecialchars($topPlayedGame->getAvgRating()) ?>"
+                      data-dev-names="<?= htmlspecialchars($topPlayedGame->getDevNames()) ?>"
                   >
-                      <?= yaw8_thumbnail_html($featuredGame->getThumbnail(), $featuredGame->getTitle(), $index) ?>
+                      <?= yaw8_thumbnail_html($topPlayedGame->getThumbnail(), $topPlayedGame->getTitle(), $index) ?>
                       <div class="game-info">
                           <div class="game-meta">
-                              <span class="game-name"><?= htmlspecialchars($featuredGame->getTitle()) ?></span>
+                              <span class="game-name"><?= htmlspecialchars($topPlayedGame->getTitle()) ?></span>
                               <span class="game-more">···</span>
                           </div>
-                          <div class="game-genre"><?= htmlspecialchars($featuredGame->getGenreNames()) ?></div>
+                          <div class="game-genre"><?= htmlspecialchars($topPlayedGame->getGenreNames()) ?></div>
                           <div class="game-footer">
-                              <span class="stars"><?= htmlspecialchars($featuredGame->getAvgRating()) ?></span>
+                              <span class="stars"><?= htmlspecialchars($topPlayedGame->getTotalRatingWeekly()) ?></span>
                               <button class="btn-play">PLAY</button>
                           </div>
                       </div>

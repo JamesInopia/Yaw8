@@ -11,12 +11,18 @@ class GamesController extends Controller{
     public function index(){
         $games = $this->gameService->getAllGames("", "");
         $topPlayedGames = $this->gameService->getTopPlayedGames("", "");
-        $featuredGames = $this->gameService->getFeaturedGames("", "");
+        $topRatedGames = $this->gameService->getTopRatedGames("", "");
+        $topWeeklyRatedGames = $this->gameService->getTopWeeklyRatedGames("", "");
+        $topWeeklyPlayedGames = $this->gameService->getTopWeeklyPlayedGames("", "");
+        $trendingGames = $this->gameService->getTrendingGames("", "");
 
         $this -> view('games/index', [
             'games' => $games,
             'topPlayedGames' => $topPlayedGames,
-            'featuredGames' => $featuredGames
+            'topRatedGames' => $topRatedGames,
+            'topWeeklyRatedGames' => $topWeeklyRatedGames,
+            'topWeeklyPlayedGames' => $topWeeklyPlayedGames,
+            'trendingGames' => $trendingGames,
         ]);
     }
 
@@ -67,12 +73,12 @@ class GamesController extends Controller{
     }
 
     # gets the info of games sorted by rating
-    public function featured($title = "", $genre = ""){
+    public function topRated($title = "", $genre = ""){
         AuthMiddleware::requireAuth();
 
-        $featuredGames = $this->gameService->getFeaturedGames($title, $genre);
+        $topAllTimeGames = $this->gameService->getTopRatedGames($title, $genre);
 
-        $this->json($featuredGames);
+        $this->json($topAllTimeGames);
     }
 
     # gets the full details of the selected game to be printed on the modal
