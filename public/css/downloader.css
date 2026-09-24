@@ -1,0 +1,140 @@
+/* ═══════════════════════════════
+    DOWNLOADER PAGE
+    Steam-style media header (big preview + thumbnail filmstrip) for
+    download-only games. Everything below the media header (toolbar,
+    actions, about section) reuses the .gp-* classes from gamepage.css.
+═══════════════════════════════ */
+
+.dl-cabinet {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.dl-media {
+    position: relative;
+}
+
+.dl-media-main {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    background: #07111d;
+    border: 1px solid var(--card-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dl-media-main img,
+.dl-media-main video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.dl-media-main .game-thumb-title {
+    font-size: 22px;
+    text-align: center;
+    white-space: pre-line;
+}
+
+.dl-media-arrow {
+    position: absolute;
+    top: calc(50% - 24px); /* nudge up so it's centered on the main image, not the filmstrip below */
+    transform: translateY(-50%);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(5, 10, 20, .7);
+    border: 1px solid rgba(255, 255, 255, .25);
+    color: #fff;
+    cursor: pointer;
+    transition: background .15s, border-color .15s, opacity .15s;
+    z-index: 2;
+}
+
+.dl-media-arrow svg {
+    width: 22px;
+    height: 22px;
+    fill: currentColor;
+}
+
+.dl-media-arrow:hover {
+    border-color: var(--cyan);
+    background: rgba(0, 229, 255, .15);
+}
+
+.dl-media-prev { left: 14px; }
+.dl-media-next { right: 14px; }
+
+.dl-media-arrow.disabled {
+    opacity: .3;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.dl-media-strip {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+}
+
+.dl-media-strip-item {
+    position: relative;
+    flex: 0 0 110px;
+    aspect-ratio: 16 / 9;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 2px solid transparent;
+    background: rgba(255, 255, 255, .05);
+    cursor: pointer;
+    padding: 0;
+}
+
+.dl-media-strip-item img,
+.dl-media-strip-item video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.dl-media-strip-item.active {
+    border-color: var(--cyan);
+}
+
+.dl-media-strip-item:hover {
+    border-color: rgba(0, 229, 255, .5);
+}
+
+.dl-strip-play {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, .35);
+    color: #fff;
+    pointer-events: none;
+}
+
+.dl-strip-play svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+}
+
+@media (max-width: 700px) {
+    .dl-media-strip-item {
+        flex-basis: 84px;
+    }
+}

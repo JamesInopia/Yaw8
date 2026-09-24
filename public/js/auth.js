@@ -7,11 +7,24 @@ function appUrl(path) {
 
 function authHeaders() {
   const token = localStorage.getItem("jwt_token");
-  return {
-    Authorization: "Bearer " + token,
+  const headers = {
     "Content-Type": "application/json",
     Accept: "application/json",
+    // Tells the server this came from our own JS, so it may fall back to the
+    // PHP session if the JWT above is missing or has expired.
+    "X-Requested-With": "XMLHttpRequest",
   };
+  if (token) headers.Authorization = "Bearer " + token;
+  return headers;
+}
+
+// True if the server rendered this page for a logged-in user (see the
+// yaw8-logged-in meta tag in layouts/main.php) OR a JWT is stored locally.
+function isLoggedIn() {
+  return (
+    Boolean(document.querySelector('meta[name="yaw8-logged-in"]')) ||
+    Boolean(localStorage.getItem("jwt_token"))
+  );
 }
 
 // ═══════════════════════════════════════════
@@ -48,6 +61,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const tabs = document.querySelectorAll("[data-auth-tab]");
   const headingTitle = document.getElementById("authHeadingTitle");
   const headingSub = document.getElementById("authHeadingSub");
+  let resetEmail = "";
 
   if (!formContainer) return;
   // ── CORE FUNCTION: LOAD FORM VIA FETCH ──
@@ -55,7 +69,13 @@ document.addEventListener("DOMContentLoaded", () => {
     formContainer.style.opacity = "0.5";
     formContainer.style.transition = "opacity 0.15s ease-in-out";
 
-    fetch(`?url=auth/form&type=${formType}`)
+    fetch(`?url=auth/form&type=${formType}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+    })
       .then((response) => {
         if (!response.ok) throw new Error("Network response was not ok");
         return response.text();
@@ -108,6 +128,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // Handle Switch links (e.g., "Already have an account? Log In")
     const switchBtn = e.target.closest("[data-auth-switch]");
     if (switchBtn) {
+      const tabsEl = document.querySelector(".auth-tabs");
+      if (tabsEl) tabsEl.style.display = "";
       const targetType = switchBtn.getAttribute("data-auth-switch");
       tabs.forEach((t) => t.classList.remove("active"));
       const matchingTab = document.querySelector(
@@ -115,6 +137,44 @@ document.addEventListener("DOMContentLoaded", () => {
       );
       if (matchingTab) matchingTab.classList.add("active");
       loadForm(targetType);
+    }
+
+    // Handle "Forgot password?" link → step 1 of the reset flow
+    const forgotLink = e.target.closest(".auth-forgot-link");
+    if (forgotLink) {
+      e.preventDefault();
+      const tabsEl = document.querySelector(".auth-tabs");
+      if (tabsEl) tabsEl.style.display = "none";
+      if (headingTitle) headingTitle.textContent = "Forgot Password";
+      if (headingSub)
+        headingSub.innerHTML = "No worries, we'll help you get back in.";
+      loadForm("forgot-email");
+    }
+
+    // Handle "Resend" code button
+    const resendBtn = e.target.closest("#resendCodeBtn");
+    if (resendBtn) {
+      fetch(appUrl("auth/forgot-password"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ email: resetEmail }),
+      })
+        .then((r) => r.json())
+        .then((res) => {
+          const errorAlert = document.querySelector(
+            "#forgotCodeForm .auth-error",
+          );
+          if (errorAlert) {
+            errorAlert.style.color = res.success ? "var(--cyan)" : "#FF4FD8";
+            errorAlert.textContent = res.success
+              ? "A new code has been sent."
+              : res.message || "Could not resend code.";
+            errorAlert.classList.add("active");
+          }
+        });
     }
 
     // Handle Password Visibility Toggles
@@ -126,6 +186,43 @@ document.addEventListener("DOMContentLoaded", () => {
       input.type = showing ? "password" : "text";
       pwToggle.classList.toggle("showing", !showing);
     }
+  });
+
+  // ── EVENT DELEGATION: 6-DIGIT CODE BOXES ──
+  formContainer.addEventListener("input", (e) => {
+    const box = e.target.closest(".otp-box");
+    if (!box) return;
+    box.value = box.value.replace(/\D/g, "").slice(0, 1);
+    if (box.value && box.nextElementSibling?.classList.contains("otp-box")) {
+      box.nextElementSibling.focus();
+    }
+  });
+
+  formContainer.addEventListener("keydown", (e) => {
+    const box = e.target.closest(".otp-box");
+    if (!box) return;
+    if (
+      e.key === "Backspace" &&
+      !box.value &&
+      box.previousElementSibling?.classList.contains("otp-box")
+    ) {
+      box.previousElementSibling.focus();
+    }
+  });
+
+  formContainer.addEventListener("paste", (e) => {
+    const box = e.target.closest(".otp-box");
+    if (!box) return;
+    e.preventDefault();
+    const digits = (e.clipboardData.getData("text") || "")
+      .replace(/\D/g, "")
+      .split("");
+    const boxes = Array.from(document.querySelectorAll(".otp-box"));
+    const startIndex = boxes.indexOf(box);
+    digits.slice(0, boxes.length - startIndex).forEach((d, i) => {
+      boxes[startIndex + i].value = d;
+    });
+    boxes[Math.min(startIndex + digits.length, boxes.length - 1)]?.focus();
   });
 
   // ── EVENT DELEGATION: FORM SUBMISSIONS ──
@@ -265,6 +362,144 @@ document.addEventListener("DOMContentLoaded", () => {
         })
         .catch((err) => {
           console.error("AJAX Error: ", err);
+          if (errorAlert) {
+            errorAlert.textContent = "An unexpected error occurred.";
+            errorAlert.classList.add("active");
+          }
+        });
+    }
+
+    // ───────────────────────────────────────
+    // FORGOT PASSWORD — STEP 1: SEND CODE
+    // ───────────────────────────────────────
+    if (form.id === "forgotEmailForm") {
+      const errorAlert = form.querySelector(".auth-error");
+      if (errorAlert) errorAlert.classList.remove("active");
+
+      const email = document.getElementById("forgotEmail")?.value || "";
+
+      fetch(appUrl("auth/forgot-password"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ email }),
+      })
+        .then((r) => r.json())
+        .then((res) => {
+          if (res.success) {
+            resetEmail = email;
+            loadForm("forgot-code");
+            setTimeout(() => {
+              const display = document.getElementById(
+                "forgotCodeEmailDisplay",
+              );
+              if (display) display.textContent = resetEmail;
+              document.querySelector(".otp-box")?.focus();
+            }, 0);
+          } else if (errorAlert) {
+            errorAlert.textContent = res.message || "Could not send code.";
+            errorAlert.classList.add("active");
+          }
+        })
+        .catch(() => {
+          if (errorAlert) {
+            errorAlert.textContent = "An unexpected error occurred.";
+            errorAlert.classList.add("active");
+          }
+        });
+    }
+
+    // ───────────────────────────────────────
+    // FORGOT PASSWORD — STEP 2: VERIFY CODE
+    // ───────────────────────────────────────
+    if (form.id === "forgotCodeForm") {
+      const errorAlert = form.querySelector(".auth-error");
+      if (errorAlert) errorAlert.classList.remove("active");
+
+      const code = Array.from(document.querySelectorAll(".otp-box"))
+        .map((b) => b.value)
+        .join("");
+
+      if (code.length !== 6) {
+        if (errorAlert) {
+          errorAlert.textContent = "Please enter all 6 digits.";
+          errorAlert.classList.add("active");
+        }
+        return;
+      }
+
+      fetch(appUrl("auth/verify-reset-code"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ code }),
+      })
+        .then((r) => r.json())
+        .then((res) => {
+          if (res.success) {
+            loadForm("reset-password");
+          } else if (errorAlert) {
+            errorAlert.textContent = res.message || "Incorrect code.";
+            errorAlert.classList.add("active");
+          }
+        })
+        .catch(() => {
+          if (errorAlert) {
+            errorAlert.textContent = "An unexpected error occurred.";
+            errorAlert.classList.add("active");
+          }
+        });
+    }
+
+    // ───────────────────────────────────────
+    // FORGOT PASSWORD — STEP 3: SET NEW PASSWORD
+    // ───────────────────────────────────────
+    if (form.id === "resetPasswordForm") {
+      const errorAlert = form.querySelector(".auth-error");
+      if (errorAlert) errorAlert.classList.remove("active");
+
+      const newPassword =
+        document.getElementById("resetNewPassword")?.value || "";
+      const confirmPassword =
+        document.getElementById("resetConfirmPassword")?.value || "";
+
+      fetch(appUrl("auth/reset-password"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ newPassword, confirmPassword }),
+      })
+        .then((r) => r.json())
+        .then((res) => {
+          if (res.success) {
+            const tabsEl = document.querySelector(".auth-tabs");
+            if (tabsEl) tabsEl.style.display = "";
+            const loginTab = document.querySelector(
+              '[data-auth-tab="login"]',
+            );
+            if (loginTab) {
+              tabs.forEach((t) => t.classList.remove("active"));
+              loginTab.classList.add("active");
+            }
+            if (headingTitle) headingTitle.textContent = "Welcome Back";
+            if (headingSub)
+              headingSub.innerHTML =
+                "Log in to play, rate, and submit games <br> from the YA!W8 community.";
+            resetEmail = "";
+            loadForm("login");
+          } else if (errorAlert) {
+            errorAlert.textContent =
+              res.message || "Could not reset password.";
+            errorAlert.classList.add("active");
+          }
+        })
+        .catch(() => {
           if (errorAlert) {
             errorAlert.textContent = "An unexpected error occurred.";
             errorAlert.classList.add("active");

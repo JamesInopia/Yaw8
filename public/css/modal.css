@@ -61,6 +61,13 @@
         margin-bottom: 80px;
     }
 
+    /* Game details modal only — wider than the default .modal-content so
+       the 16:9 thumbnail column can be big enough to match the height of
+       the title/stats/actions column next to it (see .modal-header). */
+    .modal-content-game-view {
+        max-width: 1060px;
+    }
+
     .modal-close {
         position: absolute;
         top: 30px;
@@ -97,21 +104,84 @@
     /* Modal Header */
     .modal-header {
         display: grid;
-        grid-template-columns: 340px 1fr;
+        grid-template-columns: minmax(320px, 54%) 1fr;
         gap: 32px;
         margin-bottom: 32px;
         align-items: stretch;
     }
 
+    .modal-header-info {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    /* Wraps the thumbnail so the prev/next feature-graphic arrows can be
+       absolutely positioned over it without affecting the 16:9 sizing. */
+    .modal-thumb-carousel {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        align-self: start;
+    }
+
     .modal-thumb {
         width: 100%;
+        height: 100%;
         border-radius: 12px;
         border: 1px solid rgba(0,229,255,0.15);
         overflow: hidden;
         position: relative;
-        min-height: 180px;
         background-size: cover;
         background-position: center;
+    }
+
+    .modal-thumb img,
+    .modal-thumb video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .modal-thumb-arrow {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(5, 10, 20, .7);
+        border: 1px solid rgba(255, 255, 255, .25);
+        color: #fff;
+        cursor: pointer;
+        transition: background .15s, border-color .15s, opacity .15s;
+        z-index: 2;
+    }
+
+    .modal-thumb-arrow svg {
+        width: 18px;
+        height: 18px;
+        fill: currentColor;
+    }
+
+    .modal-thumb-arrow:hover {
+        border-color: #00E5FF;
+        background: rgba(0, 229, 255, .15);
+    }
+
+    .modal-thumb-prev { left: 10px; }
+    .modal-thumb-next { right: 10px; }
+
+    /* Nothing (further) to scroll to — dimmed and inert rather than hidden,
+       so the carousel's layout never jumps. */
+    .modal-thumb-arrow.disabled {
+        opacity: .3;
+        cursor: not-allowed;
+        pointer-events: none;
     }
 
     /* The modal thumbnail box is much bigger than a grid card, so scale
@@ -245,6 +315,93 @@
         opacity: 0.9;
         transform: translateY(-2px);
         box-shadow: 0 0 32px rgba(0, 229, 255, 0.6);
+    }
+
+    /* Rate / Favorite / (Download) / Report row, under PLAY NOW.
+       Download only renders for downloadable games — see modalDownloadBtn
+       wiring in script.js, which also adds .has-download here. */
+    .modal-action-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin-top: 14px;
+    }
+
+    .modal-action-row.has-download {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    .modal-star-rating,
+    .modal-action-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        background: rgba(255, 255, 255, .04);
+        border: 1px solid rgba(0, 229, 255, 0.18);
+        border-radius: 8px;
+        padding: 11px 10px;
+        font-size: 13px;
+        font-weight: 600;
+        font-family: 'Poppins', sans-serif;
+        color: #8892a4;
+        cursor: pointer;
+        transition: all .15s;
+    }
+
+    .modal-action-btn svg {
+        width: 16px;
+        height: 16px;
+        fill: currentColor;
+        flex-shrink: 0;
+    }
+
+    .modal-action-btn:hover {
+        border-color: #00E5FF;
+        color: #F5F7FA;
+    }
+
+    .modal-action-btn.active {
+        color: #ff4fd8;
+        border-color: #ff4fd8;
+        background: rgba(255, 79, 216, .1);
+    }
+
+    #modalReportBtn:hover {
+        color: #ff7070;
+        border-color: #ff5f5f;
+    }
+
+    .modal-star {
+        background: none;
+        border: none;
+        padding: 0;
+        font-size: 18px;
+        line-height: 1;
+        color: rgba(255, 255, 255, .25);
+        cursor: pointer;
+        transition: color .15s, transform .1s;
+    }
+
+    .modal-star:hover {
+        transform: scale(1.15);
+    }
+
+    .modal-star.filled,
+    .modal-star.hover-preview {
+        color: #fbbf24;
+    }
+
+    .modal-star-rating.submitting {
+        opacity: .6;
+        pointer-events: none;
+    }
+
+    @media (max-width: 600px) {
+        .modal-action-row,
+        .modal-action-row.has-download {
+            grid-template-columns: 1fr;
+        }
     }
 
     /* Modal Sections */
@@ -507,10 +664,6 @@
         gap: 16px;
     }
 
-    .modal-thumb {
-        max-height: 250px;
-    }
-
     .carousel-item {
         width: calc((100% - 12px) / 2);
     }
@@ -643,6 +796,19 @@
         opacity: 0.9;
         transform: translateY(-2px);
         box-shadow: 0 0 32px rgba(0, 229, 255, 0.55);
+    }
+
+    .form-btn-submit:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    /* Inline validation / submit error text on form modals */
+    .form-error {
+        font-size: 12px;
+        color: #ff7070;
+        margin-top: -6px;
     }
 
     /* ═══════════════════════════════
@@ -937,6 +1103,159 @@
         background: #00E5FF;
         border-color: #00E5FF;
         color: #000;
+    }
+
+    /* ═══════════════════════════════
+        SUBMIT/EDIT GAME — Availability + Feature Graphics
+    ═══════════════════════════════ */
+    .access-type-toggle {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    .access-type-btn {
+        background: rgba(255, 255, 255, .04);
+        border: 1px solid rgba(255, 255, 255, .15);
+        border-radius: 8px;
+        padding: 10px;
+        font-size: 13px;
+        font-weight: 600;
+        font-family: 'Poppins', sans-serif;
+        color: #8892a4;
+        cursor: pointer;
+        transition: all .15s;
+    }
+
+    .access-type-btn:hover {
+        border-color: rgba(0, 229, 255, 0.4);
+        color: #F5F7FA;
+    }
+
+    .access-type-btn.active {
+        background: rgba(0, 229, 255, 0.12);
+        border-color: #00E5FF;
+        color: #00E5FF;
+    }
+
+    .form-checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #F5F7FA;
+        cursor: pointer;
+    }
+
+    .form-checkbox-label input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        accent-color: #00E5FF;
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+
+    .form-hint {
+        display: block;
+        font-size: 11px;
+        color: #8892a4;
+        margin-top: 4px;
+        line-height: 1.5;
+    }
+
+    /* Feature graphics dropzone + preview grid */
+    .feature-graphics-dropzone {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        border: 2px dashed rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        padding: 20px;
+        cursor: pointer;
+        transition: border-color .15s, background .15s;
+    }
+
+    .feature-graphics-dropzone:hover,
+    .feature-graphics-dropzone.dragover {
+        border-color: #00E5FF;
+        background: rgba(0, 229, 255, 0.04);
+    }
+
+    .feature-graphics-dropzone svg {
+        width: 22px;
+        height: 22px;
+        stroke: #8892a4;
+        stroke-width: 2;
+        fill: none;
+    }
+
+    .feature-graphics-dropzone span {
+        color: #8892a4;
+        font-size: 12px;
+    }
+
+    .feature-graphics-preview-list {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        margin-top: 12px;
+    }
+
+    .feature-graphics-preview-item {
+        position: relative;
+        aspect-ratio: 16 / 9;
+        border-radius: 6px;
+        overflow: hidden;
+        background: rgba(255, 255, 255, .05);
+        border: 1px solid rgba(255, 255, 255, .1);
+    }
+
+    .feature-graphics-preview-item img,
+    .feature-graphics-preview-item video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .feature-graphics-preview-item .fg-video-badge {
+        position: absolute;
+        bottom: 4px;
+        left: 4px;
+        background: rgba(0, 0, 0, .65);
+        color: #fff;
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+        padding: 2px 6px;
+        border-radius: 4px;
+    }
+
+    .feature-graphics-preview-item .fg-remove-btn {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, .65);
+        border: 1px solid rgba(255, 255, 255, .2);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        padding: 0;
+    }
+
+    .feature-graphics-preview-item .fg-remove-btn svg {
+        width: 12px;
+        height: 12px;
+        fill: currentColor;
+        stroke: none;
     }
 
     /* Thumbnail upload box (right column) */

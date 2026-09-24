@@ -109,8 +109,17 @@ class ProfileController extends Controller {
             $controls = $_POST['controls'] ?? '';
             $genresRaw = $_POST['genres'] ?? $_POST['genre'] ?? '[]';
             $genreNames = is_string($genresRaw) ? (json_decode($genresRaw, true) ?: []) : (array) $genresRaw;
-            $status = $_POST['status'] ?? 'Draft';
+            # New games always start "under review" until an admin confirms publication.
+            # (Never trust a status sent from the browser.)
+            $status = Game::STATUS_UNDER_REVIEW;
             $collaborators = isset($_POST['collaborators']) ? json_decode($_POST['collaborators'], true) : [];
+
+            // Playable online (optionally also downloadable) vs download-only —
+            // never trust anything but these two known values from the browser.
+            $accessType = ($_POST['accessType'] ?? '') === Game::ACCESS_DOWNLOAD_ONLY
+                ? Game::ACCESS_DOWNLOAD_ONLY
+                : Game::ACCESS_ONLINE;
+            $allowDownload = filter_var($_POST['allowDownload'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
             // Genre is optional, only checking for user ID and Title
             if (!$creatorUserId || empty($title)) {
@@ -126,6 +135,9 @@ class ProfileController extends Controller {
             }
 
             // Handle Game File Upload (Note: checking 'game_file' to match JS)
+            // A download-only game may not even have an in-browser playable
+            // file — the zip itself IS the download, so this stays optional
+            // for that case (enforced on the frontend, not re-checked here).
             $gameFilePath = null;
             if (isset($_FILES['game_file']) && $_FILES['game_file']['error'] === UPLOAD_ERR_OK) {
                 $gameFilePath = 'uploads/games/' . basename($_FILES['game_file']['name']);
@@ -133,7 +145,13 @@ class ProfileController extends Controller {
             }
 
             $gameModel = new Game();
-            $newGameId = $gameModel->addGame($creatorUserId, $title, $description, $controls, $genreNames, $thumbnailPath, $gameFilePath, $status, $collaborators);
+            $newGameId = $gameModel->addGame($creatorUserId, $title, $description, $controls, $genreNames, $thumbnailPath, $gameFilePath, $status, $collaborators, $accessType, $allowDownload);
+
+            // Feature graphics (screenshots/video clips for the modal carousel)
+            // need the new gameId first, since each game gets its own folder.
+            if ($newGameId && !empty($_FILES['feature_graphics'])) {
+                $this->saveFeatureGraphics($newGameId, $_FILES['feature_graphics']);
+            }
 
             if ($newGameId) {
                 // Hand back the full saved row so the frontend can add it to
@@ -171,13 +189,25 @@ class ProfileController extends Controller {
             $controls = $_POST['controls'] ?? '';
             $genresRaw = $_POST['genres'] ?? $_POST['genre'] ?? '[]';
             $genreNames = is_string($genresRaw) ? (json_decode($genresRaw, true) ?: []) : (array) $genresRaw;
-            $status = $_POST['status'] ?? 'Draft';
 
             // Genre is no longer required in this check
             if (!$game_id || empty($title)) {
                 echo json_encode(['success' => false, 'message' => 'Missing required fields (ID or Title).']);
                 exit;
             }
+
+            // Only touch accessType/allowDownload if the edit form actually
+            // sent them — editGame()'s COALESCE keeps whatever's already
+            // saved when these come through as null.
+            $accessType = null;
+            if (isset($_POST['accessType'])) {
+                $accessType = $_POST['accessType'] === Game::ACCESS_DOWNLOAD_ONLY
+                    ? Game::ACCESS_DOWNLOAD_ONLY
+                    : Game::ACCESS_ONLINE;
+            }
+            $allowDownload = isset($_POST['allowDownload'])
+                ? filter_var($_POST['allowDownload'], FILTER_VALIDATE_BOOLEAN)
+                : null;
 
             // Handle Thumbnail Upload (if a new one is provided)
             $thumbnailPath = null;
@@ -194,7 +224,14 @@ class ProfileController extends Controller {
             }
 
             $gameModel = new Game();
-            $success = $gameModel->editGame($game_id, $title, $description, $controls, $genreNames, $thumbnailPath, $gameFilePath, $status);
+            // Status is not editable by owners — only admins change it.
+            $success = $gameModel->editGame($game_id, $title, $description, $controls, $genreNames, $thumbnailPath, $gameFilePath, $accessType, $allowDownload);
+
+            // Feature graphics: only replace the saved set if new files were
+            // actually attached this time — no upload means "leave as is".
+            if ($success && !empty($_FILES['feature_graphics'])) {
+                $this->saveFeatureGraphics($game_id, $_FILES['feature_graphics']);
+            }
 
             if ($success) {
                 // Hand back the full updated row so the frontend can patch the
@@ -246,5 +283,52 @@ class ProfileController extends Controller {
             echo json_encode(['success' => false, 'message' => 'Server Error: ' . $e->getMessage()]);
         }
         exit;
+    }
+
+    // Moves every uploaded feature-graphic file into this game's own folder
+    private function saveFeatureGraphics($gameId, array $files): void {
+        $videoExtensions = ['mp4', 'webm', 'mov', 'ogg'];
+        $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+
+        $targetDir = 'uploads/feature-graphics/' . $gameId;
+        if (!is_dir($targetDir)) {
+            mkdir($targetDir, 0755, true);
+        }
+
+        $items = [];
+        $fileCount = count((array) $files['name']);
+
+        for ($i = 0; $i < $fileCount; $i++) {
+            if (($files['error'][$i] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+                continue;
+            }
+
+            $originalName = basename($files['name'][$i]);
+            $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+
+            if (in_array($extension, $videoExtensions, true)) {
+                $mediaType = GameFeatureGraphic::TYPE_VIDEO;
+            } elseif (in_array($extension, $imageExtensions, true)) {
+                $mediaType = GameFeatureGraphic::TYPE_IMAGE;
+            } else {
+                // Unsupported file type — skip it rather than guessing.
+                continue;
+            }
+
+            $storedName = uniqid('fg_', true) . '.' . $extension;
+            $destination = $targetDir . '/' . $storedName;
+
+            if (move_uploaded_file($files['tmp_name'][$i], $destination)) {
+                $items[] = [
+                    'mediaType' => $mediaType,
+                    'filePath' => '/' . $destination,
+                ];
+            }
+        }
+
+        if (!empty($items)) {
+            $featureGraphicModel = new GameFeatureGraphic();
+            $featureGraphicModel->replaceForGame($gameId, $items);
+        }
     }
 }

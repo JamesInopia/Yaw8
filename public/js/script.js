@@ -6,9 +6,15 @@ const modalClose = document.querySelector(".modal-close");
 const carouselPrev = document.querySelector(".carousel-prev");
 const carouselNext = document.querySelector(".carousel-next");
 const gamePagePath = "?url=games/player";
+const downloaderPagePath = "?url=downloader";
 const CAROUSEL_VISIBLE_ITEMS = 4; // number of cards shown at a time
 let currentGameId = null;
+let currentGameAccessType = "online";
 let carouselIndex = 0; // current starting card index
+
+// Feature-graphics carousel (modal's thumbnail area)
+let modalCarouselItems = [];
+let modalCarouselIndex = 0;
 
 const THUMB_COLOR_CLASSES = ["gt-pixel-drift", "gt-tower-tactics", "gt-box-jumper", "gt-color-clash"];
 
@@ -34,6 +40,150 @@ function renderThumbInto(container, thumbnail, title, key) {
   }
 }
 
+// ═══════════════════════════════════════════
+// MODAL FEATURE-GRAPHICS CAROUSEL
+// Shows a game's feature graphics (screenshots/video clips), videos
+// first. Falls back to a single item — the game's thumbnail — when it
+// has no feature graphics at all, in which case the arrows are simply
+// disabled (nothing to scroll to).
+// ═══════════════════════════════════════════
+function buildModalCarouselItems(fullGame) {
+  const graphics = Array.isArray(fullGame.featureGraphics) ? fullGame.featureGraphics : [];
+
+  if (graphics.length > 0) {
+    return graphics.map((fg) => ({
+      type: fg.mediaType === "video" ? "video" : "image",
+      path: fg.filePath,
+    }));
+  }
+
+  // No feature graphics — fall back to the thumbnail (or colored default).
+  return [{ type: "thumbnail", path: fullGame.thumbnail, title: fullGame.title, key: fullGame.gameId }];
+}
+
+function renderModalCarouselItem() {
+  const container = document.getElementById("modalThumbnail");
+  if (!container) return;
+
+  const item = modalCarouselItems[modalCarouselIndex];
+  if (!item) return;
+
+  if (item.type === "video") {
+    container.classList.remove(...THUMB_COLOR_CLASSES);
+    // Never autoplay — the person presses play themselves.
+    container.innerHTML = `<video src="${item.path}" controls preload="metadata" playsinline></video>`;
+  } else if (item.type === "image") {
+    container.classList.remove(...THUMB_COLOR_CLASSES);
+    container.innerHTML = `<img src="${item.path}" alt="">`;
+  } else {
+    renderThumbInto(container, item.path, item.title, item.key);
+  }
+}
+
+function updateModalCarouselArrows() {
+  const prevBtn = document.getElementById("modalThumbPrev");
+  const nextBtn = document.getElementById("modalThumbNext");
+  if (!prevBtn || !nextBtn) return;
+
+  prevBtn.classList.toggle("disabled", modalCarouselIndex <= 0);
+  nextBtn.classList.toggle("disabled", modalCarouselIndex >= modalCarouselItems.length - 1);
+}
+
+function renderModalCarousel() {
+  renderModalCarouselItem();
+  updateModalCarouselArrows();
+}
+
+// ═══════════════════════════════════════════
+// SITE-WIDE TOAST (favorite / report / rating feedback)
+// ═══════════════════════════════════════════
+function showSiteToast(text) {
+  let toast = document.getElementById("siteToast");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.id = "siteToast";
+    toast.className = "site-toast";
+    document.body.appendChild(toast);
+  }
+  toast.textContent = text;
+  toast.classList.add("show");
+  clearTimeout(showSiteToast._t);
+  showSiteToast._t = setTimeout(() => toast.classList.remove("show"), 2200);
+}
+
+// ═══════════════════════════════════════════
+// FAVORITES
+// (Client-side only for now — there's no favorites table/endpoint yet,
+// so this mirrors the existing gpFavBtn stub on the game player page:
+// a per-browser toggle stored in localStorage. Swap this out for a real
+// fetch() call if/when a backend favorites feature is added.)
+// ═══════════════════════════════════════════
+const FAVORITES_KEY = "yaw8_favorites";
+
+function getFavoriteIds() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(FAVORITES_KEY) || "[]");
+    return Array.isArray(raw) ? raw : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function isFavorited(gameId) {
+  return getFavoriteIds().includes(String(gameId));
+}
+
+// Flips the favorite state for a game and returns the NEW state (true = now favorited).
+function toggleFavoriteId(gameId) {
+  const ids = getFavoriteIds();
+  const key = String(gameId);
+  const idx = ids.indexOf(key);
+
+  if (idx === -1) {
+    ids.push(key);
+  } else {
+    ids.splice(idx, 1);
+  }
+
+  localStorage.setItem(FAVORITES_KEY, JSON.stringify(ids));
+  return idx === -1;
+}
+
+// ═══════════════════════════════════════════
+// GAME CARD QUICK ACTIONS (Favorite + Report)
+// Wires up the two icon buttons overlaid on a game card's thumbnail.
+// Called once per card, whether it was rendered by PHP (games/index.php)
+// or built client-side (games.js renderGrid()).
+// ═══════════════════════════════════════════
+function wireCardQuickActions(card) {
+  if (!card || card.dataset.quickActionsWired) return;
+  card.dataset.quickActionsWired = "1";
+
+  const gameId = card.getAttribute("data-game-id");
+  const title = card.getAttribute("data-title") || "";
+
+  const favBtn = card.querySelector(".game-favorite-btn");
+  if (favBtn) {
+    favBtn.classList.toggle("active", isFavorited(gameId));
+    favBtn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      e.preventDefault();
+      const nowFavorited = toggleFavoriteId(gameId);
+      favBtn.classList.toggle("active", nowFavorited);
+      showSiteToast(nowFavorited ? "Added to Favorites" : "Removed from Favorites");
+    });
+  }
+
+  const reportBtn = card.querySelector(".game-report-btn");
+  if (reportBtn) {
+    reportBtn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      e.preventDefault();
+      openReportModal(gameId, title);
+    });
+  }
+}
+
 // Open modal only when clicking the card (not the play button)
 document.querySelectorAll(".game-card").forEach((card) => {
   card.addEventListener("click", function (e) {
@@ -43,6 +193,8 @@ document.querySelectorAll(".game-card").forEach((card) => {
 
     openGameModal(this.dataset);
   });
+
+  wireCardQuickActions(card);
 });
 
 async function openGameModal(gameData) {
@@ -72,8 +224,37 @@ async function openGameModal(gameData) {
       fullGame.lastUpdated || "—";
     document.getElementById("modalGameReleased").textContent =
       fullGame.dateReleased || "—";
-    const modalThumb = document.getElementById("modalThumbnail");
-    renderThumbInto(modalThumb, fullGame.thumbnail, fullGame.title, fullGame.gameId);
+
+    // Feature-graphics carousel (falls back to the thumbnail alone)
+    modalCarouselItems = buildModalCarouselItems(fullGame);
+    modalCarouselIndex = 0;
+    renderModalCarousel();
+
+    // Sync the rate / favorite action row to this game
+    if (modalStarWrap) {
+      modalStarWrap.dataset.current = fullGame.userRating || 0;
+      paintModalStars(Number(modalStarWrap.dataset.current), "filled");
+    }
+    if (modalFavBtn) {
+      modalFavBtn.classList.toggle("active", isFavorited(fullGame.gameId));
+    }
+
+    // Availability: online (playable, maybe also downloadable) vs
+    // download-only (no in-browser player — PLAY NOW leads to the
+    // Downloader page instead).
+    currentGameAccessType = fullGame.accessType || "online";
+    const isDownloadOnly = currentGameAccessType === "download_only";
+
+    if (modalPlayBtn) {
+      modalPlayBtn.textContent = isDownloadOnly ? "VIEW & DOWNLOAD" : "PLAY NOW";
+    }
+
+    const modalActionRow = document.getElementById("modalActionRow");
+    if (modalDownloadBtn) {
+      const showDownload = !!fullGame.isDownloadable;
+      modalDownloadBtn.style.display = showDownload ? "" : "none";
+      if (modalActionRow) modalActionRow.classList.toggle("has-download", showDownload);
+    }
 
     // Reset carousel
     carouselIndex = 0;
@@ -123,6 +304,10 @@ function goToGamePage(gameId) {
   window.location.href = `${gamePagePath}&gameId=${gameId}`;
 }
 
+function goToDownloaderPage(gameId) {
+  window.location.href = `${downloaderPagePath}&gameId=${gameId}`;
+}
+
 document.addEventListener("click", function (e) {
   const playBtn = e.target.closest(".btn-play");
   if (!playBtn) return;
@@ -130,14 +315,264 @@ document.addEventListener("click", function (e) {
   const card = playBtn.closest("[data-game-id]");
   if (!card) return;
 
-  goToGamePage(card.getAttribute("data-game-id"));
+  const gameId = card.getAttribute("data-game-id");
+  if (card.getAttribute("data-access-type") === "download_only") {
+    goToDownloaderPage(gameId);
+  } else {
+    goToGamePage(gameId);
+  }
 });
+
+// Feature-graphics carousel arrows (modal)
+const modalThumbPrev = document.getElementById("modalThumbPrev");
+const modalThumbNext = document.getElementById("modalThumbNext");
+
+if (modalThumbPrev) {
+  modalThumbPrev.addEventListener("click", function () {
+    if (modalCarouselIndex <= 0) return;
+    modalCarouselIndex -= 1;
+    renderModalCarousel();
+  });
+}
+
+if (modalThumbNext) {
+  modalThumbNext.addEventListener("click", function () {
+    if (modalCarouselIndex >= modalCarouselItems.length - 1) return;
+    modalCarouselIndex += 1;
+    renderModalCarousel();
+  });
+}
 
 const modalPlayBtn = document.querySelector(".btn-play-modal");
 if (modalPlayBtn) {
   modalPlayBtn.addEventListener("click", function () {
     if (!currentGameId) return;
-    goToGamePage(currentGameId);
+    if (currentGameAccessType === "download_only") {
+      goToDownloaderPage(currentGameId);
+    } else {
+      goToGamePage(currentGameId);
+    }
+  });
+}
+
+const modalDownloadBtn = document.getElementById("modalDownloadBtn");
+if (modalDownloadBtn) {
+  modalDownloadBtn.addEventListener("click", function () {
+    if (!currentGameId) return;
+    window.location.href = `?url=games/download&gameId=${currentGameId}`;
+  });
+}
+
+// ═══════════════════════════════════════════
+// MODAL ACTION ROW: RATE / FAVORITE / REPORT
+// ═══════════════════════════════════════════
+const modalStarWrap = document.getElementById("modalStarRating");
+const modalFavBtn = document.getElementById("modalFavBtn");
+const modalReportBtn = document.getElementById("modalReportBtn");
+
+function paintModalStars(upTo, className) {
+  if (!modalStarWrap) return;
+  modalStarWrap.querySelectorAll(".modal-star").forEach((star) => {
+    const value = Number(star.dataset.value);
+    star.classList.toggle(className, value <= upTo);
+  });
+}
+
+if (modalStarWrap) {
+  modalStarWrap.addEventListener("mouseover", function (e) {
+    const star = e.target.closest(".modal-star");
+    if (!star) return;
+    paintModalStars(Number(star.dataset.value), "hover-preview");
+  });
+
+  modalStarWrap.addEventListener("mouseleave", function () {
+    paintModalStars(0, "hover-preview");
+  });
+
+  modalStarWrap.addEventListener("click", function (e) {
+    const star = e.target.closest(".modal-star");
+    if (!star || !currentGameId) return;
+
+    if (!isLoggedIn()) {
+      showSiteToast("Log in to rate this game");
+      setTimeout(() => {
+        window.location.href = "?url=auth";
+      }, 900);
+      return;
+    }
+
+    const value = Number(star.dataset.value);
+    modalStarWrap.classList.add("submitting");
+
+    fetch(`?url=games/rate&gameId=${currentGameId}`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ rating: value }),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error(`Status ${res.status}`);
+        return res.json();
+      })
+      .then((data) => {
+        modalStarWrap.dataset.current = data.userRating ?? value;
+        paintModalStars(Number(modalStarWrap.dataset.current), "filled");
+        const ratingStat = document.getElementById("modalRating");
+        if (ratingStat && typeof data.avgRating !== "undefined") {
+          ratingStat.textContent = `★ ${data.avgRating}`;
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to submit rating:", err);
+        showSiteToast("Couldn't save your rating — try again");
+      })
+      .finally(() => {
+        modalStarWrap.classList.remove("submitting");
+      });
+  });
+}
+
+if (modalFavBtn) {
+  modalFavBtn.addEventListener("click", function () {
+    if (!currentGameId) return;
+    const nowFavorited = toggleFavoriteId(currentGameId);
+    modalFavBtn.classList.toggle("active", nowFavorited);
+
+    // Keep any matching card on the page (grid, carousel) in sync
+    document
+      .querySelectorAll(`.game-favorite-btn`)
+      .forEach((btn) => {
+        const card = btn.closest("[data-game-id]");
+        if (card && card.getAttribute("data-game-id") === String(currentGameId)) {
+          btn.classList.toggle("active", nowFavorited);
+        }
+      });
+
+    showSiteToast(nowFavorited ? "Added to Favorites" : "Removed from Favorites");
+  });
+}
+
+if (modalReportBtn) {
+  modalReportBtn.addEventListener("click", function () {
+    if (!currentGameId) return;
+    openReportModal(currentGameId, document.getElementById("modalGameName").textContent);
+  });
+}
+
+// ═══════════════════════════════════════════
+// REPORT GAME MODAL
+// ═══════════════════════════════════════════
+const reportModal = document.getElementById("report-game-modal");
+const reportForm = document.getElementById("reportGameForm");
+
+function openReportModal(gameId, title) {
+  if (!reportModal || !reportForm) return;
+
+  if (!isLoggedIn()) {
+    showSiteToast("Log in to report a game");
+    setTimeout(() => {
+      window.location.href = "?url=auth";
+    }, 900);
+    return;
+  }
+
+  reportForm.reset();
+  const otherGroup = document.getElementById("reportOtherGroup");
+  const formError = document.getElementById("reportFormError");
+  if (otherGroup) otherGroup.style.display = "none";
+  if (formError) formError.style.display = "none";
+
+  document.getElementById("reportGameId").value = gameId || "";
+  document.getElementById("reportGameName").textContent = title || "this game";
+
+  reportModal.classList.add("active");
+  reportModal.scrollTop = 0;
+  document.body.style.overflow = "hidden";
+}
+
+function closeReportModal() {
+  if (!reportModal) return;
+  reportModal.classList.remove("active");
+  document.body.style.overflow = "auto";
+}
+
+if (reportModal && reportForm) {
+  const reportClose = document.getElementById("reportModalClose");
+  const reportCancel = document.getElementById("reportCancelBtn");
+  const reportOverlay = reportModal.querySelector(".modal-overlay");
+  const reportReasonSelect = document.getElementById("reportReason");
+  const reportOtherGroup = document.getElementById("reportOtherGroup");
+  const reportOtherInput = document.getElementById("reportOtherInput");
+  const reportFormError = document.getElementById("reportFormError");
+  const reportSubmitBtn = document.getElementById("reportSubmitBtn");
+
+  if (reportClose) reportClose.addEventListener("click", closeReportModal);
+  if (reportCancel) reportCancel.addEventListener("click", closeReportModal);
+  if (reportOverlay) reportOverlay.addEventListener("click", closeReportModal);
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && reportModal.classList.contains("active")) {
+      closeReportModal();
+    }
+  });
+
+  if (reportReasonSelect) {
+    reportReasonSelect.addEventListener("change", function () {
+      reportOtherGroup.style.display = this.value === "other" ? "flex" : "none";
+    });
+  }
+
+  reportForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+
+    const gameId = document.getElementById("reportGameId").value;
+    const reasonValue = reportReasonSelect.value;
+    const isOther = reasonValue === "other";
+    const reason = isOther ? reportOtherInput.value.trim() : reasonValue;
+    const details = document.getElementById("reportDescription").value.trim();
+
+    reportFormError.style.display = "none";
+
+    if (!reasonValue) {
+      reportFormError.textContent = "Please choose a reason for this report.";
+      reportFormError.style.display = "block";
+      return;
+    }
+
+    if (isOther && !reason) {
+      reportFormError.textContent = "Please specify a reason.";
+      reportFormError.style.display = "block";
+      return;
+    }
+
+    if (!gameId) {
+      reportFormError.textContent = "Something went wrong — please reopen the report form.";
+      reportFormError.style.display = "block";
+      return;
+    }
+
+    reportSubmitBtn.disabled = true;
+
+    fetch(`?url=games/report&gameId=${gameId}`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ reason, details }),
+    })
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || `Status ${res.status}`);
+        return data;
+      })
+      .then(() => {
+        showSiteToast("Thanks — your report has been submitted.");
+        closeReportModal();
+      })
+      .catch((err) => {
+        reportFormError.textContent = err.message || "Couldn't submit your report — try again.";
+        reportFormError.style.display = "block";
+      })
+      .finally(() => {
+        reportSubmitBtn.disabled = false;
+      });
   });
 }
 

@@ -107,6 +107,13 @@ class User {
         return $stmt->execute([$hashedPassword, $userId]);
     }
 
+    # Function to update user password by emai
+    public function updatePasswordByEmail($email, $hashedPassword): bool {
+        $pdo = Database::connect();
+        $stmt = $pdo->prepare('UPDATE user_account SET password = ? WHERE email = ?');
+        return $stmt->execute([$hashedPassword, $email]);
+    }
+
     public function getUserById($userId) : ?array {
         $pdo = Database::connect();
         $stmt = $pdo->prepare('SELECT * FROM user_account WHERE userId = ? LIMIT 1');
@@ -115,6 +122,142 @@ class User {
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
         return $user ?: null;
+    }
+
+    # ───────────────────────────────────────────
+    # AUTH STATE + ADMIN USER MANAGEMENT
+    # ───────────────────────────────────────────
+
+    # Checks if account is suspended
+    public function getAuthState($userId): ?array {
+        $pdo = Database::connect();
+        $stmt = $pdo->prepare(
+            'SELECT userId, role, suspended_until,
+                    (suspended = 1 AND (suspended_until IS NULL OR suspended_until > NOW())) AS suspendedNow
+             FROM user_account
+             WHERE userId = ?
+             LIMIT 1'
+        );
+        $stmt->execute([$userId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $row ?: null;
+    }
+
+    # Accounts for the admin Users tab.
+    public function getUsersForAdmin(bool $includeAdmins, $excludeUserId): array {
+        $params = [];
+        $where = ['1 = 1'];
+
+        if (!$includeAdmins) {
+            $marks = implode(', ', array_fill(0, count(Auth::ADMIN_ROLES), '?'));
+            $where[] = "LOWER(TRIM(COALESCE(u.role, ''))) NOT IN ($marks)";
+            $params = array_merge($params, Auth::ADMIN_ROLES);
+        } else {
+            $where[] = "LOWER(TRIM(COALESCE(u.role, ''))) <> ?";
+            $params[] = Auth::SUPREME_ROLE;
+        }
+
+        $where[] = 'u.userId <> ?';
+        $params[] = (int) $excludeUserId;
+
+        $pdo = Database::connect();
+        $stmt = $pdo->prepare($this->adminUserSelect() . ' WHERE ' . implode(' AND ', $where) . ' ORDER BY u.userId ASC');
+        $stmt->execute($params);
+
+        return array_map([$this, 'shapeAdminUser'], $stmt->fetchAll(PDO::FETCH_ASSOC));
+    }
+
+    # Checks account permissions
+    public function getUserForAdmin($userId): ?array {
+        $pdo = Database::connect();
+        $stmt = $pdo->prepare($this->adminUserSelect() . ' WHERE u.userId = ? LIMIT 1');
+        $stmt->execute([$userId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $row ? $this->shapeAdminUser($row) : null;
+    }
+
+    private function adminUserSelect(): string {
+        return 'SELECT u.userId, u.fullname, u.username, u.email, u.role, u.suspended_until,
+                    (u.suspended = 1 AND (u.suspended_until IS NULL OR u.suspended_until > NOW())) AS suspendedNow,
+                    (SELECT AVG(r.rating)
+                       FROM rating r
+                       JOIN game_devs gd ON gd.gameId = r.gameId
+                      WHERE gd.userId = u.userId) AS avgRating,
+                    (SELECT COUNT(*)
+                       FROM rating r
+                       JOIN game_devs gd ON gd.gameId = r.gameId
+                      WHERE gd.userId = u.userId) AS ratingCount
+                FROM user_account u';
+    }
+
+    private function shapeAdminUser(array $row): array {
+        $suspended = !empty($row['suspendedNow']);
+
+        return [
+            'userId'         => (int) $row['userId'],
+            'name'           => $row['fullname'],
+            'username'       => $row['username'],
+            'email'          => $row['email'],
+            'role'           => (string) $row['role'],
+            'avgRating'      => round((float) $row['avgRating'], 1),
+            'ratingCount'    => (int) $row['ratingCount'],
+            'suspended'      => $suspended,
+            'suspendedUntil' => $suspended ? $row['suspended_until'] : null,
+            'indefinite'     => $suspended && $row['suspended_until'] === null,
+        ];
+    }
+
+    public function suspend($userId, ?int $days): bool {
+        $pdo = Database::connect();
+
+        if ($days === null) {
+            $stmt = $pdo->prepare('UPDATE user_account SET suspended = 1, suspended_until = NULL WHERE userId = ?');
+            return $stmt->execute([$userId]);
+        }
+
+        $stmt = $pdo->prepare('UPDATE user_account SET suspended = 1, suspended_until = DATE_ADD(NOW(), INTERVAL ? DAY) WHERE userId = ?');
+        return $stmt->execute([$days, $userId]);
+    }
+
+    public function unsuspend($userId): bool {
+        $pdo = Database::connect();
+        $stmt = $pdo->prepare('UPDATE user_account SET suspended = 0, suspended_until = NULL WHERE userId = ?');
+
+        return $stmt->execute([$userId]);
+    }
+
+    public function updateRole($userId, string $role): bool {
+        $pdo = Database::connect();
+        $stmt = $pdo->prepare('UPDATE user_account SET role = ? WHERE userId = ?');
+
+        return $stmt->execute([$role, $userId]);
+    }
+
+    public function countAll(): int {
+        $pdo = Database::connect();
+        return (int) $pdo->query('SELECT COUNT(*) FROM user_account')->fetchColumn();
+    }
+
+    # Navbar search: accounts whose username or full name matches. Same people the
+    # Developers page lists. $like / $prefix are already-escaped LIKE patterns.
+    public function searchDevelopers(string $like, string $prefix, int $limit = 5): array {
+        $pdo = Database::connect();
+
+        $stmt = $pdo->prepare(
+            "SELECT u.userId AS id, u.fullname AS name, u.username,
+                (SELECT COUNT(DISTINCT gd.gameId)
+                   FROM game_devs gd JOIN game g ON g.gameId = gd.gameId AND g.status = 'published'
+                  WHERE gd.userId = u.userId) AS games
+             FROM user_account u
+             WHERE u.username LIKE ? OR u.fullname LIKE ?
+             ORDER BY (u.username LIKE ? OR u.fullname LIKE ?) DESC, games DESC, u.username ASC
+             LIMIT " . max(1, $limit)
+        );
+        $stmt->execute([$like, $like, $prefix, $prefix]);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function getAllUsers() {

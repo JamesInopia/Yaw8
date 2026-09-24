@@ -42,6 +42,27 @@
                             </div>
                         </div>
 
+                        <!-- Access Type: Playable Online vs Download Only -->
+                        <div class="form-group">
+                            <label class="form-label">Availability <span class="form-required">*</span></label>
+                            <div class="access-type-toggle" id="editAccessTypeToggle">
+                                <button type="button" class="access-type-btn active" data-value="online">Playable Online</button>
+                                <button type="button" class="access-type-btn" data-value="download_only">Download Only</button>
+                            </div>
+                            <input type="hidden" id="editAccessType" value="online" />
+                        </div>
+
+                        <div class="form-group" id="editAllowDownloadGroup">
+                            <label class="form-checkbox-label">
+                                <input type="checkbox" id="editAllowDownload" />
+                                Also let players download this game
+                            </label>
+                            <span class="form-hint">Players will still be able to play it in-browser — this just adds a Download button too.</span>
+                        </div>
+                        <p class="form-hint" id="editDownloadOnlyNote" style="display: none;">
+                            This game will have no in-browser player — players will only be able to download it.
+                        </p>
+
                         <!-- Collaborators Section -->
                         <div class="form-group" id="editCollabSection">
                             <label class="form-label">Add Collaborators</label>
@@ -87,6 +108,18 @@
                             <label class="form-label">Replace Game File (.zip)</label>
                             <input type="file" class="form-input" id="editGameFileInput" accept=".zip,application/zip,application/x-zip-compressed" style="padding: 8px 12px; cursor: pointer;" />
                             <span style="font-size: 11px; color: #8892a4; margin-top: 4px;">Upload a new zip file to replace the existing file in the database.</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Feature Graphics</label>
+                            <span class="form-hint" style="margin-top: 0; margin-bottom: 8px;">Screenshots or short clips shown in the game's carousel. Videos are shown first. Uploading new ones here replaces the current set.</span>
+
+                            <div class="feature-graphics-dropzone" id="editFeatureGraphicsDropzone">
+                                <svg viewBox="0 0 24 24"><line x1="12" y1="4" x2="12" y2="20"/><line x1="4" y1="12" x2="20" y2="12"/></svg>
+                                <span>Add images or videos</span>
+                            </div>
+                            <input type="file" id="editFeatureGraphicsInput" accept="image/*,video/*" multiple hidden />
+                            <div class="feature-graphics-preview-list" id="editFeatureGraphicsPreviewList"></div>
                         </div>
 
                         <!-- GENRES -->

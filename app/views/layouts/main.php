@@ -1,6 +1,29 @@
 <?php
   $currentRoute = $_GET['url'] ?? 'home'; 
   $isLoggedIn = !empty($_SESSION['user_id']);
+  # Admin / Supreme Overlord accounts get an extra "Admin" tab in the navbar
+  $isAdmin = $isLoggedIn && Auth::isAdmin();
+  $isAdminRoute = in_array($currentRoute, ['admin', 'admin/game']);
+
+  # Name shown in the navbar's user button (falls back to "User" if it can't be loaded)
+  $navUsername = 'User';
+  if ($isLoggedIn) {
+    try {
+      $navUserRow = (new User())->getUserById($_SESSION['user_id']);
+      if (!empty($navUserRow['username'])) {
+        $navUsername = $navUserRow['username'];
+      }
+    } catch (Throwable $e) {
+      error_log('Navbar username lookup failed: ' . $e->getMessage());
+    }
+  }
+
+  # "Random Challenge" footer link. On a game's own page, skip that game so the
+  # person never gets sent to the game they're already on.
+  $randomHref = '?url=games/random';
+  if (in_array($currentRoute, ['games/player', 'downloader'], true) && ctype_digit((string) ($_GET['gameId'] ?? ''))) {
+    $randomHref .= '&exclude=' . (int) $_GET['gameId'];
+  }
 ?>
 
 <!DOCTYPE html>
@@ -8,6 +31,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <?php if ($isLoggedIn): ?><meta name="yaw8-logged-in" content="1"/><?php endif; ?>
     <title>YAW8 - Play What Students Create</title>
 
     <!-- ICONS -->
@@ -16,12 +40,16 @@
     <!-- CSS -->
     <link rel="stylesheet" href="css/style.css"/>
     <link rel="stylesheet" href="css/modal.css"/>
+    <link rel="stylesheet" href="css/search.css"/>
 
     <?php if ($currentRoute === 'auth'): ?>
       <link rel="stylesheet" href="css/auth.css"/>
-    <?php elseif ($currentRoute === 'games' || $currentRoute === 'games/player'): ?>
+    <?php elseif ($currentRoute === 'games' || $currentRoute === 'games/player' || $currentRoute === 'downloader'): ?>
       <link rel="stylesheet" href="css/games.css"/>
       <link rel="stylesheet" href="css/gamepage.css"/>
+      <?php if ($currentRoute === 'downloader'): ?>
+      <link rel="stylesheet" href="css/downloader.css"/>
+      <?php endif; ?>
     <?php elseif ($currentRoute === 'developers'): ?>
       <link rel="stylesheet" href="css/developers.css"/>
     <?php elseif ($currentRoute === 'about'): ?>
@@ -30,6 +58,8 @@
       <link rel="stylesheet" href="css/account.css"/>
     <?php elseif ($currentRoute === 'settings'): ?>
       <link rel="stylesheet" href="css/settings.css"/>
+    <?php elseif ($isAdminRoute): ?>
+      <link rel="stylesheet" href="css/admin.css"/>
     <?php endif; ?>
     
 </head>
@@ -89,6 +119,14 @@
           About
         </a>
       </li>
+      <?php if ($isAdmin): ?>
+      <li>
+        <a href="?url=admin" <?= $isAdminRoute ? 'class="active"' : '' ?> data-nav="admin">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
+          Admin
+        </a>
+      </li>
+      <?php endif; ?>
     </ul>
   </div>
 
@@ -117,7 +155,7 @@
         <div class="avatar-circle">
           <svg viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
         </div>
-        <p>User</p>
+        <p title="<?= htmlspecialchars($navUsername) ?>"><?= htmlspecialchars($navUsername) ?></p>
         <svg class="chevron" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
       </button>
 
@@ -138,7 +176,7 @@
 <!-- ══════════════════════════════════════════
     CONTENT
 ══════════════════════════════════════════ -->
-<div class="<?= in_array($currentRoute, ['about', 'games', 'games/player']) ? 'page-wrap-single' : 'page-wrap' ?>" <?= in_array($currentRoute, ['developers', 'profile']) ? 'style="grid-template-columns: 1fr;"' : '' ?>>
+<div class="<?= (in_array($currentRoute, ['about', 'games', 'games/player']) || $isAdminRoute) ? 'page-wrap-single' : 'page-wrap' ?>" <?= in_array($currentRoute, ['developers', 'profile']) ? 'style="grid-template-columns: 1fr;"' : '' ?>>
     <?= $content ?? '' ?>
 </div>
 
@@ -147,7 +185,7 @@
 ══════════════════════════════════════════ -->
 <div id="game-modal" class="modal">
 <div class="modal-overlay"></div>
-<div class="modal-content">
+<div class="modal-content modal-content-game-view">
 <button class="modal-close">
     <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
 </button>
@@ -156,6 +194,8 @@
 
 </div>
 </div>
+
+<?php require dirname(__DIR__) . "/content/games/reportGame-modal.php" ?>
 
 <!-- ══════════════════════════════════════════
     FOOTER
@@ -170,7 +210,7 @@
             <h4>Explore</h4>
             <ul>
                 <li><a href="?url=games#all-games">All Games</a></li>
-                <li><a href="#">Random Challenge</a></li>
+                <li><a href="<?= htmlspecialchars($randomHref) ?>">Random Challenge</a></li>
                 <li><a href="?url=games#community-spotlight">Spotlight</a></li>
             </ul>
         </div>
@@ -179,7 +219,7 @@
             <ul>
                 <li><a href="?url=developers">Developers</a></li>
                 <li><a href="?url=games#top-played">Leaderboard</a></li>
-                <li><a href="#">Submit Your Game</a></li>
+                <li><a href="?url=profile&amp;upload=1">Submit Your Game</a></li>
             </ul>
         </div>
         <div class="footer-col">
@@ -188,30 +228,6 @@
                 <li><a href="#">Feedback</a></li>
                 <li><a href="?url=about">About Us</a></li>
             </ul>
-        </div>
-        <div class="footer-col">
-            <h4>Follow Us</h4>
-            <div class="social-links" style="margin-top:4px;flex-wrap:wrap;">
-                    <!-- Discord -->
-                    <a href="#" title="Discord">
-                        <svg viewBox="0 0 24 24"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
-                    </a>
-
-                    <!-- Facebook -->
-                    <a href="#" title="Facebook">
-                        <svg viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-                    </a>
-
-                    <!-- YouTube -->
-                    <a href="#" title="YouTube">
-                        <svg viewBox="0 0 24 24"><path d="M23.495 6.205a3.007 3.007 0 0 0-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 0 0 .527 6.205a31.247 31.247 0 0 0-.522 5.805 31.247 31.247 0 0 0 .522 5.783 3.007 3.007 0 0 0 2.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 0 0 2.088-2.088 31.247 31.247 0 0 0 .5-5.783 31.247 31.247 0 0 0-.5-5.805zM9.609 15.601V8.408l6.264 3.602z"/></svg>
-                    </a>
-                    
-                    <!-- Twitter / X -->
-                    <a href="#" title="Twitter">
-                        <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-                    </a>
-                </div>
         </div>
     </div>
     <div class="footer-bottom">
@@ -230,10 +246,13 @@
 <script src="js/auth.js"></script>
 <?php if ($currentRoute !== 'auth'): ?>
   <script src="js/script.js"></script>
+  <script src="js/nav-tools.js"></script>
   <?php if ($currentRoute === 'games'): ?>
     <script src="js/games.js"></script>
   <?php elseif ($currentRoute === 'games/player'): ?>
     <script src="js/gamepage.js"></script>
+  <?php elseif ($currentRoute === 'downloader'): ?>
+    <script src="js/downloader.js"></script>
   <?php elseif ($currentRoute === 'developers'): ?>
     <script src="js/developers.js"></script>
   <?php elseif ($currentRoute === 'about'): ?>
@@ -242,6 +261,13 @@
     <script src="js/myprofile.js"></script>
   <?php elseif ($currentRoute === 'settings'): ?>
     <script src="js/settings.js"></script>
+  <?php elseif ($currentRoute === 'admin'): ?>
+    <script src="js/admin-common.js"></script>
+    <script src="js/admin.js"></script>
+    <script src="js/admin-users.js"></script>
+  <?php elseif ($currentRoute === 'admin/game'): ?>
+    <script src="js/admin-common.js"></script>
+    <script src="js/admin-game.js"></script>
   <?php endif; ?>    
 <?php endif; ?>
 

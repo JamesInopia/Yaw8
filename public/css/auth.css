@@ -560,3 +560,44 @@
 .auth-switch-text button:hover {
     text-decoration-color: var(--cyan);
 }
+
+/* ── Forgot password: step description text ── */
+.auth-step-text {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.6;
+    text-align: center;
+    margin: 0 0 4px;
+}
+
+#forgotCodeEmailDisplay {
+    color: var(--cyan);
+}
+
+/* ── 6-digit code input ── */
+.otp-row {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.otp-box {
+    width: 46px;
+    height: 54px;
+    text-align: center;
+    font-family: 'Poppins', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--white);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    outline: none;
+    transition: border-color .2s, box-shadow .2s, background .2s;
+}
+
+.otp-box:focus {
+    border-color: var(--cyan);
+    background: rgba(0, 229, 255, 0.06);
+    box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.15);
+}

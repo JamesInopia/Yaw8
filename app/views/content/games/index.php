@@ -3,9 +3,7 @@
 ══════════════════════════════════════════ -->
 <?php
 if (!function_exists('yaw8_thumbnail_html')) {
-    // Renders a game's thumbnail: the real image if one exists,
-    // otherwise a colored placeholder with the title as text
-    // (cycles through 4 preset color classes so cards don't all look the same).
+    // Renders a game's thumbnail if it has, otherwise a colored placeholder with the title as text
     function yaw8_thumbnail_html($thumbnail, $title, $index) {
         $colorClasses = ['gt-pixel-drift', 'gt-tower-tactics', 'gt-box-jumper', 'gt-color-clash'];
 
@@ -19,11 +17,26 @@ if (!function_exists('yaw8_thumbnail_html')) {
         return '<div class="game-thumb ' . $colorClass . '"><div class="game-thumb-title">' . $titleText . '</div></div>';
     }
 }
+
+if (!function_exists('yaw8_quick_actions_html')) {
+    // Favorite + Report icon buttons
+    function yaw8_quick_actions_html() {
+        return '
+                    <div class="game-quick-actions">
+                        <button type="button" class="game-quick-btn game-favorite-btn" title="Favorite" aria-label="Favorite">
+                            <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                        </button>
+                        <button type="button" class="game-quick-btn game-report-btn" title="Report" aria-label="Report">
+                            <svg viewBox="0 0 24 24"><path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/></svg>
+                        </button>
+                    </div>';
+    }
+}
 ?>
 <!-- ─────────────
     PAGE HEADER
 ───────────── -->
-<section class="page-header"> <!--Change the image/background-->
+<section class="page-header">
 <div class="page-header-content">
     <h1>All The <span class="accent">Games</span></h1>
     <p>Featured picks, community favorites, and every single game the YA!W8 crew has shipped — all in one place. Filter by genre and find your next favorite.</p>
@@ -60,7 +73,9 @@ if (!function_exists('yaw8_thumbnail_html')) {
                     data-genre-names="<?= htmlspecialchars($topPlayedGame->getGenreNames()) ?>"
                     data-avg-rating="<?= htmlspecialchars($topPlayedGame->getAvgRating()) ?>"
                     data-dev-names="<?= htmlspecialchars($topPlayedGame->getDevNames()) ?>"
+                    data-access-type="<?= htmlspecialchars($topPlayedGame->getAccessType()) ?>"
                 >
+                    <?= yaw8_quick_actions_html() ?>
                     <?php
                         $topHasThumb = !empty($topPlayedGame->getThumbnail());
                         $topColorClasses = ['gt-pixel-drift', 'gt-tower-tactics', 'gt-box-jumper', 'gt-color-clash'];
@@ -162,6 +177,18 @@ if (!function_exists('yaw8_thumbnail_html')) {
             <?php foreach($topRatedGames as $index => $topRatedGame): ?>
                 <?php $rank = $index + 1; ?>
                 <div class="game-card"
+                    data-game-id="<?= htmlspecialchars($featuredGame->getGameId()) ?>"
+                    data-title="<?= htmlspecialchars($featuredGame->getTitle()) ?>"
+                    data-description="<?= htmlspecialchars($featuredGame->getDescription()) ?>"
+                    data-controls="<?= htmlspecialchars($featuredGame->getControls()) ?>"
+                    data-total-plays="<?= htmlspecialchars($featuredGame->getTotalPlays()) ?>"
+                    data-date-released="<?= htmlspecialchars($featuredGame->getDateReleased()) ?>"
+                    data-last-updated="<?= htmlspecialchars($featuredGame->getLastUpdated()) ?>"
+                    data-thumbnail="<?= htmlspecialchars($featuredGame->getThumbnail()) ?>"
+                    data-genre-names="<?= htmlspecialchars($featuredGame->getGenreNames()) ?>"
+                    data-avg-rating="<?= htmlspecialchars($featuredGame->getAvgRating()) ?>"
+                    data-dev-names="<?= htmlspecialchars($featuredGame->getDevNames()) ?>"
+                    data-access-type="<?= htmlspecialchars($featuredGame->getAccessType()) ?>"
                     data-game-id="<?= htmlspecialchars($topRatedGame->getGameId()) ?>"
                     data-title="<?= htmlspecialchars($topRatedGame->getTitle()) ?>"
                     data-description="<?= htmlspecialchars($topRatedGame->getDescription()) ?>"
@@ -174,6 +201,8 @@ if (!function_exists('yaw8_thumbnail_html')) {
                     data-avg-rating="<?= htmlspecialchars($topRatedGame->getAvgRating()) ?>"
                     data-dev-names="<?= htmlspecialchars($topRatedGame->getDevNames()) ?>"
                 >
+                    <?= yaw8_quick_actions_html() ?>
+                    <?= yaw8_thumbnail_html($featuredGame->getThumbnail(), $featuredGame->getTitle(), $index) ?>
                     <?php
                         $topHasThumb = !empty($topRatedGame->getThumbnail());
                         $topColorClasses = ['gt-pixel-drift', 'gt-tower-tactics', 'gt-box-jumper', 'gt-color-clash'];
@@ -337,7 +366,9 @@ if (!function_exists('yaw8_thumbnail_html')) {
                     data-genre-names="<?= htmlspecialchars($game->getGenreNames()) ?>"
                     data-avg-rating="<?= htmlspecialchars($game->getAvgRating()) ?>"
                     data-dev-names="<?= htmlspecialchars($game->getDevNames()) ?>"
+                    data-access-type="<?= htmlspecialchars($game->getAccessType()) ?>"
                 >
+                    <?= yaw8_quick_actions_html() ?>
                     <?= yaw8_thumbnail_html($game->getThumbnail(), $game->getTitle(), $index) ?>
                     <div class="game-info">
                         <div class="game-meta">
@@ -358,4 +389,4 @@ if (!function_exists('yaw8_thumbnail_html')) {
 </div>
 </section>
 
-</div><!-- end .page-wrap-single -->
+</div>

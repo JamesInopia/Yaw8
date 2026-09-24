@@ -206,8 +206,19 @@ function mapDbGame(g) {
         status: g.status,
         plays: g.totalPlays,
         dateAdded: g.dateReleased,
-        thumbnail: g.thumbnail
+        thumbnail: g.thumbnail,
+        accessType: g.accessType || 'online',
+        allowDownload: g.allowDownload == 1 || g.allowDownload === true
     };
+}
+
+// Label + CSS class for a game's status badge.
+// published -> Published, unlisted -> Unlisted, anything else -> Under Review
+function getGameStatusInfo(game) {
+    const val = String(game && game.status !== undefined ? game.status : '').toLowerCase().trim();
+    if (val === 'published' || val === '1' || val === 'true') return { label: 'Published', cls: 'published' };
+    if (val === 'unlisted') return { label: 'Unlisted', cls: 'unlisted' };
+    return { label: 'Under Review', cls: 'review' };
 }
 
 function initMyGamesPage(initialGames) {
@@ -237,7 +248,7 @@ function initMyGamesPage(initialGames) {
         const normalizedFilter = (currentFilter || 'all').toLowerCase().trim();
 
         if (['review', 'under_review', 'under-review', 'pending', 'draft'].includes(normalizedFilter)) {
-            filteredGames = games.filter(g => !isGamePublished(g));
+            filteredGames = games.filter(g => getGameStatusInfo(g).cls === 'review');
         } else if (normalizedFilter === 'published') {
             filteredGames = games.filter(g => isGamePublished(g));
         } else {
@@ -283,9 +294,9 @@ function initMyGamesPage(initialGames) {
 
         // 4. Render cards
         grid.innerHTML = sorted.map((game, index) => {
-            const isPublished = isGamePublished(game);
-            const statusLabel = isPublished ? 'Published' : 'Under Review';
-            const statusClass = isPublished ? 'published' : 'review';
+            const statusInfo = getGameStatusInfo(game);
+            const statusLabel = statusInfo.label;
+            const statusClass = statusInfo.cls;
             const ratingDisplay = game.rating ? `★ ${parseFloat(game.rating).toFixed(1)}` : 'New';
             
             const safeName = String(game.name || '').replace(/"/g, '&quot;');
@@ -539,6 +550,107 @@ function initMyGamesPage(initialGames) {
         thumbnailFileInput.value = '';
     }
 
+    // ── Availability (Playable Online / Download Only) ──
+    function wireAccessTypeToggle(prefix) {
+        const toggle = document.getElementById(prefix + 'AccessTypeToggle');
+        const hiddenInput = document.getElementById(prefix + 'AccessType');
+        const allowDownloadGroup = document.getElementById(prefix + 'AllowDownloadGroup');
+        const downloadOnlyNote = document.getElementById(prefix + 'DownloadOnlyNote');
+        if (!toggle || !hiddenInput) return null;
+
+        function setAccessType(value) {
+            const normalized = value === 'download_only' ? 'download_only' : 'online';
+            hiddenInput.value = normalized;
+            toggle.querySelectorAll('.access-type-btn').forEach(function (btn) {
+                btn.classList.toggle('active', btn.getAttribute('data-value') === normalized);
+            });
+            const isDownloadOnly = normalized === 'download_only';
+            if (allowDownloadGroup) allowDownloadGroup.style.display = isDownloadOnly ? 'none' : 'block';
+            if (downloadOnlyNote) downloadOnlyNote.style.display = isDownloadOnly ? 'block' : 'none';
+        }
+
+        toggle.querySelectorAll('.access-type-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                setAccessType(btn.getAttribute('data-value'));
+            });
+        });
+
+        return setAccessType;
+    }
+
+    const setSubmitAccessType = wireAccessTypeToggle('submit');
+
+    // ── Feature Graphics (multiple images/videos) ──
+    const featureGraphicsFiles = {};
+
+    function wireFeatureGraphics(prefix) {
+        const dropzone = document.getElementById(prefix + 'FeatureGraphicsDropzone');
+        const input = document.getElementById(prefix + 'FeatureGraphicsInput');
+        const previewList = document.getElementById(prefix + 'FeatureGraphicsPreviewList');
+        if (!dropzone || !input || !previewList) return null;
+
+        featureGraphicsFiles[prefix] = [];
+
+        function renderPreviews() {
+            previewList.innerHTML = '';
+            featureGraphicsFiles[prefix].forEach(function (file, idx) {
+                const url = URL.createObjectURL(file);
+                const isVideo = file.type.indexOf('video/') === 0;
+                const item = document.createElement('div');
+                item.className = 'feature-graphics-preview-item';
+                item.innerHTML = (isVideo
+                    ? '<video src="' + url + '" muted></video><span class="fg-video-badge">Video</span>'
+                    : '<img src="' + url + '" alt="">') +
+                    '<button type="button" class="fg-remove-btn" data-idx="' + idx + '">' +
+                    '<svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>' +
+                    '</button>';
+                previewList.appendChild(item);
+            });
+        }
+
+        function addFiles(fileList) {
+            Array.from(fileList || []).forEach(function (file) {
+                const isMedia = file.type.indexOf('image/') === 0 || file.type.indexOf('video/') === 0;
+                if (isMedia) featureGraphicsFiles[prefix].push(file);
+            });
+            renderPreviews();
+        }
+
+        dropzone.addEventListener('click', function () { input.click(); });
+
+        dropzone.addEventListener('dragover', function (e) {
+            e.preventDefault();
+            dropzone.classList.add('dragover');
+        });
+        dropzone.addEventListener('dragleave', function () {
+            dropzone.classList.remove('dragover');
+        });
+        dropzone.addEventListener('drop', function (e) {
+            e.preventDefault();
+            dropzone.classList.remove('dragover');
+            addFiles(e.dataTransfer.files);
+        });
+
+        input.addEventListener('change', function () {
+            addFiles(input.files);
+            input.value = '';
+        });
+
+        previewList.addEventListener('click', function (e) {
+            const btn = e.target.closest('.fg-remove-btn');
+            if (!btn) return;
+            featureGraphicsFiles[prefix].splice(Number(btn.getAttribute('data-idx')), 1);
+            renderPreviews();
+        });
+
+        return function resetFeatureGraphics() {
+            featureGraphicsFiles[prefix] = [];
+            renderPreviews();
+        };
+    }
+
+    const resetSubmitFeatureGraphics = wireFeatureGraphics('submit');
+
     // ── Add Collaborators (left column) ──
     const collabInput = document.getElementById('collabInput');
     const collabAddBtn = document.getElementById('collabAddBtn');
@@ -596,6 +708,8 @@ function initMyGamesPage(initialGames) {
         resetGenreChips();
         resetThumbnailPreview();
         resetCollaborators();
+        if (setSubmitAccessType) setSubmitAccessType('online');
+        if (resetSubmitFeatureGraphics) resetSubmitFeatureGraphics();
 
         document.getElementById('gameDetailsTitle').textContent = 'Submit Your Game';
         document.getElementById('submitGameId').value = '';
@@ -614,6 +728,15 @@ function initMyGamesPage(initialGames) {
 
     document.getElementById('addGameBtn')?.addEventListener('click', () => openUploadModal());
     document.getElementById('emptyAddGameBtn')?.addEventListener('click', () => openUploadModal());
+
+    // "Submit Game" / "Submit Your Game" elsewhere on the site link here with
+    // ?upload=1 — open the upload flow straight away (once the loading screen is gone).
+    if (new URLSearchParams(window.location.search).has('upload')) {
+        history.replaceState(null, '', '?url=profile');
+        const openFromLink = () => setTimeout(openUploadModal, 700);
+        if (document.readyState === 'complete') openFromLink();
+        else window.addEventListener('load', openFromLink);
+    }
 
     if (submitModalClose) submitModalClose.addEventListener('click', closeSubmitModal);
     if (submitCancelBtn) submitCancelBtn.addEventListener('click', closeSubmitModal);
@@ -649,6 +772,12 @@ function initMyGamesPage(initialGames) {
 
         const activeCollaborators = projectType === 'collab' ? collaborators : [];
         formData.append('collaborators', JSON.stringify(activeCollaborators));
+
+        formData.append('accessType', document.getElementById('submitAccessType').value);
+        formData.append('allowDownload', document.getElementById('submitAllowDownload').checked ? '1' : '0');
+        (featureGraphicsFiles.submit || []).forEach(function (file) {
+            formData.append('feature_graphics[]', file);
+        });
 
         if (gameZipFile) formData.append('game_file', gameZipFile);
         if (thumbnailFile) formData.append('thumbnail', thumbnailFile);
@@ -769,6 +898,9 @@ function initMyGamesPage(initialGames) {
         editThumbnailFileInput.value = '';
     }
 
+    const setEditAccessType = wireAccessTypeToggle('edit');
+    const resetEditFeatureGraphics = wireFeatureGraphics('edit');
+
     // ── Add Collaborators (left column) ──
     const editCollabInput = document.getElementById('editCollabInput');
     const editCollabAddBtn = document.getElementById('editCollabAddBtn');
@@ -823,6 +955,10 @@ function initMyGamesPage(initialGames) {
         resetEditGenreChips();
         resetEditThumbnailPreview();
         resetEditCollaborators();
+        if (resetEditFeatureGraphics) resetEditFeatureGraphics();
+        if (setEditAccessType) setEditAccessType(game.accessType || 'online');
+        const editAllowDownloadEl = document.getElementById('editAllowDownload');
+        if (editAllowDownloadEl) editAllowDownloadEl.checked = !!game.allowDownload;
 
         document.getElementById('editGameId').value = game.id;
         document.getElementById('editGameTitle').value = game.name || '';
@@ -898,6 +1034,12 @@ function initMyGamesPage(initialGames) {
         const activeCollaborators = projectType === 'collab' ? editCollaborators : [];
         formData.append('collaborators', JSON.stringify(activeCollaborators));
 
+        formData.append('accessType', document.getElementById('editAccessType').value);
+        formData.append('allowDownload', document.getElementById('editAllowDownload').checked ? '1' : '0');
+        (featureGraphicsFiles.edit || []).forEach(function (file) {
+            formData.append('feature_graphics[]', file);
+        });
+
         if (gameZipFile) formData.append('game_file', gameZipFile);
         if (thumbnailFile) formData.append('thumbnail', thumbnailFile);
 
@@ -947,7 +1089,7 @@ function initMyGamesPage(initialGames) {
         const game = games.find(g => g.id === gameId);
         if (!game) return;
 
-        const statusLabel = game.status === 'published' ? 'Published' : 'Under Review';
+        const statusLabel = getGameStatusInfo(game).label;
         const ratingDisplay = game.rating ? '★ ' + game.rating : 'Not yet rated';
 
         manageInner.innerHTML = `

@@ -10,6 +10,28 @@ class Controller {
         }
     }
 
+    # Page guard for the admin area. Guests are sent to the login page;
+    protected function requireAdminPage(): void {
+        $this->requireAuth();
+
+        if (!Auth::isAdmin()) {
+            header('Location: ?url=home');
+            exit;
+        }
+    }
+
+    # API guard for the admin area
+    protected function requireAdminApi(): int {
+        $payload = AuthMiddleware::requireAuth();
+        $userId = $payload['sub'] ?? null;
+
+        if (!$userId || !Auth::isAdminUser($userId)) {
+            $this->json(['success' => false, 'message' => 'Admin access required.'], 403);
+        }
+
+        return (int) $userId;
+    }
+
     protected function json($data, int $status = 200) {
         http_response_code($status);
         header("Content-Type: application/json");
@@ -17,8 +39,7 @@ class Controller {
         exit;
     }
 
-    # Reads a JSON request body into an array, falling back to $_POST for
-    # regular form submissions (shared by any controller that accepts POST).
+    # Regular form submissions
     protected function jsonInput(): array {
         $raw = file_get_contents('php://input');
         $input = json_decode($raw, true);
@@ -30,10 +51,7 @@ class Controller {
         return $_POST;
     }
 
-    # Returns the logged-in user's id from the PHP session, or null for a
-    # guest. Unlike AuthMiddleware::requireAuth() (which reads the JWT
-    # Bearer header — only present on fetch() calls) this reads the
-    # session cookie, which IS present on a normal page navigation.
+    # Returns the logged-in user's id from the PHP session
     protected function currentUserIdOrNull() {
         if (session_status() === PHP_SESSION_NONE) {
             session_start();

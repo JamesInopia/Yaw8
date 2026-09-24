@@ -27,7 +27,7 @@
 .gp-cabinet {
     position: relative;
     max-width: 1300px;
-    width: 78%;
+    width: 100%;
     margin: 0 auto;
     border-radius: var(--radius);
     padding: 3px;
@@ -42,14 +42,81 @@
     pointer-events: none;
 }
 
+/* ── The screen (the box the game must never escape) ──
+   Its height is driven by JS (--gp-screen-h) from the game's measured
+   content height, capped so the cabinet never outgrows the viewport. */
+
 .gp-screen {
+    --gp-native-w: 1280px;   /* logical width the iframe renders at */
+    --gp-native-h: 720px;    /* measured content height, updated by JS  */
+    --gp-scale: 1;
+    --gp-vw: 100%;           /* scaled viewport size, set by JS */
+    --gp-vh: 560px;
+    --gp-screen-h: 560px;
+
     position: relative;
     width: 100%;
-    aspect-ratio: 16/9;
-    min-height: 560px;
+    height: var(--gp-screen-h);
+    margin: 0 auto;
     background: #000;
     border-radius: 10px;
     overflow: hidden;
+}
+
+/* ── Scroll layer ──
+   Sits under the HUD / start overlay so those stay pinned to the screen
+   while the game itself scrolls. */
+
+.gp-scroll {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    overflow: hidden;
+}
+
+/* Windowed mode, content taller than the box → let it scroll rather than
+   shrinking the game into unreadability. */
+.gp-scroll.gp-scrollable {
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+}
+
+.gp-scroll.gp-scrollable::-webkit-scrollbar {
+    width: 10px;
+}
+
+.gp-scroll.gp-scrollable::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,.18);
+    border-radius: 6px;
+}
+
+/* ── Scaled viewport ──
+   Occupies exactly the post-scale footprint of the stage, so scrolling
+   extents are correct and `margin:auto` centres it without clipping. */
+
+.gp-viewport {
+    position: relative;
+    flex: none;
+    margin: auto;
+    width: var(--gp-vw);
+    height: var(--gp-vh);
+}
+
+/* ── Fixed-size stage ──
+   The iframe always renders at the game's native width and its own real
+   content height, so the game never reflows and nothing is ever cut off.
+   Only this wrapper is scaled. */
+
+.gp-stage {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: var(--gp-native-w);
+    height: var(--gp-native-h);
+    transform-origin: top left;
+    transform: scale(var(--gp-scale));
+    will-change: transform;
 }
 
 .gp-iframe {
@@ -57,6 +124,22 @@
     height: 100%;
     border: none;
     display: block;
+    background: #fff;
+    overflow: hidden;
+}
+
+/* ── Fullscreen ──
+   Contain-fit: scale is min(w, h) so the ENTIRE page is visible, letterboxed
+   rather than cropped. Never scrolls. */
+
+.gp-screen:fullscreen,
+.gp-screen:-webkit-full-screen {
+    width: 100vw;
+    height: 100vh;
+    max-width: none;
+    max-height: none;
+    border-radius: 0;
+    overflow: hidden;
     background: #000;
 }
 
@@ -189,6 +272,68 @@
     width: 15px;
     height: 15px;
     fill: currentColor;
+}
+
+/* ── Volume control (icon + slider, replaces the old plain mute button) ── */
+
+.gp-volume-control {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(1,1,8,.7);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 0 10px 0 0;
+    backdrop-filter: blur(6px);
+}
+
+.gp-volume-control .gp-hud-btn {
+    background: none;
+    border: none;
+    backdrop-filter: none;
+}
+
+.gp-hud-btn.active {
+    color: var(--cyan);
+    border-color: var(--cyan);
+}
+
+.gp-volume-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 64px;
+    height: 3px;
+    border-radius: 2px;
+    background: rgba(255,255,255,.25);
+    cursor: pointer;
+    outline: none;
+}
+
+.gp-volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: var(--cyan);
+    box-shadow: 0 0 6px rgba(0,229,255,.7);
+    cursor: pointer;
+}
+
+.gp-volume-slider::-moz-range-thumb {
+    width: 11px;
+    height: 11px;
+    border: none;
+    border-radius: 50%;
+    background: var(--cyan);
+    box-shadow: 0 0 6px rgba(0,229,255,.7);
+    cursor: pointer;
+}
+
+.gp-volume-slider::-moz-range-track {
+    height: 3px;
+    border-radius: 2px;
+    background: rgba(255,255,255,.25);
 }
 
 /* ── Toolbar: title / meta / actions ── */

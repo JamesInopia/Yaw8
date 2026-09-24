@@ -1,4 +1,3 @@
-<!-- AFTER (fixed) -->
 <div id="devModal" class="modal">
     <div class="modal-overlay" id="devModalOverlay"></div>
     <div class="modal-content">
