@@ -60,7 +60,6 @@ const aboutDevOverlay    = document.getElementById('aboutDevModalOverlay');
 
 // ═══════════════════════════════════════════
 // MODAL OPEN / CLOSE FUNCTIONS
-// Must be defined before the click listener below
 // ═══════════════════════════════════════════
 function openAboutDevModal(devId) {
     const dev = aboutDevDatabase[devId];
@@ -102,9 +101,6 @@ function closeAboutDevModal() {
 
 // ═══════════════════════════════════════════
 // TEAM CARD CLICKS
-// team-card is now a plain <div data-dev-id="..."> with no href, so there's
-// no default browser navigation to prevent and nothing else on the page to
-// race against — a simple delegated bubble-phase listener is all we need.
 // ═══════════════════════════════════════════
 document.addEventListener('click', function(e) {
     const card = e.target.closest('.team-card[data-dev-id]');
@@ -123,7 +119,7 @@ document.addEventListener('keydown', function(e) {
 });
 
 // ═══════════════════════════════════════════
-// SCROLL REVEAL — last so it doesn't block clicks
+// SCROLL REVEAL
 // ═══════════════════════════════════════════
 (function initScrollReveal() {
     const targets = document.querySelectorAll('.team-card, .comment-card');
