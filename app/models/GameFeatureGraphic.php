@@ -27,7 +27,16 @@
         public function getFeatureGraphicId() { return $this->featureGraphicId; }
         public function getGameId() { return $this->gameId; }
         public function getMediaType() { return $this->mediaType; }
-        public function getFilePath() { return $this->filePath; }
+
+        # Every other stored path in this app (thumbnail, gameFiles) is kept
+        # relative — no leading slash — so it resolves correctly against
+        # whichever URL the page happens to be served from (see
+        # ProfileController's thumbnail upload handling). Feature graphics
+        # were briefly stored WITH a leading slash, which turns them into an
+        # absolute-from-domain-root path and breaks as soon as the app isn't
+        # hosted at the domain root. Stripping it here fixes both old rows
+        # already saved with the slash and any new ones, without a migration.
+        public function getFilePath() { return ltrim((string) $this->filePath, '/'); }
         public function getSortOrder() { return $this->sortOrder; }
         public function isVideo(): bool { return $this->mediaType === self::TYPE_VIDEO; }
 
@@ -37,7 +46,7 @@
                 "featureGraphicId" => $this->featureGraphicId,
                 "gameId" => $this->gameId,
                 "mediaType" => $this->mediaType,
-                "filePath" => $this->filePath,
+                "filePath" => $this->getFilePath(),
                 "sortOrder" => $this->sortOrder,
             ];
         }

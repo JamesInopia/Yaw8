@@ -16,7 +16,7 @@
                 <input type="hidden" id="editGameId" value="" />
                 
                 <!-- MAIN WRAPPER -->
-                <div style="display: flex; gap: 40px; flex: 1; overflow-y: auto; padding-right: 15px; scroll-behavior: smooth;">
+                <div style="display: flex; gap: 40px; flex: 1; overflow-y: auto; padding-right: 15px; min-height: 0; scroll-behavior: smooth;">
                     
                     <!-- LEFT COLUMN -->
                     <div style="flex: 2; display: flex; flex-direction: column; gap: 18px;">
@@ -112,7 +112,7 @@
 
                         <div class="form-group">
                             <label class="form-label">Feature Graphics</label>
-                            <span class="form-hint" style="margin-top: 0; margin-bottom: 8px;">Screenshots or short clips shown in the game's carousel. Videos are shown first. Uploading new ones here replaces the current set.</span>
+                            <span class="form-hint" style="margin-top: 0; margin-bottom: 8px;">Screenshots or short clips shown in the game's carousel. Videos are shown first. Tiles marked "Current" are already saved — remove any you don't want, and add new ones below.</span>
 
                             <div class="feature-graphics-dropzone" id="editFeatureGraphicsDropzone">
                                 <svg viewBox="0 0 24 24"><line x1="12" y1="4" x2="12" y2="20"/><line x1="4" y1="12" x2="20" y2="12"/></svg>
@@ -125,20 +125,16 @@
                         <!-- GENRES -->
                         <div class="genre-box">
                             <h4 style="color: #F5F7FA; font-size: 14px; margin-bottom: 12px;">Genres</h4>
-                            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-                                <!-- Changed from <input type="text"> to <select> -->
-                                <select class="form-input form-select" id="editGenreInput">
-                                    <option value="" disabled selected>Select a genre...</option>
-                                    <!-- Example PHP loop to populate from DB -->
-                                    <?php foreach ($availableGenres as $dbGenre): ?>
-                                        <option value="<?= htmlspecialchars($dbGenre['name']) ?>"><?= htmlspecialchars($dbGenre['name']) ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                                <button type="button" class="genre-add-btn" id="editGenreAddBtn" style="padding: 0 16px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; cursor: pointer; color: white;">
-                                    <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: currentColor;"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-                                </button>
+                            <span class="form-hint" style="margin-top: 0; margin-bottom: 8px;">Tick every genre that fits.</span>
+                            <!-- Tickboxes: real checkboxes styled as toggleable chips -->
+                            <div class="genre-chip-group" id="editGenreChipGroup">
+                                <?php foreach ($availableGenres as $dbGenre): ?>
+                                    <label class="genre-chip genre-chip-tickbox">
+                                        <input type="checkbox" name="genres[]" value="<?= htmlspecialchars($dbGenre['name']) ?>">
+                                        <?= htmlspecialchars($dbGenre['name']) ?>
+                                    </label>
+                                <?php endforeach; ?>
                             </div>
-                            <div class="genre-chip-list" id="editGenreChipList" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
                         </div>
                     </div>
                 </div>

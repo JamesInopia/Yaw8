@@ -53,6 +53,30 @@
 
   let contentH = START_H;
 
+  // ── Auto-centering ("crop to where the game actually draws") ───────────
+  // The iframe is always at least NATIVE_W x START_H, but plenty of games
+  // draw a smaller, fixed-size canvas in the top-left corner of their page
+  // (Cut the Rope style). `crop` is the rectangle, in iframe pixels, that
+  // the game really occupies; the player shows just that rectangle, centred,
+  // instead of the whole (mostly empty) page. null = show the whole page.
+  let crop = null;
+  let drawnBounds = null; // union of everything seen drawn so far (grows only)
+
+  const CROP_MIN_W = 200; // ignore "content" smaller than this (spinners, "loading...")
+  const CROP_MIN_H = 150;
+  const CROP_SLACK = 8;   // already within this many px of full size = don't bother
+  const CROP_MAX_SCAN = 1000; // DOM-heavy pages: skip rather than slow the game down
+  const BACKDROP_FRACTION = 0.85;
+  const NON_VISUAL_TAGS = new Set([
+    "SCRIPT", "STYLE", "LINK", "META", "NOSCRIPT", "TEMPLATE", "TITLE",
+    "BR", "HEAD", "BASE", "SOURCE", "TRACK", "PARAM", "OPTION", "DATALIST",
+  ]);
+  // Things that draw pixels by themselves, however big they are
+  const SURFACE_TAGS = new Set([
+    "CANVAS", "IMG", "VIDEO", "SVG", "IFRAME", "EMBED", "OBJECT", "PICTURE",
+    "INPUT", "BUTTON", "SELECT", "TEXTAREA",
+  ]);
+
   function isFullscreen() {
     return Boolean(document.fullscreenElement || document.webkitFullscreenElement);
   }
@@ -73,11 +97,15 @@
     const full = isFullscreen();
     let scale, screenH;
 
+    // The part of the iframe that gets shown: just the area the game draws
+    // in (see crop above), or the whole page when there's nothing to crop.
+    const view = crop || { x: 0, y: 0, w: NATIVE_W, h: contentH };
+
     if (full) {
       const availW = window.innerWidth;
       const availH = window.innerHeight;
 
-      scale = Math.min(availW / NATIVE_W, availH / contentH);
+      scale = Math.min(availW / view.w, availH / view.h);
       screenH = availH;
       scrollEl.classList.remove("gp-scrollable");
     } else {
@@ -85,9 +113,9 @@
       const maxH = Math.max(MIN_SCREEN_H, window.innerHeight - CHROME_H);
 
       // Fit width, but don't blow a small game up past its native size.
-      scale = Math.min(1, availW / NATIVE_W);
+      scale = Math.min(1, availW / view.w);
 
-      const scaledH = contentH * scale;
+      const scaledH = view.h * scale;
       screenH = Math.min(scaledH, maxH);
 
       // Taller than the box? Then scroll instead of shrinking further.
@@ -97,8 +125,11 @@
     screenEl.style.setProperty("--gp-scale", String(scale));
     screenEl.style.setProperty("--gp-native-w", NATIVE_W + "px");
     screenEl.style.setProperty("--gp-native-h", contentH + "px");
-    screenEl.style.setProperty("--gp-vw", NATIVE_W * scale + "px");
-    screenEl.style.setProperty("--gp-vh", contentH * scale + "px");
+    screenEl.style.setProperty("--gp-vw", view.w * scale + "px");
+    screenEl.style.setProperty("--gp-vh", view.h * scale + "px");
+    // Slide the stage so the cropped area lines up with the viewport's corner
+    screenEl.style.setProperty("--gp-off-x", -view.x * scale + "px");
+    screenEl.style.setProperty("--gp-off-y", -view.y * scale + "px");
     screenEl.style.setProperty("--gp-screen-h", Math.round(screenH) + "px");
   }
 
@@ -122,14 +153,135 @@
 
       // Clamp so one badly-built game can't produce a 40,000px stage.
       const next = Math.min(measured, 6000);
+      let changed = false;
 
       if (Math.abs(next - contentH) > 4) {
         contentH = next;
-        fitStage();
+        changed = true;
       }
+
+      if (updateCrop(doc)) changed = true;
+
+      if (changed) fitStage();
     } catch (err) {
       /* cross-origin game — keep the fallback height */
     }
+  }
+
+  // ── Find the rectangle the game actually draws in ───────────────────────
+  // Walks the game's DOM and unions the boxes of everything that paints
+  // pixels: canvases/images/video, elements with a background or border, and
+  // text. Deliberately errs on the side of showing MORE: anything unusual
+  // (huge DOM, cross-origin, a full-screen HUD) simply means no cropping,
+  // which is exactly how the player behaved before.
+  function measureDrawnBounds(doc) {
+    const win = doc.defaultView;
+    if (!win || !doc.body) return null;
+
+    const all = doc.body.getElementsByTagName("*");
+    if (all.length > CROP_MAX_SCAN) return null;
+
+    const docW = NATIVE_W;
+    const docH = Math.max(win.innerHeight || 0, contentH);
+    let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+
+    // Adds a rect (viewport coords) to the union, clipped to the page area
+    function add(r) {
+      const l = Math.max(0, r.left), t = Math.max(0, r.top);
+      const rr = Math.min(docW, r.right), bb = Math.min(docH, r.bottom);
+      if (rr - l < 1 || bb - t < 1) return; // empty, or entirely off-screen
+      if (l < x1) x1 = l;
+      if (t < y1) y1 = t;
+      if (rr > x2) x2 = rr;
+      if (bb > y2) y2 = bb;
+    }
+
+    const range = doc.createRange();
+
+    for (let i = 0; i < all.length; i++) {
+      const el = all[i];
+      const tag = el.tagName.toUpperCase();
+      if (NON_VISUAL_TAGS.has(tag)) continue;
+      if (el.ownerSVGElement) continue; // parts inside an <svg>: the <svg> covers them
+
+      const cs = win.getComputedStyle(el);
+      if (cs.display === "none" || cs.visibility === "hidden") continue;
+      if (parseFloat(cs.opacity) === 0) continue;
+
+      const r = el.getBoundingClientRect();
+
+      // Text: use the text's own extent, not its (often full-width) container
+      for (let n = el.firstChild; n; n = n.nextSibling) {
+        if (n.nodeType === 3 && n.nodeValue.trim() !== "") {
+          range.selectNodeContents(n);
+          add(range.getBoundingClientRect());
+        }
+      }
+
+      if (r.width < 1 || r.height < 1) continue;
+
+      if (SURFACE_TAGS.has(tag)) {
+        add(r);
+        continue;
+      }
+
+      // A plain box only counts if it paints something (background/border)...
+      const bg = cs.backgroundColor;
+      const paintsBox =
+        (bg && bg !== "transparent" && bg !== "rgba(0, 0, 0, 0)") ||
+        cs.backgroundImage !== "none" ||
+        ["Top", "Right", "Bottom", "Left"].some(function (side) {
+          return cs["border" + side + "Style"] !== "none" && parseFloat(cs["border" + side + "Width"]) > 0;
+        });
+      if (!paintsBox) continue;
+
+      // ...and a box covering (nearly) the whole page is a backdrop / dimmer /
+      // page background, not "the game". Its children still count on their own.
+      if (r.width >= docW * BACKDROP_FRACTION && r.height >= docH * BACKDROP_FRACTION) continue;
+
+      add(r);
+    }
+
+    return x2 > x1 && y2 > y1 ? { x1: x1, y1: y1, x2: x2, y2: y2 } : null;
+  }
+
+  // Recomputes `crop`. Returns true if it changed.
+  function updateCrop(doc) {
+    const seen = measureDrawnBounds(doc);
+
+    // Grow-only: once something has been seen drawn, its area stays visible.
+    // Keeps the player from jumping around when a game shows and hides menus,
+    // and guarantees a late-appearing overlay is never clipped away.
+    if (seen) {
+      drawnBounds = drawnBounds
+        ? {
+            x1: Math.min(drawnBounds.x1, seen.x1),
+            y1: Math.min(drawnBounds.y1, seen.y1),
+            x2: Math.max(drawnBounds.x2, seen.x2),
+            y2: Math.max(drawnBounds.y2, seen.y2),
+          }
+        : seen;
+    }
+
+    let next = null;
+    if (drawnBounds) {
+      const x = Math.max(0, Math.floor(drawnBounds.x1));
+      const y = Math.max(0, Math.floor(drawnBounds.y1));
+      const w = Math.min(NATIVE_W, Math.ceil(drawnBounds.x2)) - x;
+      const h = Math.min(contentH, Math.ceil(drawnBounds.y2)) - y;
+
+      const bigEnough = w >= CROP_MIN_W && h >= CROP_MIN_H;
+      const fillsPage = w >= NATIVE_W - CROP_SLACK && h >= contentH - CROP_SLACK;
+      if (bigEnough && !fillsPage) next = { x: x, y: y, w: w, h: h };
+    }
+
+    const same =
+      (!crop && !next) ||
+      (crop && next && crop.x === next.x && crop.y === next.y && crop.w === next.w && crop.h === next.h);
+    if (same) return false;
+
+    crop = next;
+    return true;
   }
 
   function remeasureSoon() {
@@ -158,6 +310,10 @@
   function loadGame() {
     if (!playableUrl) return;
 
+    // Fresh page (start or restart): forget what the previous run drew
+    crop = null;
+    drawnBounds = null;
+
     frame.src = playableUrl;
     frame.addEventListener(
       "load",
@@ -175,6 +331,25 @@
           const doc = frame.contentDocument;
           if (doc && doc.body && typeof ResizeObserver !== "undefined") {
             new ResizeObserver(measureContent).observe(doc.body);
+          }
+
+          // Menus, overlays and canvases that appear or resize without the
+          // page height changing. Throttled so animated pages stay cheap.
+          if (doc && doc.body && typeof MutationObserver !== "undefined") {
+            let queued = null;
+            new MutationObserver(function () {
+              if (queued) return;
+              queued = setTimeout(function () {
+                queued = null;
+                measureContent();
+              }, 250);
+            }).observe(doc.body, {
+              subtree: true,
+              childList: true,
+              characterData: true,
+              attributes: true,
+              attributeFilter: ["class", "style", "hidden", "width", "height"],
+            });
           }
         } catch (err) {
           /* cross-origin — nothing to observe */

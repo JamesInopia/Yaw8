@@ -183,6 +183,9 @@
         status: g.status,
         plays: g.totalPlays,
         dateAdded: g.dateReleased,
-        thumbnail: g.thumbnail 
+        thumbnail: g.thumbnail,
+        accessType: g.accessType || 'online',
+        allowDownload: g.allowDownload == 1 || g.allowDownload === true,
+        featureGraphics: Array.isArray(g.featureGraphics) ? g.featureGraphics : []
     }));
 </script>

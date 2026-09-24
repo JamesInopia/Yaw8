@@ -101,6 +101,7 @@
     margin: auto;
     width: var(--gp-vw);
     height: var(--gp-vh);
+    overflow: hidden;   /* shows only the part of the stage the game actually draws in */
 }
 
 /* ── Fixed-size stage ──
@@ -110,8 +111,8 @@
 
 .gp-stage {
     position: absolute;
-    top: 0;
-    left: 0;
+    top: var(--gp-off-y, 0px);   /* set by gamepage.js: slides the game's drawn area  */
+    left: var(--gp-off-x, 0px);  /* to the viewport's corner (0 = show the whole page) */
     width: var(--gp-native-w);
     height: var(--gp-native-h);
     transform-origin: top left;

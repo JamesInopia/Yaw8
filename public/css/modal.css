@@ -1105,6 +1105,48 @@
         color: #000;
     }
 
+    /* Genre tickboxes (Submit/Edit Game modals) — real checkboxes,
+       styled as toggleable pill chips so they read as "tickboxes"
+       rather than a plain form list. */
+    .genre-chip-group {
+        max-height: 160px;
+        overflow-y: auto;
+        padding: 2px;
+    }
+
+    .genre-chip.genre-chip-tickbox {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        user-select: none;
+    }
+
+    .genre-chip.genre-chip-tickbox input[type="checkbox"] {
+        /* Visually hidden but still a real, focusable, screen-reader
+           friendly checkbox — clicking/keyboard-toggling it is what
+           actually drives selection; the label just looks like a chip. */
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+
+    .genre-chip.genre-chip-tickbox:has(input:checked) {
+        background: #00E5FF;
+        border-color: #00E5FF;
+        color: #000;
+    }
+
+    .genre-chip.genre-chip-tickbox:has(input:focus-visible) {
+        outline: 2px solid #00E5FF;
+        outline-offset: 2px;
+    }
+
     /* ═══════════════════════════════
         SUBMIT/EDIT GAME — Availability + Feature Graphics
     ═══════════════════════════════ */
@@ -1419,19 +1461,40 @@
         background-color: rgba(0, 0, 0, 0.6);
     }
     
-    .thumb-frame-box.has-image #thumbStateEmpty {
+    .thumb-frame-box.has-image #thumbStateEmpty,
+    .thumb-frame-box.has-image #editThumbStateEmpty {
         display: none !important;
     }
     
-    .thumb-frame-box.has-image #thumbRemoveBtn {
+    .thumb-frame-box.has-image #thumbRemoveBtn,
+    .thumb-frame-box.has-image #editThumbRemoveBtn {
         display: flex !important;
     }
 
-    .thumb-frame-box.has-image:hover #thumbStateFilled {
+    .thumb-frame-box.has-image:hover #thumbStateFilled,
+    .thumb-frame-box.has-image:hover #editThumbStateFilled {
         display: flex !important;
     }
     
-    #thumbRemoveBtn:hover {
+    #thumbRemoveBtn:hover,
+    #editThumbRemoveBtn:hover {
         background-color: #FF4FD8 !important;
         border-color: #FF4FD8 !important;
+    }
+
+    /* Marks a feature-graphics preview tile as an already-saved item
+       (shown when opening Edit on a game that already has graphics),
+       as opposed to a newly-picked file waiting to be uploaded. */
+    .feature-graphics-preview-item .fg-existing-badge {
+        position: absolute;
+        bottom: 4px;
+        left: 4px;
+        background: rgba(0, 0, 0, .65);
+        color: #fff;
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+        padding: 2px 6px;
+        border-radius: 4px;
     }

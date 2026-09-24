@@ -580,8 +580,24 @@
 
             $stmt = $pdo->prepare($sql);
             $stmt->execute([$userId]);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            // Attach each game's feature graphics so the "My Games" edit
+            // modal can show what's already saved instead of looking empty.
+            if (!empty($rows)) {
+                $featureGraphicModel = new GameFeatureGraphic();
+                foreach ($rows as &$row) {
+                    $row['featureGraphics'] = array_map(function ($fg) {
+                        return [
+                            'mediaType' => $fg->getMediaType(),
+                            'filePath' => $fg->getFilePath(),
+                        ];
+                    }, $featureGraphicModel->getByGame($row['gameId']));
+                }
+                unset($row);
+            }
+
+            return $rows;
         }
 
         # Function that deletes game from database

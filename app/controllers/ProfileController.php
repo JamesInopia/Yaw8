@@ -227,9 +227,29 @@ class ProfileController extends Controller {
             // Status is not editable by owners — only admins change it.
             $success = $gameModel->editGame($game_id, $title, $description, $controls, $genreNames, $thumbnailPath, $gameFilePath, $accessType, $allowDownload);
 
-            // Feature graphics: only replace the saved set if new files were
-            // actually attached this time — no upload means "leave as is".
-            if ($success && !empty($_FILES['feature_graphics'])) {
+            // Feature graphics: the edit modal always sends back the list of
+            // previously-saved graphics the user chose to keep (they may have
+            // removed some), plus any newly-picked files. We only touch the
+            // saved set at all if the request actually carries that field —
+            // an older/other caller that never mentions feature graphics
+            // leaves them untouched.
+            if ($success && isset($_POST['existing_feature_graphics'])) {
+                $keepItems = [];
+                $decoded = json_decode($_POST['existing_feature_graphics'], true);
+                if (is_array($decoded)) {
+                    foreach ($decoded as $item) {
+                        if (!empty($item['filePath']) && !empty($item['mediaType'])) {
+                            $keepItems[] = [
+                                'mediaType' => $item['mediaType'],
+                                'filePath' => ltrim($item['filePath'], '/'),
+                            ];
+                        }
+                    }
+                }
+                $this->saveFeatureGraphics($game_id, $_FILES['feature_graphics'] ?? [], $keepItems);
+            } elseif ($success && !empty($_FILES['feature_graphics'])) {
+                // Backward-compatible path for any caller that only ever
+                // uploads new files without reporting what to keep.
                 $this->saveFeatureGraphics($game_id, $_FILES['feature_graphics']);
             }
 
@@ -285,18 +305,24 @@ class ProfileController extends Controller {
         exit;
     }
 
-    // Moves every uploaded feature-graphic file into this game's own folder
-    private function saveFeatureGraphics($gameId, array $files): void {
+    // Moves every newly-uploaded feature-graphic file into this game's own
+    // folder, then saves it together with $keepItems (previously-saved
+    // graphics the caller wants to retain) as the game's full, new set.
+    // Called with an empty $files + empty $keepItems, this clears every
+    // feature graphic on the game — that's a deliberate, valid outcome
+    // (the user removed all of them in the edit modal), not a no-op.
+    private function saveFeatureGraphics($gameId, array $files, array $keepItems = []): void {
         $videoExtensions = ['mp4', 'webm', 'mov', 'ogg'];
         $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
 
         $targetDir = 'uploads/feature-graphics/' . $gameId;
-        if (!is_dir($targetDir)) {
+
+        $items = $keepItems;
+        $fileCount = count((array) ($files['name'] ?? []));
+
+        if ($fileCount > 0 && !is_dir($targetDir)) {
             mkdir($targetDir, 0755, true);
         }
-
-        $items = [];
-        $fileCount = count((array) $files['name']);
 
         for ($i = 0; $i < $fileCount; $i++) {
             if (($files['error'][$i] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
@@ -316,19 +342,20 @@ class ProfileController extends Controller {
             }
 
             $storedName = uniqid('fg_', true) . '.' . $extension;
+            // Stored (and later served) relative to /public — same
+            // convention as the thumbnail path — so it resolves correctly
+            // no matter what URL the page is served from.
             $destination = $targetDir . '/' . $storedName;
 
             if (move_uploaded_file($files['tmp_name'][$i], $destination)) {
                 $items[] = [
                     'mediaType' => $mediaType,
-                    'filePath' => '/' . $destination,
+                    'filePath' => $destination,
                 ];
             }
         }
 
-        if (!empty($items)) {
-            $featureGraphicModel = new GameFeatureGraphic();
-            $featureGraphicModel->replaceForGame($gameId, $items);
-        }
+        $featureGraphicModel = new GameFeatureGraphic();
+        $featureGraphicModel->replaceForGame($gameId, $items);
     }
 }

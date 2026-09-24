@@ -38,6 +38,15 @@ function saveMyGames(games) {
     try { localStorage.setItem('yaw8_myGames', JSON.stringify(games)); } catch (e) {}
 }
 
+// Turns a raw stored path (e.g. "uploads/thumbnails/x.jpg" or
+// "uploads/feature-graphics/11/fg_x.png", with or without a stray
+// leading slash) into a URL the browser can actually load.
+function toPublicUploadUrl(rawPath) {
+    if (!rawPath) return '';
+    const cleaned = String(rawPath).replace(/^\/+/, ''); // drop any leading slash(es)
+    return '/Yaw8/public/' + cleaned;
+}
+
 function slugify(name) {
     return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'game-' + Date.now();
 }
@@ -208,7 +217,8 @@ function mapDbGame(g) {
         dateAdded: g.dateReleased,
         thumbnail: g.thumbnail,
         accessType: g.accessType || 'online',
-        allowDownload: g.allowDownload == 1 || g.allowDownload === true
+        allowDownload: g.allowDownload == 1 || g.allowDownload === true,
+        featureGraphics: Array.isArray(g.featureGraphics) ? g.featureGraphics : []
     };
 }
 
@@ -304,8 +314,7 @@ function initMyGamesPage(initialGames) {
 
             let thumbHTML = '';
             if (game.thumbnail && game.thumbnail.includes('.')) {
-                const fileName = game.thumbnail.split('/').pop();
-                const imgPath = `/Yaw8/public/uploads/thumbnails/${fileName}`;
+                const imgPath = toPublicUploadUrl(game.thumbnail);
                 thumbHTML = `
                 <div class="game-thumb" style="background-image: url('${imgPath}'); background-size: cover; background-position: center;">
                     <span class="status-badge ${statusClass}">${statusLabel}</span>
@@ -478,44 +487,41 @@ function initMyGamesPage(initialGames) {
         collabSection.style.display = this.value === 'collab' ? 'block' : 'none';
     });
 
-    // ── Genre Input & Chips ──
-    const genreInput = document.getElementById('genreInput');
-    const genreAddBtn = document.getElementById('genreAddBtn');
-    const genreChipList = document.getElementById('genreChipList');
-    let genres = [];
+    // ── Genre Tickboxes ──
+    // A row of real checkboxes styled as toggleable chips. wireGenreTickboxes()
+    // wires up both the submit and edit modals identically; each returns
+    // {getSelected, setSelected} so the rest of the form code can read/write
+    // the checked set without caring how the tickboxes are implemented.
+    function wireGenreTickboxes(groupEl) {
+        if (!groupEl) return null;
+        const checkboxes = Array.from(groupEl.querySelectorAll('input[type="checkbox"]'));
 
-    function renderGenreChips() {
-        genreChipList.innerHTML = '';
-        genres.forEach((genre, idx) => {
-            const chip = document.createElement('span');
-            chip.className = 'collab-chip'; 
-            chip.innerHTML = `${escapeHtml(genre)} <button type="button" data-idx="${idx}"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>`;
-            genreChipList.appendChild(chip);
+        // Keep the chip's visual "active" state in sync with its checkbox —
+        // this is the fallback for browsers without CSS :has() support.
+        checkboxes.forEach((cb) => {
+            const syncActive = () => cb.closest('.genre-chip')?.classList.toggle('active', cb.checked);
+            cb.addEventListener('change', syncActive);
+            syncActive();
         });
+
+        return {
+            getSelected() {
+                return checkboxes.filter((cb) => cb.checked).map((cb) => cb.value);
+            },
+            setSelected(genreNames) {
+                const wanted = new Set((genreNames || []).map((g) => String(g).trim()).filter(Boolean));
+                checkboxes.forEach((cb) => {
+                    cb.checked = wanted.has(cb.value);
+                    cb.closest('.genre-chip')?.classList.toggle('active', cb.checked);
+                });
+            },
+        };
     }
 
-    function addGenre() {
-        const genre = genreInput.value.trim();
-        if (!genre || genres.includes(genre)) return;
-        genres.push(genre);
-        genreInput.value = '';
-        renderGenreChips();
-    }
-
-    genreAddBtn.addEventListener('click', addGenre);
-    genreInput.addEventListener('change', addGenre);
-
-    genreChipList.addEventListener('click', function (e) {
-        const btn = e.target.closest('button[data-idx]');
-        if (!btn) return;
-        genres.splice(Number(btn.getAttribute('data-idx')), 1);
-        renderGenreChips();
-    });
+    const submitGenreTickboxes = wireGenreTickboxes(document.getElementById('genreChipGroup'));
 
     function resetGenreChips() {
-        genres = [];
-        if (genreInput) genreInput.value = '';
-        renderGenreChips();
+        if (submitGenreTickboxes) submitGenreTickboxes.setSelected([]);
     }
 
     // ── Thumbnail preview (right column) ──
@@ -581,7 +587,15 @@ function initMyGamesPage(initialGames) {
     const setSubmitAccessType = wireAccessTypeToggle('submit');
 
     // ── Feature Graphics (multiple images/videos) ──
+    // Each modal tracks two lists: "existing" graphics already saved on the
+    // game (only ever populated for Edit, from the game's own data) and
+    // "new" files just picked/dropped by the user. Both render in the same
+    // preview grid and either can be removed before saving; on submit the
+    // remaining existing ones are sent back as "existing_feature_graphics"
+    // (so the server knows what to keep) alongside any new files to upload.
     const featureGraphicsFiles = {};
+    const featureGraphicsExisting = {};
+    const featureGraphicsControllers = {};
 
     function wireFeatureGraphics(prefix) {
         const dropzone = document.getElementById(prefix + 'FeatureGraphicsDropzone');
@@ -590,21 +604,38 @@ function initMyGamesPage(initialGames) {
         if (!dropzone || !input || !previewList) return null;
 
         featureGraphicsFiles[prefix] = [];
+        featureGraphicsExisting[prefix] = [];
 
         function renderPreviews() {
             previewList.innerHTML = '';
+
+            featureGraphicsExisting[prefix].forEach(function (item, idx) {
+                const isVideo = item.mediaType === 'video';
+                const url = toPublicUploadUrl(item.filePath);
+                const el = document.createElement('div');
+                el.className = 'feature-graphics-preview-item';
+                el.innerHTML = (isVideo
+                    ? '<video src="' + url + '" muted></video>'
+                    : '<img src="' + url + '" alt="">') +
+                    '<span class="fg-existing-badge">Current</span>' +
+                    '<button type="button" class="fg-remove-btn" data-existing-idx="' + idx + '">' +
+                    '<svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>' +
+                    '</button>';
+                previewList.appendChild(el);
+            });
+
             featureGraphicsFiles[prefix].forEach(function (file, idx) {
                 const url = URL.createObjectURL(file);
                 const isVideo = file.type.indexOf('video/') === 0;
-                const item = document.createElement('div');
-                item.className = 'feature-graphics-preview-item';
-                item.innerHTML = (isVideo
+                const el = document.createElement('div');
+                el.className = 'feature-graphics-preview-item';
+                el.innerHTML = (isVideo
                     ? '<video src="' + url + '" muted></video><span class="fg-video-badge">Video</span>'
                     : '<img src="' + url + '" alt="">') +
                     '<button type="button" class="fg-remove-btn" data-idx="' + idx + '">' +
                     '<svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>' +
                     '</button>';
-                previewList.appendChild(item);
+                previewList.appendChild(el);
             });
         }
 
@@ -639,14 +670,33 @@ function initMyGamesPage(initialGames) {
         previewList.addEventListener('click', function (e) {
             const btn = e.target.closest('.fg-remove-btn');
             if (!btn) return;
-            featureGraphicsFiles[prefix].splice(Number(btn.getAttribute('data-idx')), 1);
+            if (btn.hasAttribute('data-existing-idx')) {
+                featureGraphicsExisting[prefix].splice(Number(btn.getAttribute('data-existing-idx')), 1);
+            } else {
+                featureGraphicsFiles[prefix].splice(Number(btn.getAttribute('data-idx')), 1);
+            }
             renderPreviews();
         });
 
-        return function resetFeatureGraphics() {
-            featureGraphicsFiles[prefix] = [];
-            renderPreviews();
+        featureGraphicsControllers[prefix] = {
+            reset() {
+                featureGraphicsFiles[prefix] = [];
+                featureGraphicsExisting[prefix] = [];
+                renderPreviews();
+            },
+            setExisting(items) {
+                featureGraphicsExisting[prefix] = Array.isArray(items) ? items.slice() : [];
+                featureGraphicsFiles[prefix] = [];
+                renderPreviews();
+            },
+            getExisting() {
+                return featureGraphicsExisting[prefix].slice();
+            },
         };
+
+        // Kept for backwards compatibility with existing callers that just
+        // want to clear everything (equivalent to .reset()).
+        return featureGraphicsControllers[prefix].reset;
     }
 
     const resetSubmitFeatureGraphics = wireFeatureGraphics('submit');
@@ -729,6 +779,12 @@ function initMyGamesPage(initialGames) {
     document.getElementById('addGameBtn')?.addEventListener('click', () => openUploadModal());
     document.getElementById('emptyAddGameBtn')?.addEventListener('click', () => openUploadModal());
 
+    if (submitModalClose) submitModalClose.addEventListener('click', closeSubmitModal);
+    if (submitCancelBtn) submitCancelBtn.addEventListener('click', closeSubmitModal);
+    
+    const submitOverlayEl = submitGameModal ? submitGameModal.querySelector('.modal-overlay') : null;
+    if (submitOverlayEl) submitOverlayEl.addEventListener('click', closeSubmitModal);
+
     // "Submit Game" / "Submit Your Game" elsewhere on the site link here with
     // ?upload=1 — open the upload flow straight away (once the loading screen is gone).
     if (new URLSearchParams(window.location.search).has('upload')) {
@@ -737,12 +793,6 @@ function initMyGamesPage(initialGames) {
         if (document.readyState === 'complete') openFromLink();
         else window.addEventListener('load', openFromLink);
     }
-
-    if (submitModalClose) submitModalClose.addEventListener('click', closeSubmitModal);
-    if (submitCancelBtn) submitCancelBtn.addEventListener('click', closeSubmitModal);
-    
-    const submitOverlayEl = submitGameModal ? submitGameModal.querySelector('.modal-overlay') : null;
-    if (submitOverlayEl) submitOverlayEl.addEventListener('click', closeSubmitModal);
 
     submitGameForm.addEventListener('submit', function (e) {
         e.preventDefault();
@@ -768,7 +818,7 @@ function initMyGamesPage(initialGames) {
         formData.append('description', description);
         formData.append('controls', controls);
         formData.append('projectType', projectType);
-        formData.append('genres', JSON.stringify(genres));
+        formData.append('genres', JSON.stringify(submitGenreTickboxes ? submitGenreTickboxes.getSelected() : []));
 
         const activeCollaborators = projectType === 'collab' ? collaborators : [];
         formData.append('collaborators', JSON.stringify(activeCollaborators));
@@ -827,44 +877,11 @@ function initMyGamesPage(initialGames) {
         editCollabSection.style.display = this.value === 'collab' ? 'block' : 'none';
     });
 
-    // ── Genre Input & Chips ──
-    const editGenreInput = document.getElementById('editGenreInput');
-    const editGenreAddBtn = document.getElementById('editGenreAddBtn');
-    const editGenreChipList = document.getElementById('editGenreChipList');
-    let editGenres = [];
-
-    function renderEditGenreChips() {
-        editGenreChipList.innerHTML = '';
-        editGenres.forEach((genre, idx) => {
-            const chip = document.createElement('span');
-            chip.className = 'collab-chip';
-            chip.innerHTML = `${escapeHtml(genre)} <button type="button" data-idx="${idx}"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>`;
-            editGenreChipList.appendChild(chip);
-        });
-    }
-
-    function addEditGenre() {
-        const genre = editGenreInput.value.trim();
-        if (!genre || editGenres.includes(genre)) return;
-        editGenres.push(genre);
-        editGenreInput.value = '';
-        renderEditGenreChips();
-    }
-
-    editGenreAddBtn.addEventListener('click', addEditGenre);
-    editGenreInput.addEventListener('change', addEditGenre);
-
-    editGenreChipList.addEventListener('click', function (e) {
-        const btn = e.target.closest('button[data-idx]');
-        if (!btn) return;
-        editGenres.splice(Number(btn.getAttribute('data-idx')), 1);
-        renderEditGenreChips();
-    });
+    // ── Genre Tickboxes ──
+    const editGenreTickboxes = wireGenreTickboxes(document.getElementById('editGenreChipGroup'));
 
     function resetEditGenreChips() {
-        editGenres = [];
-        if (editGenreInput) editGenreInput.value = '';
-        renderEditGenreChips();
+        if (editGenreTickboxes) editGenreTickboxes.setSelected([]);
     }
 
     // ── Thumbnail preview (right column) ──
@@ -899,7 +916,7 @@ function initMyGamesPage(initialGames) {
     }
 
     const setEditAccessType = wireAccessTypeToggle('edit');
-    const resetEditFeatureGraphics = wireFeatureGraphics('edit');
+    wireFeatureGraphics('edit');
 
     // ── Add Collaborators (left column) ──
     const editCollabInput = document.getElementById('editCollabInput');
@@ -955,7 +972,6 @@ function initMyGamesPage(initialGames) {
         resetEditGenreChips();
         resetEditThumbnailPreview();
         resetEditCollaborators();
-        if (resetEditFeatureGraphics) resetEditFeatureGraphics();
         if (setEditAccessType) setEditAccessType(game.accessType || 'online');
         const editAllowDownloadEl = document.getElementById('editAllowDownload');
         if (editAllowDownloadEl) editAllowDownloadEl.checked = !!game.allowDownload;
@@ -966,9 +982,24 @@ function initMyGamesPage(initialGames) {
         document.getElementById('editControls').value = game.controls || '';
 
         // Restore genres
-        if (game.genre) {
-            editGenres = game.genre.split(', ');
-            renderEditGenreChips();
+        if (editGenreTickboxes) {
+            editGenreTickboxes.setSelected(game.genre ? game.genre.split(', ') : []);
+        }
+
+        // Restore the existing thumbnail (if the game already has one) so the
+        // box shows the real image instead of the "Add a thumbnail" empty
+        // state — the user can still click to replace it, or hit the remove
+        // button to clear it entirely.
+        if (game.thumbnail) {
+            editThumbnailUploadBox.style.backgroundImage = `url(${toPublicUploadUrl(game.thumbnail)})`;
+            editThumbnailUploadBox.classList.add('has-image');
+        }
+
+        // Restore the existing feature graphics (if any) into the preview
+        // grid, so the user can see what's already saved, remove individual
+        // ones, and/or add new ones — instead of the box looking empty.
+        if (featureGraphicsControllers.edit) {
+            featureGraphicsControllers.edit.setExisting(game.featureGraphics || []);
         }
 
         // Restore collaborators & project type
@@ -1029,13 +1060,18 @@ function initMyGamesPage(initialGames) {
         formData.append('description', description);
         formData.append('controls', controls);
         formData.append('projectType', projectType);
-        formData.append('genres', JSON.stringify(editGenres));
+        formData.append('genres', JSON.stringify(editGenreTickboxes ? editGenreTickboxes.getSelected() : []));
 
         const activeCollaborators = projectType === 'collab' ? editCollaborators : [];
         formData.append('collaborators', JSON.stringify(activeCollaborators));
 
         formData.append('accessType', document.getElementById('editAccessType').value);
         formData.append('allowDownload', document.getElementById('editAllowDownload').checked ? '1' : '0');
+        // Whatever "Current" tiles are still in the preview grid (i.e. the
+        // user didn't remove them) get kept; new files are appended too.
+        formData.append('existing_feature_graphics', JSON.stringify(
+            featureGraphicsControllers.edit ? featureGraphicsControllers.edit.getExisting() : []
+        ));
         (featureGraphicsFiles.edit || []).forEach(function (file) {
             formData.append('feature_graphics[]', file);
         });
