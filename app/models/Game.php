@@ -129,10 +129,6 @@
             return $this->accessType === self::ACCESS_DOWNLOAD_ONLY;
         }
 
-        # Raw "also allow download" flag as stored (only meaningful when
-        # the game IS online — a download-only game has no such flag to
-        # toggle). Use isDownloadable() for "can this actually be
-        # downloaded" checks.
         public function getAllowDownload() { return $this->allowDownload; }
         public function setAllowDownload($allowDownload) { $this->allowDownload = (bool) $allowDownload; }
 
@@ -177,7 +173,7 @@
                 "featureGraphics" => $this->featureGraphics,
                 "totalRatingWeekly" => $this->totalRatingWeekly,
                 "totalPlaysWeekly" => $this->totalPlaysWeekly,
-                "bayesianScore" => $this->bayesianScore,    
+                "bayesianScore" => $this->bayesianScore,
             ];
         }
 
@@ -186,19 +182,7 @@
             $pdo = Database::connect();
 
             $params = [];
-            $sql = (
-                "SELECT
-                    ga.gameId, ga.title, ga.totalPlays, ga.thumbnail, ga.accessType, ga.allowDownload,
-                    GROUP_CONCAT(DISTINCT ge.name SEPARATOR ', ') AS genreNames,
-                    COALESCE(AVG(ra.rating), 0) AS avgRating
-                FROM game ga
-                LEFT JOIN game_genre gg ON ga.gameId = gg.gameId
-                LEFT JOIN genre ge ON gg.genreId = ge.genreId
-                LEFT JOIN rating ra ON ga.gameId = ra.gameId
-                WHERE ga.status = 'published'"
-            );
 
-            # append for search function
             $sql = "WITH RatingStats AS (
                         SELECT
                             gameId,
@@ -221,6 +205,8 @@
                             ga.title,
                             ga.totalPlays,
                             ga.thumbnail,
+                            ga.accessType,
+                            ga.allowDownload,
                             GROUP_CONCAT(DISTINCT ge.name SEPARATOR ', ') AS genreNames,
                             COALESCE(rs.avgRating, 0) AS avgRating,
                             COALESCE(rs.weeklyRatings, 0) AS weeklyRatings,
@@ -232,7 +218,7 @@
                         LEFT JOIN RatingStats rs ON ga.gameId = rs.gameId
                         LEFT JOIN PlayStats ps ON ga.gameId = ps.gameId
                         WHERE ga.status = 'published'
-                        GROUP BY ga.gameId, ga.title, ga.totalPlays, ga.thumbnail,
+                        GROUP BY ga.gameId, ga.title, ga.totalPlays, ga.thumbnail, ga.accessType, ga.allowDownload,
                                 rs.avgRating, rs.weeklyRatings, rs.weeklyAvgRating, ps.weeklyPlays
                     ),
                     GlobalStats AS (
@@ -247,6 +233,8 @@
                         gws.title,
                         gws.totalPlays,
                         gws.thumbnail,
+                        gws.accessType,
+                        gws.allowDownload,
                         gws.genreNames,
                         gws.avgRating,
                         gws.weeklyRatings AS totalRatingWeekly,
@@ -284,20 +272,11 @@
                     avgRating: $row["avgRating"],
                     accessType: $row["accessType"] ?? self::ACCESS_ONLINE,
                     allowDownload: (bool) ($row["allowDownload"] ?? false),
+                    totalRatingWeekly: $row["totalRatingWeekly"],
+                    totalPlaysWeekly: $row["weeklyPlays"],
+                    bayesianScore: $row["bayesianScore"],
                 );
             }
-            $games[] = new Game(
-                gameId: $row["gameId"],
-                title: $row["title"],
-                totalPlays: $row["totalPlays"],
-                thumbnail: $row["thumbnail"],
-                genreNames: $row["genreNames"],
-                avgRating: $row["avgRating"],
-                totalRatingWeekly: $row["totalRatingWeekly"],
-                totalPlaysWeekly: $row["weeklyPlays"],
-                bayesianScore: $row["bayesianScore"],
-            );
-        }
 
             return $games;
         }
@@ -354,11 +333,6 @@
         }
 
         # Bumps a game's totalPlays by 1
-        public function incrementTotalPlays($gameId): int {
-        # Bumps a game's totalPlays by 1 (called when the player actually
-        # starts a game, not just when they view its page). Returns the
-        # updated total so the caller can refresh the on-screen count
-        # without a second round trip.
         public function incrementTotalPlays($gameId, $userId = null): int {
             $pdo = Database::connect();
 
@@ -384,9 +358,7 @@
             try {
                 $pdo->beginTransaction();
 
-                # Update the user's existing rating, or insert the first one. Done in two
-                # steps (instead of ON DUPLICATE KEY UPDATE) so it works even if the
-                # rating table has no UNIQUE (gameId, userId) key.
+                # Update the user's existing rating, or insert the first one
                 $existsStmt = $pdo->prepare('SELECT 1 FROM rating WHERE gameId = ? AND userId = ? LIMIT 1');
                 $existsStmt->execute([$gameId, $userId]);
 
@@ -418,7 +390,6 @@
         }
 
         # A random published game that actually has a file to play/download.
-        # If $excludeId is the only such game, it is returned anyway.
         public function getRandomPublishedGameId($excludeId = null): ?int {
             $pdo = Database::connect();
             $base = "SELECT gameId FROM game WHERE status = 'published' AND gameFiles IS NOT NULL AND gameFiles <> ''";
@@ -439,7 +410,6 @@
         }
 
         # Navbar search: published games whose title or genre matches.
-        # $like / $prefix are already-escaped LIKE patterns ("%q%" and "q%").
         public function searchPublished(string $like, string $prefix, int $limit = 6): array {
             $pdo = Database::connect();
 

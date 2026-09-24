@@ -249,6 +249,7 @@
   <script src="js/nav-tools.js"></script>
   <?php if ($currentRoute === 'games'): ?>
     <script src="js/games.js"></script>
+    <script src="js/row-carousel.js"></script>
   <?php elseif ($currentRoute === 'games/player'): ?>
     <script src="js/gamepage.js"></script>
   <?php elseif ($currentRoute === 'downloader'): ?>

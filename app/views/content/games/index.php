@@ -137,7 +137,9 @@ if (!function_exists('yaw8_quick_actions_html')) {
                     data-genre-names="<?= htmlspecialchars($topWeeklyPlayedGame->getGenreNames()) ?>"
                     data-avg-rating="<?= htmlspecialchars($topWeeklyPlayedGame->getAvgRating()) ?>"
                     data-dev-names="<?= htmlspecialchars($topWeeklyPlayedGame->getDevNames()) ?>"
+                    data-access-type="<?= htmlspecialchars($topWeeklyPlayedGame->getAccessType()) ?>"
                 >
+                    <?= yaw8_quick_actions_html() ?>
                     <?= yaw8_thumbnail_html($topWeeklyPlayedGame->getThumbnail(), $topWeeklyPlayedGame->getTitle(), $index) ?>
                     <div class="game-info">
                         <div class="game-meta">
@@ -177,18 +179,6 @@ if (!function_exists('yaw8_quick_actions_html')) {
             <?php foreach($topRatedGames as $index => $topRatedGame): ?>
                 <?php $rank = $index + 1; ?>
                 <div class="game-card"
-                    data-game-id="<?= htmlspecialchars($featuredGame->getGameId()) ?>"
-                    data-title="<?= htmlspecialchars($featuredGame->getTitle()) ?>"
-                    data-description="<?= htmlspecialchars($featuredGame->getDescription()) ?>"
-                    data-controls="<?= htmlspecialchars($featuredGame->getControls()) ?>"
-                    data-total-plays="<?= htmlspecialchars($featuredGame->getTotalPlays()) ?>"
-                    data-date-released="<?= htmlspecialchars($featuredGame->getDateReleased()) ?>"
-                    data-last-updated="<?= htmlspecialchars($featuredGame->getLastUpdated()) ?>"
-                    data-thumbnail="<?= htmlspecialchars($featuredGame->getThumbnail()) ?>"
-                    data-genre-names="<?= htmlspecialchars($featuredGame->getGenreNames()) ?>"
-                    data-avg-rating="<?= htmlspecialchars($featuredGame->getAvgRating()) ?>"
-                    data-dev-names="<?= htmlspecialchars($featuredGame->getDevNames()) ?>"
-                    data-access-type="<?= htmlspecialchars($featuredGame->getAccessType()) ?>"
                     data-game-id="<?= htmlspecialchars($topRatedGame->getGameId()) ?>"
                     data-title="<?= htmlspecialchars($topRatedGame->getTitle()) ?>"
                     data-description="<?= htmlspecialchars($topRatedGame->getDescription()) ?>"
@@ -201,8 +191,6 @@ if (!function_exists('yaw8_quick_actions_html')) {
                     data-avg-rating="<?= htmlspecialchars($topRatedGame->getAvgRating()) ?>"
                     data-dev-names="<?= htmlspecialchars($topRatedGame->getDevNames()) ?>"
                 >
-                    <?= yaw8_quick_actions_html() ?>
-                    <?= yaw8_thumbnail_html($featuredGame->getThumbnail(), $featuredGame->getTitle(), $index) ?>
                     <?php
                         $topHasThumb = !empty($topRatedGame->getThumbnail());
                         $topColorClasses = ['gt-pixel-drift', 'gt-tower-tactics', 'gt-box-jumper', 'gt-color-clash'];

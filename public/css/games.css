@@ -205,3 +205,127 @@
     color: #ff4fd8;
     text-shadow: 0 0 8px #cc0088;
 }
+
+/* ═══════════════════════════════
+    SINGLE-ROW SECTIONS WITH ARROWS
+    (Top Played / Top Rated / Trending — NOT "All Games")
+
+    Why this exists: .games-grid is a 4-column grid, and only the
+    .top-played-games wrapper is "display: contents" (style.css), so its
+    cards become grid items. These sections use different wrapper classes
+    (.top-played-games-all-time / -weekly), so the wrapper itself became ONE
+    grid item and the cards stacked vertically inside it.
+
+    Now each wrapper is a single horizontal row showing 4 cards at a time
+    (2 on small screens). js/row-carousel.js wraps it in .row-carousel and
+    adds the left / right arrow buttons.
+═══════════════════════════════ */
+.games-grid .top-played-games-all-time,
+.games-grid .top-played-games-weekly {
+    --row-cols: 4;              /* how many cards are visible at once */
+    --row-gap: 14px;
+
+    grid-column: 1 / -1;        /* (only matters if the arrows script didn't run) */
+    min-width: 0;
+
+    display: flex;
+    flex-wrap: nowrap;
+    gap: var(--row-gap);
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 10px 4px 14px;     /* room for the card hover lift + glow */
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: 4px; /* keep snapping aligned with the padding above */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 229, 255, .45) transparent;
+}
+
+.games-grid .top-played-games-all-time > .game-card,
+.games-grid .top-played-games-weekly > .game-card {
+    /* same card width the old 4-column grid gave */
+    flex: 0 0 calc((100% - (var(--row-cols) - 1) * var(--row-gap)) / var(--row-cols));
+    min-width: 0;
+    scroll-snap-align: start;
+}
+
+/* ── Arrow-controlled row (added by js/row-carousel.js) ── */
+.games-grid > .row-carousel {
+    grid-column: 1 / -1;        /* span the whole grid instead of one column */
+    min-width: 0;
+    position: relative;
+}
+
+/* The arrows do the scrolling, so hide the scrollbar
+   (swipe / trackpad / mouse-drag scrolling still works). */
+.row-carousel > .top-played-games-all-time,
+.row-carousel > .top-played-games-weekly {
+    scrollbar-width: none;
+}
+
+.row-carousel > .top-played-games-all-time::-webkit-scrollbar,
+.row-carousel > .top-played-games-weekly::-webkit-scrollbar {
+    display: none;
+}
+
+/* Same look as the modal's thumbnail arrows (modal.css) */
+.row-arrow {
+    position: absolute;
+    top: var(--arrow-top, 50%);   /* set by js/row-carousel.js: centered on the thumbnail */
+    transform: translateY(-50%);
+    z-index: 5;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    background: rgba(5, 10, 20, .85);
+    border: 1px solid rgba(0, 229, 255, .45);
+    color: #fff;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, .55);
+    transition: background .15s, border-color .15s, color .15s, opacity .15s;
+}
+
+.row-arrow svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+}
+
+.row-arrow:hover {
+    border-color: var(--cyan);
+    color: var(--cyan);
+    background: rgba(0, 229, 255, .18);
+}
+
+.row-arrow:focus-visible {
+    outline: 2px solid var(--cyan);
+    outline-offset: 2px;
+}
+
+.row-arrow-prev { left: -10px; }
+.row-arrow-next { right: -10px; }
+
+/* Nothing further to scroll to: dimmed and inert, so the layout never jumps */
+.row-arrow:disabled {
+    opacity: .25;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* Every game already fits in view (4 or fewer): no arrows needed */
+.row-carousel.no-overflow > .row-arrow {
+    display: none;
+}
+
+/* Same breakpoint as .games-grid in style.css: 2 cards per view, still one row */
+@media (max-width: 800px) {
+    .games-grid .top-played-games-all-time,
+    .games-grid .top-played-games-weekly { --row-cols: 2; }
+
+    .row-arrow { width: 32px; height: 32px; }
+    .row-arrow svg { width: 16px; height: 16px; }
+    .row-arrow-prev { left: -6px; }
+    .row-arrow-next { right: -6px; }
+}

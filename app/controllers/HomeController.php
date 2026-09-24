@@ -7,10 +7,10 @@ class HomeController extends Controller{
     # Function that takes user to the index
     public function index(){
         $gameService = new GameService();
-        $topAllTimeGames = $gameService->getTopPlayedGames("", "");
+        $topPlayedGames = $gameService->getTopPlayedGames("", "");
 
         $this -> view('home/index', [
-            'topAllTimeGames' => $topAllTimeGames
+            'topPlayedGames' => $topPlayedGames
         ]);
     }
 }
